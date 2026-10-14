@@ -1,0 +1,19 @@
+{
+  "titulo": "Casa de ejemplo",
+  "año": 2026,
+  "lugar": "Ciudad, País",
+  "arquitecto": "Estudio de ejemplo",
+  "descripcion": "Proyecto de ejemplo para mostrar cómo se ve una casa en el portafolio. Reemplaza este texto por una descripción breve: el encargo, el lugar y lo que buscaste mostrar con las fotografías.",
+  "publicado": "2026-09-20",
+  "portada": "01.jpg",
+  "ficha": {
+    "Programa": "Vivienda unifamiliar",
+    "Superficie": "280 m²"
+  },
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "Casa blanca de dos pisos con terraza y piscina en primer plano, bajo un cielo azul con nubes" },
+    { "archivo": "02.jpg", "alt": "Fachada de casa contemporánea blanca con aleros de madera, reflejada en la piscina" },
+    { "archivo": "03.jpg", "alt": "Living de doble altura con un muro revestido en madera y un sofá blanco" },
+    { "archivo": "04.jpg", "alt": "Casa de un piso con grandes ventanales junto a una piscina, enmarcada por vegetación" }
+  ]
+}

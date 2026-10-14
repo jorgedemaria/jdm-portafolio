@@ -1,0 +1,9 @@
+{
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "Edificio de fachada blanca con un volumen inclinado de vidrio y un cuerpo en voladizo, visto desde abajo contra un cielo claro" },
+    { "archivo": "02.jpg", "alt": "Volúmenes blancos apilados de un edificio residencial con ventanas en retícula, sobre un cielo celeste", "foco": "50% 35%" },
+    { "archivo": "03.jpg", "alt": "Torres de oficinas con muro cortina de vidrio vistas en contrapicado bajo un cielo nublado" },
+    { "archivo": "04.jpg", "alt": "Rascacielos fotografiados desde la base, convergiendo hacia un cielo cubierto de niebla" },
+    { "archivo": "05.jpg", "alt": "Casa contemporánea de madera oscura y grandes ventanales iluminados al anochecer, con un árbol en el jardín" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "titulo": "Edificio de ejemplo",
+  "año": 2025,
+  "lugar": "Ciudad, País",
+  "arquitecto": "Estudio de ejemplo",
+  "descripcion": "Proyecto de ejemplo con fotos verticales y horizontales mezcladas, para ver cómo se ordena la galería. Reemplaza este texto por la descripción del proyecto.",
+  "publicado": "2026-05-10",
+  "portada": "01.jpg",
+  "ficha": {
+    "Programa": "Vivienda colectiva",
+    "Pisos": "8"
+  },
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "Edificio residencial de fachada oscura y ladrillo visto, fotografiado en contrapicado contra el cielo" },
+    { "archivo": "02.jpg", "alt": "Muros curvos de ladrillo naranja que se abren hacia un cielo azul intenso" },
+    { "archivo": "03.jpg", "alt": "Torres de oficinas con muro cortina de vidrio vistas desde la calle" }
+  ]
+}

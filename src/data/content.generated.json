@@ -1,0 +1,303 @@
+{
+  "inicio": [
+    {
+      "src": "/images/inicio/01",
+      "width": 3000,
+      "height": 2000,
+      "widths": [
+        800,
+        1600,
+        2400
+      ],
+      "alt": "Edificio de fachada blanca con un volumen inclinado de vidrio y un cuerpo en voladizo, visto desde abajo contra un cielo claro",
+      "color": "#f8f8f8"
+    },
+    {
+      "src": "/images/inicio/02",
+      "width": 3000,
+      "height": 4246,
+      "widths": [
+        800,
+        1600,
+        2400
+      ],
+      "alt": "Volúmenes blancos apilados de un edificio residencial con ventanas en retícula, sobre un cielo celeste",
+      "foco": "50% 35%",
+      "color": "#c8d8e8"
+    },
+    {
+      "src": "/images/inicio/03",
+      "width": 3000,
+      "height": 2000,
+      "widths": [
+        800,
+        1600,
+        2400
+      ],
+      "alt": "Torres de oficinas con muro cortina de vidrio vistas en contrapicado bajo un cielo nublado",
+      "color": "#181818"
+    },
+    {
+      "src": "/images/inicio/04",
+      "width": 3000,
+      "height": 2000,
+      "widths": [
+        800,
+        1600,
+        2400
+      ],
+      "alt": "Rascacielos fotografiados desde la base, convergiendo hacia un cielo cubierto de niebla",
+      "color": "#181818"
+    },
+    {
+      "src": "/images/inicio/05",
+      "width": 3000,
+      "height": 2000,
+      "widths": [
+        800,
+        1600,
+        2400
+      ],
+      "alt": "Casa contemporánea de madera oscura y grandes ventanales iluminados al anochecer, con un árbol en el jardín",
+      "color": "#181818"
+    }
+  ],
+  "categorias": [
+    {
+      "slug": "casas",
+      "nombre": "Casas"
+    },
+    {
+      "slug": "edificios",
+      "nombre": "Edificios"
+    },
+    {
+      "slug": "urbanos",
+      "nombre": "Urbanos"
+    }
+  ],
+  "proyectos": [
+    {
+      "slug": "casa-ejemplo",
+      "categoria": {
+        "slug": "casas",
+        "nombre": "Casas"
+      },
+      "titulo": "Casa de ejemplo",
+      "año": 2026,
+      "lugar": "Ciudad, País",
+      "arquitecto": "Estudio de ejemplo",
+      "descripcion": "Proyecto de ejemplo para mostrar cómo se ve una casa en el portafolio. Reemplaza este texto por una descripción breve: el encargo, el lugar y lo que buscaste mostrar con las fotografías.",
+      "publicado": "2026-09-20",
+      "ficha": {
+        "Programa": "Vivienda unifamiliar",
+        "Superficie": "280 m²"
+      },
+      "portada": {
+        "src": "/images/proyectos/casa-ejemplo/01",
+        "width": 3000,
+        "height": 1990,
+        "widths": [
+          800,
+          1600,
+          2400
+        ],
+        "alt": "Casa blanca de dos pisos con terraza y piscina en primer plano, bajo un cielo azul con nubes",
+        "color": "#e8e8e8"
+      },
+      "fotos": [
+        {
+          "src": "/images/proyectos/casa-ejemplo/01",
+          "width": 3000,
+          "height": 1990,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Casa blanca de dos pisos con terraza y piscina en primer plano, bajo un cielo azul con nubes",
+          "color": "#e8e8e8"
+        },
+        {
+          "src": "/images/proyectos/casa-ejemplo/02",
+          "width": 3000,
+          "height": 2000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Fachada de casa contemporánea blanca con aleros de madera, reflejada en la piscina",
+          "color": "#e8e8e8"
+        },
+        {
+          "src": "/images/proyectos/casa-ejemplo/03",
+          "width": 3000,
+          "height": 2040,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Living de doble altura con un muro revestido en madera y un sofá blanco",
+          "color": "#d8d8d8"
+        },
+        {
+          "src": "/images/proyectos/casa-ejemplo/04",
+          "width": 3000,
+          "height": 2000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Casa de un piso con grandes ventanales junto a una piscina, enmarcada por vegetación",
+          "color": "#080808"
+        }
+      ]
+    },
+    {
+      "slug": "edificio-ejemplo",
+      "categoria": {
+        "slug": "edificios",
+        "nombre": "Edificios"
+      },
+      "titulo": "Edificio de ejemplo",
+      "año": 2025,
+      "lugar": "Ciudad, País",
+      "arquitecto": "Estudio de ejemplo",
+      "descripcion": "Proyecto de ejemplo con fotos verticales y horizontales mezcladas, para ver cómo se ordena la galería. Reemplaza este texto por la descripción del proyecto.",
+      "publicado": "2026-05-10",
+      "ficha": {
+        "Programa": "Vivienda colectiva",
+        "Pisos": "8"
+      },
+      "portada": {
+        "src": "/images/proyectos/edificio-ejemplo/01",
+        "width": 3000,
+        "height": 4000,
+        "widths": [
+          800,
+          1600,
+          2400
+        ],
+        "alt": "Edificio residencial de fachada oscura y ladrillo visto, fotografiado en contrapicado contra el cielo",
+        "color": "#080828"
+      },
+      "fotos": [
+        {
+          "src": "/images/proyectos/edificio-ejemplo/01",
+          "width": 3000,
+          "height": 4000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Edificio residencial de fachada oscura y ladrillo visto, fotografiado en contrapicado contra el cielo",
+          "color": "#080828"
+        },
+        {
+          "src": "/images/proyectos/edificio-ejemplo/02",
+          "width": 3000,
+          "height": 4499,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Muros curvos de ladrillo naranja que se abren hacia un cielo azul intenso",
+          "color": "#5888d8"
+        },
+        {
+          "src": "/images/proyectos/edificio-ejemplo/03",
+          "width": 3000,
+          "height": 1993,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Torres de oficinas con muro cortina de vidrio vistas desde la calle",
+          "color": "#f8f8f8"
+        }
+      ]
+    },
+    {
+      "slug": "espacio-publico-ejemplo",
+      "categoria": {
+        "slug": "urbanos",
+        "nombre": "Urbanos"
+      },
+      "titulo": "Espacio público de ejemplo",
+      "año": 2025,
+      "lugar": "Ciudad, País",
+      "arquitecto": "Oficina de ejemplo",
+      "descripcion": "Proyecto urbano de ejemplo. Reemplaza este texto por la descripción del proyecto.",
+      "publicado": "2025-11-02",
+      "ficha": {},
+      "portada": {
+        "src": "/images/proyectos/espacio-publico-ejemplo/01",
+        "width": 3000,
+        "height": 2000,
+        "widths": [
+          800,
+          1600,
+          2400
+        ],
+        "alt": "Vista de la ciudad al atardecer con una avenida iluminada que la atraviesa",
+        "color": "#f8f8f8"
+      },
+      "fotos": [
+        {
+          "src": "/images/proyectos/espacio-publico-ejemplo/01",
+          "width": 3000,
+          "height": 2000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Vista de la ciudad al atardecer con una avenida iluminada que la atraviesa",
+          "color": "#f8f8f8"
+        },
+        {
+          "src": "/images/proyectos/espacio-publico-ejemplo/02",
+          "width": 3000,
+          "height": 2000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Avenida entre rascacielos con peatones cruzando y taxis detenidos",
+          "color": "#182828"
+        },
+        {
+          "src": "/images/proyectos/espacio-publico-ejemplo/03",
+          "width": 3000,
+          "height": 3752,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Calle entre edificios altos de noche, con el pavimento mojado reflejando las luces",
+          "color": "#282838"
+        },
+        {
+          "src": "/images/proyectos/espacio-publico-ejemplo/04",
+          "width": 3000,
+          "height": 1845,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Vista aérea de una ciudad densa frente al mar al amanecer",
+          "color": "#182838"
+        }
+      ]
+    }
+  ]
+}

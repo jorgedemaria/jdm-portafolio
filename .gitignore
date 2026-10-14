@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+
+# Fotos originales: se quedan en tu computador (tu archivo de Lightroom es el respaldo).
+# Lo que se sube son los info.json y las versiones optimizadas de public/images.
+content/**/*.jpg
+content/**/*.jpeg
+content/**/*.JPG
+content/**/*.JPEG
+content/**/*.png
+content/**/*.tif
+content/**/*.tiff
+content/**/*.webp
