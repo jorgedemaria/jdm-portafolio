@@ -2,6 +2,7 @@
 import { ref, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
 import NotFoundView from './NotFoundView.vue'
+import ProjectFacts from '../components/ProjectFacts.vue'
 import { findProject } from '../data/content'
 import { useNavSectionTitle } from '../composables/useNavSectionTitle'
 import { navTitleAction, menuOpen, menuBottom } from '../composables/useMenu'
@@ -126,73 +127,48 @@ function goBack() {
   else router.push({ name: 'projects' })
 }
 
-/*
- * Los datos suben como persiana desde abajo al llegar a la página (si está la intro, cuando
- * ya se armó el navbar) y se recogen hacia abajo apenas se hace scroll; vuelven arriba del todo.
- */
-const FACTS_DELAY = 400
-const SCROLL_HIDE = 24
-const factsReady = ref(false)
-const atTop = ref(true)
-const factsShown = computed(() => factsReady.value && atTop.value)
-let factsTimer = 0
-const onFactsScroll = () => (atTop.value = window.scrollY < SCROLL_HIDE)
-function revealFacts(delay) {
-  factsTimer = setTimeout(() => {
-    factsReady.value = true
-    titleShown.value = true
-  }, delay)
-}
+// El título móvil se arma al llegar a la página (si está la intro, cuando ya se armó el navbar)
+const TITLE_DELAY = 400
+let titleTimer = 0
+const revealTitle = (delay) => (titleTimer = setTimeout(() => (titleShown.value = true), delay))
 onMounted(() => {
   backPath.value = window.history.state?.back ?? null
   // El título del navbar ("← título") lleva de vuelta
   navTitleAction.value = { label: backLabel.value, run: goBack }
-  onFactsScroll()
-  window.addEventListener('scroll', onFactsScroll, { passive: true })
-  if (introLeaving.value) revealFacts(FACTS_DELAY)
+  if (introLeaving.value) revealTitle(TITLE_DELAY)
   else {
     const stop = watch(introLeaving, (leaving) => {
       if (!leaving) return
       stop()
-      revealFacts(NAV_DURATION)
+      revealTitle(NAV_DURATION)
     })
   }
 })
 onBeforeUnmount(() => {
   navTitleAction.value = null
-  clearTimeout(factsTimer)
-  window.removeEventListener('scroll', onFactsScroll)
+  clearTimeout(titleTimer)
 })
 
 /*
- * Resto de la galería: las verticales seguidas se agrupan de a dos, lado a lado.
- * Cada foto se ve completa, sin recortes, y nunca más alta que la pantalla.
+ * Resto de la galería, con el mismo diagrama que la página de Proyectos: dos columnas con la
+ * de la derecha desfasada hacia abajo, cada foto completa en su proporción real. La primera
+ * va a todo el ancho si es horizontal.
  */
-const rows = computed(() => {
-  if (!project.value) return []
-  const result = []
-  const photos = project.value.fotos.slice(1)
-  const isPortrait = (p) => p && p.height > p.width
-  for (let i = 0; i < photos.length; i++) {
-    const photo = photos[i]
-    const next = photos[i + 1]
-    if (isPortrait(photo) && isPortrait(next)) {
-      result.push({ type: 'pair', photos: [photo, next] })
-      i++
-    } else {
-      result.push({ type: 'single', photos: [photo] })
-    }
-  }
-  return result
-})
+const gallery = computed(() => project.value?.fotos.slice(1) ?? [])
+const isWide = (i) => i === 0 && gallery.value[0].width > gallery.value[0].height
+// Columna derecha (desfasada): cuenta desde después de la foto a todo el ancho, si la hay
+const isRight = (i) => (i - (isWide(0) ? 1 : 0)) % 2 === 1
+
+/*
+ * La ficha va en el hueco del desfase: arriba de la primera foto de la columna derecha, que
+ * así queda corrida hacia abajo por la ficha en vez de por el margen. En móvil (una columna)
+ * o si no hay columna derecha, va al comienzo de la galería.
+ */
+const firstRight = computed(() => (isWide(0) ? 2 : 1))
+const factsInGap = computed(() => gallery.value.length > firstRight.value)
 
 // Las fotos de la galería se desenrollan con el scroll a medida que aparecen
 const reveal = useScrollReveal()
-
-// Ancho para que la foto quepa entera en la pantalla (deja aire para el navbar)
-const fitWidth = (photo) => ({
-  width: `min(100%, calc((100svh - 8rem) * ${photo.width / photo.height}))`,
-})
 </script>
 
 <template>
@@ -210,40 +186,6 @@ const fitWidth = (photo) => ({
         <div class="absolute inset-x-0 top-0 h-full" :style="heroFrame">
           <ResponsiveImage v-bind="firstPhoto" fill loading="eager" sizes="100vw" />
         </div>
-
-        <!-- Datos en la esquina inferior izquierda de la foto, alineados con el título -->
-        <div class="absolute inset-x-0 bottom-0 px-2 pb-6">
-          <div class="page">
-            <!-- Persiana: sube desde abajo y se recoge al hacer scroll (oculta, no se puede enfocar) -->
-            <dl
-              :inert="!factsShown"
-              :class="[
-                'pointer-events-auto divide-y divide-primario border border-primario bg-fondo text-cuerpo-sm transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none md:w-2/5',
-                factsShown ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
-              ]"
-            >
-              <div class="flex items-baseline justify-between gap-4 px-3 py-2.5">
-                <dt class="text-texto/65">categoría</dt>
-                <dd class="text-right">
-                  <RouterLink
-                    :to="{ name: 'projects', query: { categoria: project.categoria.slug } }"
-                    class="lowercase text-texto decoration-1 underline-offset-4 hover:underline"
-                  >
-                    {{ project.categoria.nombre }}
-                  </RouterLink>
-                </dd>
-              </div>
-              <div
-                v-for="[label, value] in facts"
-                :key="label"
-                class="flex items-baseline justify-between gap-4 px-3 py-2.5"
-              >
-                <dt class="text-texto/65">{{ label }}</dt>
-                <dd class="text-right text-texto">{{ value }}</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -251,24 +193,22 @@ const fitWidth = (photo) => ({
 
     <div class="px-2">
       <div class="page">
-        <div class="mt-6 flex flex-col gap-6 lg:mt-10 lg:gap-10">
-          <template v-for="row in rows" :key="row.photos[0].src">
-            <div v-if="row.type === 'pair'" class="grid gap-6 md:grid-cols-2 lg:gap-10">
-              <div
-                v-for="photo in row.photos"
-                :key="photo.src"
-                :ref="reveal"
-                class="mx-auto overflow-hidden"
-                :style="fitWidth(photo)"
-              >
-                <ResponsiveImage v-bind="photo" sizes="(min-width: 768px) 50vw, 100vw" />
-              </div>
+        <ProjectFacts :project="project" :facts="facts" :class="['mt-6', factsInGap && 'md:hidden']" />
+        <ul class="mt-6 grid gap-x-10 gap-y-16 md:grid-cols-2 md:items-start lg:mt-10">
+          <li
+            v-for="(photo, i) in gallery"
+            :key="photo.src"
+            :class="[isWide(i) && 'md:col-span-2', isRight(i) && i !== firstRight && 'md:mt-24']"
+          >
+            <ProjectFacts v-if="i === firstRight" :project="project" :facts="facts" class="mb-10 max-md:hidden" />
+            <div :ref="reveal" class="overflow-hidden">
+              <ResponsiveImage
+                v-bind="photo"
+                :sizes="isWide(i) ? '(min-width: 1440px) 1360px, 100vw' : '(min-width: 1440px) 680px, (min-width: 768px) 48vw, 100vw'"
+              />
             </div>
-            <div v-else :ref="reveal" class="mx-auto overflow-hidden" :style="fitWidth(row.photos[0])">
-              <ResponsiveImage v-bind="row.photos[0]" sizes="(min-width: 1440px) 1320px, 100vw" />
-            </div>
-          </template>
-        </div>
+          </li>
+        </ul>
       </div>
     </div>
 

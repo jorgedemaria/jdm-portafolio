@@ -314,7 +314,7 @@ const facts = (project) => [
                       :key="label"
                       class="flex items-baseline justify-between gap-4 px-3 py-2.5"
                     >
-                      <dt class="text-texto/65">{{ label }}</dt>
+                      <dt class="font-light text-primario">{{ label }}</dt>
                       <dd class="text-right text-texto">{{ value }}</dd>
                     </div>
                   </dl>

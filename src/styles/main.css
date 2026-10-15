@@ -1,4 +1,5 @@
 @import '@fontsource/sora/latin-600.css';
+@import '@fontsource/jetbrains-mono/latin-300.css';
 @import '@fontsource/jetbrains-mono/latin-400.css';
 @import '@fontsource/jetbrains-mono/latin-800.css';
 @import 'tailwindcss';
@@ -21,6 +22,7 @@
    * - JetBrains Mono 800 (font-extrabold): la voz del sitio. Logo, intro, mensajes y llamadas a
    *   la acción en bloques (contacto, 404).
    * - JetBrains Mono 400: todo lo demás (texto, menú, fichas, pie).
+   * - JetBrains Mono 300 (font-light): etiquetas de las fichas (detalle y tarjetas de proyecto).
    */
   --font-*: initial;
   --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
