@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
+import { useRoute } from "vue-router";
 import AppNav from "./components/AppNav.vue";
 import AppIntro from "./components/AppIntro.vue";
 import AppFooter from "./components/AppFooter.vue";
@@ -10,8 +11,14 @@ import {
   navOverPhotos,
   navSectionTitle,
 } from "./composables/useMenu";
+import { introLeaving } from "./composables/useIntro";
 
-const showIntro = ref(true);
+/*
+ * La intro sale cada vez que se entra por Inicio; al entrar directo a otra página, no. Sin
+ * intro, el resto del sitio (logo, datos de un proyecto) se arma de inmediato como si ya hubiera salido.
+ */
+const showIntro = ref(window.location.pathname === "/");
+if (!showIntro.value) introLeaving.value = true;
 
 /*
  * Al abrir el menú, el contenido (y el pie) bajan lo que mide el menú + 24 px, así el menú
@@ -19,8 +26,12 @@ const showIntro = ref(true);
  * Con un título de sección bajo el logo se usa el mismo ritmo que ese título.
  */
 const MENU_GAP = 24;
+// En Inicio no se baja nada (asomaría el fondo crema); "últimos trabajos" se corre por su cuenta
+const route = useRoute();
 const contentPush = computed(() =>
-  menuOpen.value && !navOverPhotos.value && menuHeight.value ? menuHeight.value + MENU_GAP : 0,
+  menuOpen.value && !navOverPhotos.value && menuHeight.value && route.name !== "home"
+    ? menuHeight.value + MENU_GAP
+    : 0,
 );
 const titleBelowLogo = computed(() => !!navSectionTitle.value && menuHorizontal.value);
 const pushClass = computed(() => {

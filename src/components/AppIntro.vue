@@ -19,8 +19,9 @@ const emit = defineEmits(["done"]);
 const MIN_DURATION = 1300;
 const MAX_WAIT = 4000;
 const EXIT_DURATION = 700;
-// Parpadeo del cursor solo, antes de empezar a escribir
-const CARET_LEAD = 500;
+// Parpadeo del cursor solo, antes de empezar a escribir: 1,5 parpadeos (visible, oculto,
+// visible) con el ciclo de 1 s de TypingCaret
+const CARET_LEAD = 1500;
 
 // Desfase entre sílabas y tiempo que una sílaba elegida pasa mostrando caracteres al azar
 const STAGGER = 90;

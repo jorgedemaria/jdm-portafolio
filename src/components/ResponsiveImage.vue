@@ -29,6 +29,8 @@ const props = defineProps({
   zoom: { type: Number, default: null },
   // Color promedio de la foto: fondo mientras carga
   color: { type: String, default: null },
+  // Huella del original: cambia la URL al reemplazar la foto, así no se ve la versión en caché
+  origen: { type: String, default: null },
 })
 
 // Avisa cuando la foto terminó de cargar (ej. para mostrarla recién entonces)
@@ -41,8 +43,9 @@ function onLoad() {
   emit('loaded')
 }
 
-const srcset = (ext) => props.widths.map((w) => `${props.src}-${w}.${ext} ${w}w`).join(', ')
-const fallback = computed(() => `${props.src}-${props.widths[1] ?? props.widths[0]}.jpg`)
+const version = computed(() => (props.origen ? `?v=${props.origen}` : ''))
+const srcset = (ext) => props.widths.map((w) => `${props.src}-${w}.${ext}${version.value} ${w}w`).join(', ')
+const fallback = computed(() => `${props.src}-${props.widths[1] ?? props.widths[0]}.jpg${version.value}`)
 
 // La imagen puede venir de caché y estar completa antes de montar
 onMounted(() => {

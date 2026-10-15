@@ -50,12 +50,10 @@ const type = [
       <p class="mt-4 max-w-[60ch] text-cuerpo-sm">Pasa el cursor para ver el hover y usa Tab para ver el foco.</p>
       <div class="mt-8 flex flex-wrap items-center gap-6">
         <AppButton>Escríbeme</AppButton>
-        <AppButton variant="secundario">Ver proyecto</AppButton>
         <AppButton disabled>Desactivado</AppButton>
       </div>
       <div class="mt-6 flex flex-wrap items-center gap-6">
         <AppButton size="md">Escríbeme</AppButton>
-        <AppButton size="md" variant="secundario">Ver proyectos</AppButton>
         <AppButton size="md" :arrow="false" type="submit">Enviar mensaje</AppButton>
       </div>
     </section>

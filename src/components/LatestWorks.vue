@@ -19,8 +19,6 @@ const props = defineProps({
 
 // Parte del recorrido en la que aparecen los proyectos; el resto es pausa con los tres visibles
 const REVEAL_SPAN = 0.75
-// Inercia: tiempo (ms) que tarda la animación en alcanzar la posición del scroll
-const SMOOTHING = 140
 
 const root = ref(null)
 const progress = useScrollProgress(root)
@@ -35,36 +33,7 @@ onMounted(() => {
   wideQuery.addEventListener('change', updateWide)
 })
 
-// El avance sigue al scroll con inercia, igual que el stack de fotos
-const smooth = ref(0)
-let frame = 0
-let lastTime = 0
-function follow(now) {
-  const diff = progress.value - smooth.value
-  if (Math.abs(diff) < 0.0002) {
-    smooth.value = progress.value
-    frame = 0
-    return
-  }
-  smooth.value += diff * (1 - Math.exp(-(now - lastTime) / SMOOTHING))
-  lastTime = now
-  frame = requestAnimationFrame(follow)
-}
-watch(progress, () => {
-  if (reducedMotion.value) {
-    smooth.value = progress.value
-    return
-  }
-  if (!frame) {
-    lastTime = performance.now()
-    frame = requestAnimationFrame(follow)
-  }
-})
-
-onBeforeUnmount(() => {
-  cancelAnimationFrame(frame)
-  wideQuery?.removeEventListener('change', updateWide)
-})
+onBeforeUnmount(() => wideQuery?.removeEventListener('change', updateWide))
 
 const animated = computed(() => wide.value && !reducedMotion.value)
 
@@ -107,7 +76,7 @@ function reveal(index) {
   if (reducedMotion.value) return 1
   if (!wide.value) return narrowReveal.value[index] ?? 1
   const span = REVEAL_SPAN / props.projects.length
-  return easeOut(clamp((smooth.value - index * span) / span))
+  return easeOut(clamp((progress.value - index * span) / span))
 }
 
 // Se descubre con un barrido de izquierda a derecha y un leve desplazamiento

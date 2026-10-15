@@ -23,52 +23,94 @@ const reducedMotion = useReducedMotion()
 const SEGMENT = 1.6
 // Parte de cada tramo en la que la foto se mueve; el resto es pausa sobre la foto ya apoyada
 const MOVE = 0.8
-// Inercia: tiempo (ms) que tarda el stack en alcanzar la posición del scroll
-const SMOOTHING = 140
 
 // Responde desde el primer pixel de scroll y frena suave al apoyarse
 const easeOutSine = (x) => Math.sin((x * Math.PI) / 2)
 const clamp = (x) => Math.min(Math.max(x, 0), 1)
 
-// El stack sigue al scroll con inercia, así un golpe de rueda no hace saltar la foto
-const smoothProgress = ref(progress.value)
-let frame = 0
-let lastTime = 0
+// Posición en la secuencia: 0 = primera foto, n-1 = última. La inercia la da el scroll suave
+// del sitio (useSmoothScroll)
+const position = computed(() => progress.value * (props.photos.length - 1))
 
-function follow(now) {
-  const dt = now - lastTime
-  lastTime = now
-  const diff = progress.value - smoothProgress.value
-  if (Math.abs(diff) < 0.0002) {
-    smoothProgress.value = progress.value
-    frame = 0
-    return
-  }
-  smoothProgress.value += diff * (1 - Math.exp(-dt / SMOOTHING))
-  frame = requestAnimationFrame(follow)
+/*
+ * Teléfono y tablet: como la primera foto del detalle de un proyecto, cada foto llega a
+ * pantalla completa y, al seguir el scroll, su marco se achica (anclado arriba, el borde de
+ * abajo sube) hasta la proporción real de la foto, que termina completa a todo el ancho.
+ * Recién entonces sube la siguiente. El achique va 1:1 con el scroll; al achicarse la última,
+ * la página sigue pegada a su borde de abajo, sin hueco.
+ */
+const narrow = ref(false)
+const viewport = ref({ width: 0, height: 0 })
+let narrowQuery
+const measureViewport = () => {
+  narrow.value = narrowQuery.matches
+  viewport.value = { width: window.innerWidth, height: window.innerHeight }
 }
-
-watch(progress, (value) => {
-  if (reducedMotion.value) {
-    smoothProgress.value = value
-    return
-  }
-  if (!frame) {
-    lastTime = performance.now()
-    frame = requestAnimationFrame(follow)
-  }
+onMounted(() => {
+  narrowQuery = window.matchMedia('(width < 64rem)')
+  measureViewport()
+  narrowQuery.addEventListener('change', measureViewport)
+  window.addEventListener('resize', measureViewport)
 })
+onBeforeUnmount(() => {
+  narrowQuery?.removeEventListener('change', measureViewport)
+  window.removeEventListener('resize', measureViewport)
+})
+const shrinkMode = computed(() => narrow.value && !reducedMotion.value && viewport.value.height > 0)
 
-onBeforeUnmount(() => cancelAnimationFrame(frame))
+// Scroll (px) que achica cada foto: lo que le sobra a la pantalla respecto de su alto real.
+// Si ya casi la llena, no se achica (igual que en el detalle)
+const shrinkDistance = computed(() => {
+  const { width, height } = viewport.value
+  return props.photos.map((p) => {
+    const full = (width * p.height) / p.width
+    return full < height * 0.97 ? height - full : 0
+  })
+})
+// Scroll (px) de la llegada de cada foto: lo que sube, desde el borde de abajo de la anterior
+// ya achicada hasta arriba. Va 1:1 con el scroll, como el achique, así el stack sigue al dedo
+const arriveDistance = computed(() =>
+  shrinkDistance.value.map((_, i) => (i === 0 ? 0 : viewport.value.height - shrinkDistance.value[i - 1])),
+)
+const shrinkTotal = computed(() =>
+  [...shrinkDistance.value, ...arriveDistance.value].reduce((sum, d) => sum + d, 0),
+)
 
-// Posición en la secuencia: 0 = primera foto, n-1 = última
-const position = computed(() => smoothProgress.value * (props.photos.length - 1))
+// Por foto: llegada (0 abajo → 1 apoyada) y achique (0 pantalla completa → 1 alto real),
+// en orden: achique de la 1, llegada de la 2, achique de la 2…
+const timeline = computed(() => {
+  const scrolled = progress.value * shrinkTotal.value
+  let at = 0
+  return props.photos.map((_, i) => {
+    let arrive = 1
+    if (i > 0) {
+      arrive = clamp((scrolled - at) / arriveDistance.value[i])
+      at += arriveDistance.value[i]
+    }
+    const d = shrinkDistance.value[i]
+    const shrink = d ? clamp((scrolled - at) / d) : 0
+    at += d
+    return { arrive, shrink, height: viewport.value.height - d * shrink }
+  })
+})
 
 // 0 = fuera (abajo), 1 = apoyada en el stack
 function arrival(index) {
   if (index === 0) return 1
+  if (shrinkMode.value) return timeline.value[index].arrive
   return easeOutSine(clamp((position.value - (index - 1)) / MOVE))
 }
+
+// Alto del recorrido: el de siempre o, en teléfono y tablet, pantalla + llegadas + achiques.
+// La parte fija mide una pantalla pero la última foto termina en su alto real: un margen
+// negativo sube la página esa diferencia, para que siga justo donde termina la foto
+const rootStyle = computed(() => {
+  if (!shrinkMode.value) return { height: `${100 + (props.photos.length - 1) * SEGMENT * 100}svh` }
+  return {
+    height: `${viewport.value.height + shrinkTotal.value}px`,
+    marginBottom: `${-shrinkDistance.value.at(-1)}px`,
+  }
+})
 
 const started = computed(() => progress.value > 0.003)
 
@@ -259,14 +301,32 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBlocks))
 function photoStyle(index) {
   const a = arrival(index)
   if (reducedMotion.value) return { opacity: a }
+  if (shrinkMode.value) {
+    // Una foto ya tapada por la siguiente se oculta: al achicarse la de encima no asoma debajo
+    const covered = index < props.photos.length - 1 && timeline.value[index + 1].arrive === 1
+    // Sube pegada al borde de abajo de la anterior (ya achicada), sin hueco entre ambas
+    const start = index > 0 ? timeline.value[index - 1].height : viewport.value.height
+    return {
+      bottom: 'auto',
+      height: `${timeline.value[index].height}px`,
+      transform: `translate3d(0, ${(1 - a) * start}px, 0)`,
+      visibility: covered ? 'hidden' : null,
+    }
+  }
   return {
     transform: `translate3d(0, ${(1 - a) * 100}svh, 0)`,
   }
 }
+
+// En teléfono y tablet, "Desliza" y el contador van pegados al borde de abajo de la foto actual
+const indicatorStyle = computed(() => {
+  if (!shrinkMode.value || !current.value) return null
+  return { transform: `translateY(${timeline.value[current.value - 1].height - viewport.value.height}px)` }
+})
 </script>
 
 <template>
-  <div ref="root" class="relative" :style="{ height: `${100 + (photos.length - 1) * SEGMENT * 100}svh` }">
+  <div ref="root" class="relative" :style="rootStyle">
     <div class="sticky top-0 h-svh overflow-hidden">
       <div
         v-for="(photo, i) in photos"
@@ -295,7 +355,7 @@ function photoStyle(index) {
         <div class="mx-auto h-full max-w-360 px-2">
           <div
             ref="gridEl"
-            class="relative ml-4 h-full sm:ml-5 xl:mr-8 xl:ml-11"
+            class="relative h-full xl:mx-8"
           >
             <!-- El menú las empuja hacia abajo (misma duración y curva que la persiana) -->
             <div
@@ -340,11 +400,12 @@ function photoStyle(index) {
       <!-- Mismos márgenes que el navbar: "Desliza" alineado con el logo; el final del contador, con el borde del botón del menú (y la última línea) -->
       <div
         class="absolute inset-x-0 bottom-0 px-2 pb-6 text-cuerpo text-fondo"
+        :style="indicatorStyle"
         aria-hidden="true"
       >
         <!-- Cada texto en un bloque verde; el bloque empieza en la primera línea y termina en la última -->
         <div class="mx-auto flex max-w-360 items-end justify-between px-2">
-          <div class="ml-1 px-3 sm:ml-2 xl:ml-8">
+          <div class="xl:ml-8">
             <p
               v-if="hint"
               class="block-text overflow-hidden bg-primario px-1.5 py-0.5 whitespace-pre"

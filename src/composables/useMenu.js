@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 /*
  * Estado compartido del menú principal. Lo usan el navbar (que lo abre, cierra y mide)
@@ -34,9 +34,9 @@ export const navOverPhotos = ref(false)
 // Título de la sección en la que se está (se muestra debajo del logo, desde 768 px)
 export const navSectionTitle = ref('')
 
-// La página pide el título sin el fondo crema que tapa lo que pasa por detrás (ej. el detalle
-// de un proyecto, donde el título queda sobre la foto)
-export const navTitlePlain = ref(false)
+// Acción opcional del título de sección: { label, run }. Con ella el título se vuelve un botón
+// con una flecha "←" antes (ej. volver desde el detalle de un proyecto)
+export const navTitleAction = shallowRef(null)
 
 // Borde inferior (px desde arriba de la pantalla) de lo más bajo del navbar: el logo, el menú
 // abierto o el título de sección. Las secciones fijas lo usan para no quedar debajo.

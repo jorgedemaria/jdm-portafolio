@@ -9,8 +9,6 @@ import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScram
  */
 const props = defineProps({
   project: { type: Object, required: true },
-  // Nivel del título según la página donde se use
-  headingLevel: { type: Number, default: 2 },
 })
 
 // Con el cursor encima, la foto de esta tarjeta no cambia (ver CardPhoto)
@@ -62,8 +60,7 @@ onBeforeUnmount(() => observer?.disconnect())
         sizes="(min-width: 1280px) 30vw, (min-width: 768px) 46vw, 100vw"
       />
     </RouterLink>
-    <component
-      :is="`h${headingLevel}`"
+    <h2
       ref="titleEl"
       class="mt-3 font-display text-cuerpo leading-snug font-semibold text-texto"
     >
@@ -74,7 +71,7 @@ onBeforeUnmount(() => observer?.disconnect())
       >
         <span aria-hidden="true">{{ title }}</span>
       </RouterLink>
-    </component>
+    </h2>
 
     <!--
       Grilla tipo menú, del alto de su contenido. En pantallas con cursor se apoya en el borde

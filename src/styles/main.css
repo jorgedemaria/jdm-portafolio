@@ -5,14 +5,13 @@
 
 /*
  * Design tokens — fuente: Figma "jdm-portafolio" › guía de estilos.
- * La paleta se restringe a los cuatro colores de la hoja de estilos.
+ * La paleta se restringe a los tres colores de la hoja de estilos.
  */
 @theme {
   /* Colores */
   --color-*: initial;
   --color-fondo: #f1f0e2;
   --color-primario: #207349;
-  --color-acento: #c82a58; /* ajustado desde #d32e5e para cumplir AA (4.66:1 sobre fondo) */
   --color-texto: #101010;
 
   /* Familias */
@@ -60,17 +59,12 @@
   max-width: 90rem;
   /*
    * Sumando los 8 px (px-2) de la sección que lo contiene, el contenido va del comienzo
-   * del logo al final del botón del menú:
-   *   izquierda 32 / 36 / 60 px  ·  derecha 16 / 16 / 48 px (móvil / desde sm / desde xl)
+   * del logo al final del botón del menú, con el mismo aire a ambos lados:
+   *   16 px, y 48 px desde xl
    */
-  padding-left: 1.5rem;
-  padding-right: 0.5rem;
-  @media (width >= 40rem) {
-    padding-left: 1.75rem;
-  }
+  padding-inline: 0.5rem;
   @media (width >= 80rem) {
-    padding-left: 3.25rem;
-    padding-right: 2.5rem;
+    padding-inline: 2.5rem;
   }
 }
 

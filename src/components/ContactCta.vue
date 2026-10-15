@@ -115,12 +115,12 @@ function reset() {
 }
 
 // Frase del tamaño del logo (36 px); en pantallas angostas se achica para caber en una línea
-const promptSize = `min(2.25rem, calc((100vw - 4.5rem) / ${PROMPT.length * 0.6 + 0.34}))`
+const promptSize = `min(2.25rem, calc((100vw - 3.5rem) / ${PROMPT.length * 0.6 + 0.34}))`
 const promptVisible = computed(() => prompt.value.trimEnd())
 
 // El correo (y la carita) usan el ancho disponible sin pasar de 6rem
 const EMAIL_CHARS = site.email.length + 3
-const emailSize = `min(6rem, calc((100vw - 4.5rem) / ${EMAIL_CHARS * 0.6}))`
+const emailSize = `min(6rem, calc((100vw - 3.5rem) / ${EMAIL_CHARS * 0.6}))`
 
 let observer
 onMounted(() => {
@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section id="contacto" ref="root" aria-label="Contacto" class="flex min-h-[calc(100svh-15.125rem)] flex-col md:min-h-[calc(100svh-8.1875rem)] xl:min-h-[calc(100svh-5.125rem)] justify-center px-2 py-16">
+  <section id="contacto" ref="root" aria-label="Contacto" class="flex min-h-[calc(100svh-14.4375rem)] flex-col md:min-h-[calc(100svh-7.9375rem)] xl:min-h-[calc(100svh-5rem)] justify-center px-2 py-16">
     <div class="page flex w-full flex-col">
       <!--
         Frase en un bloque verde, como el logo. El ancho completo queda reservado (invisible) y

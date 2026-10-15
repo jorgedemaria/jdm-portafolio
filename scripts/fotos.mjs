@@ -90,6 +90,14 @@ function checkPhotos(folder, photos, publicBase) {
       errors.push(`${where}: a la foto número ${i + 1} le falta "archivo"`)
       return
     }
+    if (typeof photo.alt !== 'string' || !photo.alt.trim()) {
+      errors.push(`${where}: a la foto ${name} le falta "alt" (una descripción de lo que se ve)`)
+      return
+    }
+    if (photo.zoom !== undefined && !(typeof photo.zoom === 'number' && photo.zoom >= 1 && photo.zoom <= 1.5)) {
+      errors.push(`${where}: el "zoom" de la foto ${name} debe ser un número entre 1 y 1.5, sin comillas (ej: 1.1)`)
+      return
+    }
     if (!existsSync(join(folder, name))) {
       // Sin original, pero ya procesada antes: se reutiliza tal cual
       const done = previous.get(`${publicBase}/${parse(name).name}`)
@@ -98,14 +106,6 @@ function checkPhotos(folder, photos, publicBase) {
         return
       }
       errors.push(`${where}: la foto ${name} está en info.json pero no en la carpeta`)
-      return
-    }
-    if (typeof photo.alt !== 'string' || !photo.alt.trim()) {
-      errors.push(`${where}: a la foto ${name} le falta "alt" (una descripción de lo que se ve)`)
-      return
-    }
-    if (photo.zoom !== undefined && !(typeof photo.zoom === 'number' && photo.zoom >= 1 && photo.zoom <= 1.5)) {
-      errors.push(`${where}: el "zoom" de la foto ${name} debe ser un número entre 1 y 1.5, sin comillas (ej: 1.1)`)
       return
     }
     valid.push(photo)
@@ -147,7 +147,8 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
   // Comparar solo fechas fallaba con fotos reemplazadas por otras más antiguas.
   const { size, mtimeMs } = statSync(source)
   const origen = `${size}-${Math.round(mtimeMs)}`
-  const same = previous.get(`${publicBase}/${name}`)?.origen === origen
+  const before = previous.get(`${publicBase}/${name}`)
+  const same = before?.origen === origen
   const jobs = []
   for (const w of widths) {
     for (const [ext, encode] of Object.entries(FORMATS)) {
@@ -155,7 +156,7 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
       expected.add(file)
       const target = join(outDir, file)
       if (same && existsSync(target)) continue
-      jobs.push(encode(sharp(source).rotate().resize({ width: w })).toFile(target))
+      jobs.push(encode(image.clone().resize({ width: w })).toFile(target))
     }
   }
   if (jobs.length) {
@@ -165,9 +166,12 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
     unchanged++
   }
 
-  // Color promedio: se muestra de fondo mientras carga la foto
-  const { dominant } = await sharp(source).resize(32).stats()
-  const color = '#' + [dominant.r, dominant.g, dominant.b].map((c) => c.toString(16).padStart(2, '0')).join('')
+  // Color promedio: se muestra de fondo mientras carga la foto (si el original no cambió, se reutiliza)
+  let color = same ? before.color : null
+  if (!color) {
+    const { dominant } = await sharp(source).resize(32).stats()
+    color = '#' + [dominant.r, dominant.g, dominant.b].map((c) => c.toString(16).padStart(2, '0')).join('')
+  }
 
   return {
     src: `${publicBase}/${name}`,

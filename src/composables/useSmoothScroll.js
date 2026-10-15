@@ -27,9 +27,10 @@ export function resumeSmoothScroll() {
   lenis?.start()
 }
 
-// Baja suave hasta un elemento (o selector), ej. la sección de contacto
+// Baja suave hasta un elemento (o su hash, ej. '#contacto'). getElementById y no querySelector:
+// un hash como '#2024' no es un selector válido y lanzaría un error
 export function scrollToElement(target) {
-  const el = typeof target === 'string' ? document.querySelector(target) : target
+  const el = typeof target === 'string' ? document.getElementById(decodeURIComponent(target.slice(1))) : target
   if (!el) return
   if (lenis) lenis.scrollTo(el, { duration: 1.4 })
   else el.scrollIntoView({ behavior: 'smooth' })

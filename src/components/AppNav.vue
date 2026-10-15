@@ -10,7 +10,7 @@ import {
   navOverPhotos,
   navSectionTitle,
   navContentBottom,
-  navTitlePlain,
+  navTitleAction,
 } from "../composables/useMenu";
 import { introLeaving } from "../composables/useIntro";
 import { scrollToElement } from "../composables/useSmoothScroll";
@@ -195,13 +195,17 @@ function onKeydown(event) {
   if (event.key === "Escape" && open.value) close({ restoreFocus: true });
 }
 
+// flush 'post': la página ya está en pantalla, así en la primera carga el navbar nace
+// transparente sobre las fotos en vez de mostrar el fondo y desvanecerlo
 watch(
   () => route.fullPath,
   () => {
     close();
+    onScroll();
     // Volver a medir cuando termine la transición de página
     setTimeout(onScroll, 300);
   },
+  { flush: "post" },
 );
 
 function onScroll() {
@@ -218,8 +222,6 @@ onMounted(() => {
   document.addEventListener("keydown", onKeydown);
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("jdm:stack-edge", playSymbols);
-  // En la primera carga la página aún no está montada: medir cuando el router termine
-  router.isReady().then(() => nextTick(onScroll));
 });
 
 onBeforeUnmount(() => {
@@ -236,22 +238,6 @@ onBeforeUnmount(() => {
  */
 const TITLE_GAP = 16;
 
-/*
- * Mientras se ve un título bajo el logo, el fondo crema del navbar se extiende hasta
- * BACKDROP_GAP px debajo de él: lo que pasa por detrás (p. ej. las fotos de una sección
- * fija que se suelta) queda tapado. Sigue al título cuando baja por el menú.
- */
-const BACKDROP_GAP = 16;
-const headerRef = ref(null);
-const backdropShown = computed(
-  () =>
-    !!sectionTitle.value.trim() && menuHorizontal.value && !overPhotos.value && !navTitlePlain.value,
-);
-const backdropHeight = computed(() => {
-  const header = headerRef.value?.offsetHeight ?? 0;
-  if (!backdropShown.value || !header) return 0;
-  return Math.max(0, titleTop.value + titleHeight.value + BACKDROP_GAP - header);
-});
 const sectionTitleRef = ref(null);
 const titleHeight = ref(0);
 const titleTop = computed(() => {
@@ -282,27 +268,8 @@ watch(
 </script>
 
 <template>
-  <header
-    ref="headerRef"
-    :class="[
-      'fixed inset-x-0 top-0 z-50 p-2 transition-colors duration-150',
-      overPhotos ? 'bg-transparent' : 'bg-fondo',
-    ]"
-  >
-    <!--
-      Extensión del fondo para tapar lo que pasa detrás del título de sección. Solo se anima
-      con el menú; al cambiar de sección aparece y desaparece en el acto.
-    -->
-    <div
-      aria-hidden="true"
-      :class="[
-        'absolute inset-x-0 top-full bg-fondo',
-        !backdropShown
-          ? 'transition-none'
-          : 'transition-[height] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
-      ]"
-      :style="{ height: `${backdropHeight}px` }"
-    />
+  <!-- Navbar siempre transparente, en todas las páginas -->
+  <header class="fixed inset-x-0 top-0 z-50 p-2">
     <!-- Clic fuera del menú lo cierra -->
     <div
       v-if="open"
@@ -320,7 +287,7 @@ watch(
         <div class="flex items-center">
         <RouterLink
           :to="{ name: 'home' }"
-          class="ml-1 px-3 text-h3 font-extrabold whitespace-nowrap text-fondo sm:ml-2 sm:text-logo xl:ml-8"
+          class="text-h3 font-extrabold whitespace-nowrap text-fondo sm:text-logo xl:ml-8"
         >
           <span class="sr-only">{{ site.name }} — inicio</span>
           <!-- Logo en un bloque verde; el bloque empieza en la primera línea de la retícula -->
@@ -436,16 +403,36 @@ watch(
         el menú se recoge primero y el título sube 0,3 s después. La sección conserva su
         título para lectores de pantalla.
       -->
+      <!--
+        Título de sección. Con una acción (navTitleAction) lleva una flecha "←" antes, y solo
+        la flecha es un botón (ej. volver desde el detalle de un proyecto); el título es texto.
+      -->
       <span
         v-if="sectionTitle"
         ref="sectionTitleRef"
-        aria-hidden="true"
-        :class="[
-          'pointer-events-none absolute hidden font-display text-logo font-semibold whitespace-pre text-texto transition-[top] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] md:block',
-        ]"
+        class="pointer-events-none absolute hidden items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto transition-[top] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] md:flex"
         :style="titleStyle"
-        >{{ sectionTitle }}</span
       >
+        <button
+          v-if="navTitleAction"
+          type="button"
+          class="group/arrow pointer-events-auto -my-[0.15em] -ml-[0.15em] cursor-pointer p-[0.15em]"
+          :aria-label="navTitleAction.label"
+          @click="navTitleAction.run()"
+        >
+          <svg
+            class="block size-[0.6em] transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/arrow:-translate-x-1"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.25"
+            aria-hidden="true"
+          >
+            <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />
+          </svg>
+        </button>
+        <span aria-hidden="true">{{ sectionTitle }}</span>
+      </span>
     </div>
   </header>
 </template>

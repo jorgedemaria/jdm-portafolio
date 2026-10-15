@@ -76,14 +76,14 @@ onBeforeUnmount(() => clearTimeout(timer))
       >
         <div class="cell">
           <dt class="text-etiqueta">fotografía de arquitectura</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap md:text-left">
             <span class="sr-only">{{ values.nombre }}</span><span aria-hidden="true">{{ shown('nombre') }}</span>
           </dd>
         </div>
 
         <div class="cell">
           <dt class="text-etiqueta">correo</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap md:text-left">
             <button
               type="button"
               :class="['cursor-pointer text-left', link]"
@@ -98,7 +98,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
         <div v-if="site.instagram" class="cell">
           <dt class="text-etiqueta">instagram</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap md:text-left">
             <a :href="instagramUrl" target="_blank" rel="noopener" :class="link">
               <span class="sr-only">{{ values.instagram }}</span><span aria-hidden="true">{{ shown('instagram') }}</span>
             </a>
@@ -107,7 +107,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
         <div v-if="site.telefono" class="cell">
           <dt class="text-etiqueta">teléfono</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap md:text-left">
             <a :href="telefonoHref" :class="link">
               <span class="sr-only">{{ values.telefono }}</span><span aria-hidden="true">{{ shown('telefono') }}</span>
             </a>
@@ -116,7 +116,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
         <div v-if="site.ubicacion" class="cell">
           <dt class="text-etiqueta">ubicación</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap md:text-left">
             <span class="sr-only">{{ values.ubicacion }}</span><span aria-hidden="true">{{ shown('ubicacion') }}</span>
           </dd>
         </div>
@@ -124,7 +124,7 @@ onBeforeUnmount(() => clearTimeout(timer))
         <!-- Año: columna angosta al final, del ancho de su contenido -->
         <div class="cell">
           <dt class="text-etiqueta">©</dt>
-          <dd class="shrink-0 text-right text-cuerpo whitespace-nowrap tabular-nums md:text-left">
+          <dd class="shrink-0 text-right text-cuerpo-sm whitespace-nowrap tabular-nums md:text-left">
             <span class="sr-only">{{ values.año }}</span><span aria-hidden="true">{{ shown('año') }}</span>
           </dd>
         </div>
