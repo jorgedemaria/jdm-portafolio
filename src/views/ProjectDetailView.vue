@@ -1,16 +1,24 @@
 <script setup>
-import { computed, watchEffect } from 'vue'
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
-import ProjectFacts from '../components/ProjectFacts.vue'
 import NotFoundView from './NotFoundView.vue'
-import { findProject, neighbors } from '../data/content'
+import { findProject } from '../data/content'
+import { useNavSectionTitle } from '../composables/useNavSectionTitle'
+import { navTitlePlain } from '../composables/useMenu'
+import { useScrollReveal } from '../composables/useScrollReveal'
 
 const props = defineProps({
   slug: { type: String, required: true },
 })
 
 const project = computed(() => findProject(props.slug))
-const around = computed(() => neighbors(props.slug))
+
+// Desde 768 px el nombre del proyecto se muestra debajo del logo, con su animación y sin
+// fondo: queda sobre la foto
+const root = ref(null)
+useNavSectionTitle(root, () => project.value?.titulo ?? '')
+onMounted(() => (navTitlePlain.value = true))
+onBeforeUnmount(() => (navTitlePlain.value = false))
 
 watchEffect(() => {
   document.title = project.value
@@ -18,97 +26,112 @@ watchEffect(() => {
     : 'Página no encontrada — Jorge de María'
 })
 
+// Datos del proyecto, como la grilla de las tarjetas (filas separadas por líneas)
+const facts = computed(() => [
+  ['año', String(project.value.año)],
+  ['lugar', project.value.lugar],
+  ['arquitectura', project.value.arquitecto],
+  ...Object.entries(project.value.ficha ?? {}).map(([label, value]) => [label.toLowerCase(), value]),
+])
+
+const firstPhoto = computed(() => project.value?.fotos[0])
+
 /*
- * Galería: las fotos horizontales van a todo el ancho; las verticales seguidas
- * se agrupan de a dos, lado a lado. Una vertical suelta va centrada, más angosta.
+ * Resto de la galería: las verticales seguidas se agrupan de a dos, lado a lado.
+ * Cada foto se ve completa, sin recortes, y nunca más alta que la pantalla.
  */
 const rows = computed(() => {
   if (!project.value) return []
   const result = []
-  const photos = project.value.fotos
+  const photos = project.value.fotos.slice(1)
+  const isPortrait = (p) => p && p.height > p.width
   for (let i = 0; i < photos.length; i++) {
     const photo = photos[i]
     const next = photos[i + 1]
-    const isPortrait = (p) => p && p.height > p.width
     if (isPortrait(photo) && isPortrait(next)) {
       result.push({ type: 'pair', photos: [photo, next] })
       i++
     } else {
-      result.push({ type: isPortrait(photo) ? 'portrait' : 'landscape', photos: [photo] })
+      result.push({ type: 'single', photos: [photo] })
     }
   }
   return result
+})
+
+// Las fotos de la galería se desenrollan con el scroll a medida que aparecen
+const reveal = useScrollReveal()
+
+// Ancho para que la foto quepa entera en la pantalla (deja aire para el navbar)
+const fitWidth = (photo) => ({
+  width: `min(100%, calc((100svh - 8rem) * ${photo.width / photo.height}))`,
 })
 </script>
 
 <template>
   <NotFoundView v-if="!project" />
 
-  <article v-else class="px-2 pt-32 pb-28 lg:pt-40">
-    <div class="page">
-      <header>
-        <RouterLink
-          :to="{ name: 'projects', query: { categoria: project.categoria.slug } }"
-          class="text-cuerpo-sm lowercase text-texto/65 decoration-1 underline-offset-4 hover:underline"
-        >
-          {{ project.categoria.nombre }}
-        </RouterLink>
-        <h1 class="mt-3 font-display text-h1">{{ project.titulo }}</h1>
+  <article v-else ref="root" class="pb-16">
+    <!--
+      Primera foto: ocupa toda la pantalla, desde arriba. Mientras se ve, el navbar va sin
+      fondo encima de ella (data-nav-overlay, como el stack de Inicio).
+    -->
+    <div class="relative h-svh w-full" data-nav-overlay>
+      <ResponsiveImage v-bind="firstPhoto" fill loading="eager" sizes="100vw" />
 
-        <div class="mt-10 grid gap-10 lg:grid-cols-12">
-          <p class="max-w-[60ch] lg:col-span-7">{{ project.descripcion }}</p>
-          <ProjectFacts :project="project" class="lg:col-span-4 lg:col-start-9" />
-        </div>
-      </header>
-
-      <div class="mt-16 flex flex-col gap-6 lg:mt-24 lg:gap-10">
-        <template v-for="(row, r) in rows" :key="row.photos[0].src">
-          <ResponsiveImage
-            v-if="row.type === 'landscape'"
-            v-bind="row.photos[0]"
-            :loading="r === 0 ? 'eager' : 'lazy'"
-            sizes="(min-width: 1440px) 1320px, calc(100vw - 4rem)"
-          />
-          <div v-else-if="row.type === 'pair'" class="grid gap-6 md:grid-cols-2 lg:gap-10">
-            <ResponsiveImage
-              v-for="photo in row.photos"
-              :key="photo.src"
-              v-bind="photo"
-              :loading="r === 0 ? 'eager' : 'lazy'"
-              sizes="(min-width: 768px) 50vw, 100vw"
-            />
-          </div>
-          <ResponsiveImage
-            v-else
-            v-bind="row.photos[0]"
-            :loading="r === 0 ? 'eager' : 'lazy'"
-            sizes="(min-width: 768px) 50vw, 100vw"
-            class="w-full md:mx-auto md:w-1/2"
-          />
-        </template>
+      <!-- En móvil el título va sobre la foto, debajo del logo; desde 768 px, en el navbar -->
+      <div class="absolute inset-x-0 top-0 px-2 pt-20 md:sr-only">
+        <h1 class="page font-display text-h1">{{ project.titulo }}</h1>
       </div>
 
-      <nav
-        v-if="around.previous"
-        aria-label="Otros proyectos"
-        class="mt-24 grid grid-cols-2 gap-6 border-t border-primario pt-6"
-      >
-        <RouterLink :to="{ name: 'project', params: { slug: around.previous.slug } }" class="group">
-          <span class="block text-cuerpo-sm text-texto/65">anterior</span>
-          <span class="mt-2 block font-display text-h4 decoration-1 underline-offset-4 group-hover:underline">
-            {{ around.previous.titulo }}
-          </span>
-        </RouterLink>
-        <RouterLink
-          :to="{ name: 'project', params: { slug: around.next.slug } }"
-          class="group text-right"
-        >
-          <span class="block text-cuerpo-sm text-texto/65">siguiente</span>
-          <span class="mt-2 block font-display text-h4 decoration-1 underline-offset-4 group-hover:underline">
-            {{ around.next.titulo }}
-          </span>
-        </RouterLink>
-      </nav>
+      <!-- Datos en la esquina inferior izquierda de la foto, alineados con el título -->
+      <div class="absolute inset-x-0 bottom-0 px-2 pb-6">
+        <div class="page">
+          <dl class="divide-y divide-primario border border-primario bg-fondo text-cuerpo-sm md:w-2/5">
+            <div class="flex items-baseline justify-between gap-4 px-3 py-2.5">
+              <dt class="text-texto/65">categoría</dt>
+              <dd class="text-right">
+                <RouterLink
+                  :to="{ name: 'projects', query: { categoria: project.categoria.slug } }"
+                  class="lowercase text-texto decoration-1 underline-offset-4 hover:underline"
+                >
+                  {{ project.categoria.nombre }}
+                </RouterLink>
+              </dd>
+            </div>
+            <div
+              v-for="[label, value] in facts"
+              :key="label"
+              class="flex items-baseline justify-between gap-4 px-3 py-2.5"
+            >
+              <dt class="text-texto/65">{{ label }}</dt>
+              <dd class="text-right text-texto">{{ value }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-2">
+      <div class="page">
+        <div class="mt-6 flex flex-col gap-6 lg:mt-10 lg:gap-10">
+          <template v-for="row in rows" :key="row.photos[0].src">
+            <div v-if="row.type === 'pair'" class="grid gap-6 md:grid-cols-2 lg:gap-10">
+              <div
+                v-for="photo in row.photos"
+                :key="photo.src"
+                :ref="reveal"
+                class="mx-auto overflow-hidden"
+                :style="fitWidth(photo)"
+              >
+                <ResponsiveImage v-bind="photo" sizes="(min-width: 768px) 50vw, 100vw" />
+              </div>
+            </div>
+            <div v-else :ref="reveal" class="mx-auto overflow-hidden" :style="fitWidth(row.photos[0])">
+              <ResponsiveImage v-bind="row.photos[0]" sizes="(min-width: 1440px) 1320px, 100vw" />
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
   </article>
 </template>

@@ -1,12 +1,16 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { site } from "../data/site";
+import { introLeaving } from "../composables/useIntro";
+import TypingCaret from "./TypingCaret.vue";
 
 /*
  * Pantalla de entrada: el nombre aparece sílaba por sílaba y, cada vez, unas pocas sílabas
  * elegidas al azar pasan por caracteres aleatorios antes de fijarse.
  * Se mantiene ~2 s (o hasta que cargue la página, con un tope), sale de la misma
  * forma con otras sílabas al azar y la pantalla se recoge hacia arriba.
+ * Un cursor de texto acompaña todo: parpadea un momento antes de escribir, queda fijo
+ * mientras se escribe o se borra y parpadea mientras el nombre está quieto.
  */
 const emit = defineEmits(["done"]);
 
@@ -14,6 +18,8 @@ const emit = defineEmits(["done"]);
 const MIN_DURATION = 1300;
 const MAX_WAIT = 4000;
 const EXIT_DURATION = 700;
+// Parpadeo del cursor solo, antes de empezar a escribir
+const CARET_LEAD = 500;
 
 // Desfase entre sílabas y tiempo que una sílaba elegida pasa mostrando caracteres al azar
 const STAGGER = 90;
@@ -56,8 +62,13 @@ const smileySyllable = site.nameSyllables.flat().at(-1) === SMILEY ? syllableCou
 const smileyChars = target.flatMap((_, i) => (syllableOf[i] === smileySyllable ? [i] : []));
 
 const display = ref(target.map(() => " "));
+// Cursor de texto (ver TypingCaret): 'idle' parpadea, 'typing' fijo, 'off' oculto
+const caret = ref("off");
+// Texto hasta el último carácter visible: define hasta dónde llega el bloque verde
+const visibleText = computed(() => display.value.join("").trimEnd());
 // Tamaño grande que siempre cabe en una línea: cada carácter de JetBrains Mono mide 0,6em
-const fontSize = `min(6rem, calc((100vw - 2.5rem) / ${target.length * 0.6}))`;
+// (+0,34em del margen interno del bloque verde, igual que el del logo)
+const fontSize = `min(6rem, calc((100vw - 2.5rem) / ${target.length * 0.6 + 0.34}))`;
 const leaving = ref(false);
 
 let timers = [];
@@ -113,6 +124,7 @@ function scramble({ initial, final, stagger = STAGGER, scrambleTime = SCRAMBLE, 
   }
   const duration = Math.max(...endAt.filter((t) => t !== undefined), ...Object.values(charEnd));
 
+  caret.value = "typing";
   return new Promise((resolve) => {
     const start = performance.now();
     let lastTick = -Infinity;
@@ -132,7 +144,10 @@ function scramble({ initial, final, stagger = STAGGER, scrambleTime = SCRAMBLE, 
         });
       }
       if (t < duration) frame = requestAnimationFrame(step);
-      else resolve();
+      else {
+        caret.value = "idle";
+        resolve();
+      }
     }
 
     frame = requestAnimationFrame(step);
@@ -144,20 +159,26 @@ onMounted(async () => {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reducedMotion) display.value = [...target];
-  else
+  else {
+    caret.value = "idle";
+    await wait(CARET_LEAD);
     await scramble({
       initial: () => " ",
       final: (i) => target[i],
       stagger: ENTER_STAGGER,
       scrambleTime: ENTER_SCRAMBLE,
     });
+  }
 
   await Promise.all([wait(MIN_DURATION), Promise.race([pageLoaded(), wait(MAX_WAIT)])]);
 
   // Salida: se borra al revés, de derecha a izquierda
   if (!reducedMotion) await scramble({ initial: (i) => target[i], final: () => " ", reverse: true });
+  caret.value = "off";
 
   leaving.value = true;
+  // Avisa al resto del sitio: empieza la secuencia de entrada (logo, menú, líneas)
+  introLeaving.value = true;
   await wait(EXIT_DURATION);
   document.documentElement.style.overflow = "";
   emit("done");
@@ -179,7 +200,12 @@ onBeforeUnmount(() => {
     ]"
     aria-hidden="true"
   >
+    <!--
+      El ancho completo queda reservado (invisible) para que el nombre no se mueva; el bloque
+      verde solo llega hasta el último carácter visible: crece hacia la derecha al entrar y
+      se achica hacia la izquierda al salir.
+    -->
     <!-- prettier-ignore -->
-    <p class="leading-none font-extrabold whitespace-pre text-primario" :style="{ fontSize }">{{ display.join("") }}</p>
+    <p class="relative leading-none font-extrabold whitespace-pre text-fondo" :style="{ fontSize }"><span class="invisible block px-[0.17em] pt-[0.22em] pb-[0.11em]">{{ target.join("") }}</span><span v-if="visibleText || caret !== 'off'" class="absolute top-0 left-0 bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em]">{{ visibleText }}<TypingCaret :state="caret" /></span></p>
   </div>
 </template>

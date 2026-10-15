@@ -4,7 +4,6 @@ import AppButton from '../components/AppButton.vue'
 const colors = [
   { name: 'fondo', hex: '#F1F0E2', class: 'bg-fondo border border-texto' },
   { name: 'primario', hex: '#207349', class: 'bg-primario' },
-  { name: 'acento', hex: '#C82A58', class: 'bg-acento' },
   { name: 'texto', hex: '#101010', class: 'bg-texto' },
 ]
 

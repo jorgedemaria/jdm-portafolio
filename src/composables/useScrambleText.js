@@ -54,17 +54,25 @@ const DEFAULTS = { stagger: 35, scramble: 280, tick: 50, keepUnchanged: true, ch
  * Devuelve un texto que sigue a `source`: cada vez que cambia, sus caracteres pasan por
  * caracteres al azar antes de fijarse en el nuevo.
  * keepUnchanged: los caracteres que no cambian se quedan quietos en vez de desordenarse.
+ * playing (ref, opcional): queda en true mientras se anima (ej. para mostrar el cursor).
  */
 export function useScrambleText(source, options = {}) {
   const opts = { ...DEFAULTS, ...options }
   const display = ref(source.value)
   const reducedMotion = prefersReducedMotion()
+  const playing = options.playing
   let cancel = () => {}
 
   watch(source, (target) => {
     cancel()
-    if (reducedMotion) display.value = target
-    else cancel = animate(display, display.value, target, opts)
+    if (reducedMotion) {
+      display.value = target
+      return
+    }
+    if (playing) playing.value = true
+    cancel = animate(display, display.value, target, opts, () => {
+      if (playing) playing.value = false
+    })
   })
 
   onBeforeUnmount(() => cancel())

@@ -26,7 +26,17 @@ const FORMATS = {
 }
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.webp']
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
-const DATE = /^\d{4}-\d{2}-\d{2}$/
+// Fecha de publicación: DD-MM-AAAA (también se acepta AAAA-MM-DD)
+const DATE_DMY = /^(\d{2})-(\d{2})-(\d{4})$/
+const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/
+function toIsoDate(value) {
+  if (typeof value !== 'string') return null
+  const dmy = value.match(DATE_DMY)
+  const iso = dmy ? `${dmy[3]}-${dmy[2]}-${dmy[1]}` : DATE_ISO.test(value) ? value : null
+  // Date.parse acepta 2026-02-31; se comprueba que la fecha exista de verdad
+  if (!iso || isNaN(Date.parse(iso)) || new Date(iso).toISOString().slice(0, 10) !== iso) return null
+  return iso
+}
 
 // Datos de la última ejecución: permiten reutilizar fotos ya procesadas cuyo original
 // no está en este computador (los originales no se suben a GitHub)
@@ -94,6 +104,10 @@ function checkPhotos(folder, photos, publicBase) {
       errors.push(`${where}: a la foto ${name} le falta "alt" (una descripción de lo que se ve)`)
       return
     }
+    if (photo.zoom !== undefined && !(typeof photo.zoom === 'number' && photo.zoom >= 1 && photo.zoom <= 1.5)) {
+      errors.push(`${where}: el "zoom" de la foto ${name} debe ser un número entre 1 y 1.5, sin comillas (ej: 1.1)`)
+      return
+    }
     valid.push(photo)
   })
   // Fotos en la carpeta que no aparecen en info.json: no es un error, pero conviene saberlo
@@ -111,8 +125,15 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
   if (photo.reuse) {
     photo.reuse.widths.forEach((w) => Object.keys(FORMATS).forEach((ext) => expected.add(`${name}-${w}.${ext}`)))
     unchanged++
-    const { foco, ...data } = photo.reuse
-    return { ...data, alt: photo.alt.trim(), ...(photo.foco ? { foco: photo.foco } : {}) }
+    const { foco, focoMovil, focoTablet, zoom, ...data } = photo.reuse
+    return {
+      ...data,
+      alt: photo.alt.trim(),
+      ...(photo.foco ? { foco: photo.foco } : {}),
+      ...(photo.focoMovil ? { focoMovil: photo.focoMovil } : {}),
+      ...(photo.focoTablet ? { focoTablet: photo.focoTablet } : {}),
+      ...(photo.zoom ? { zoom: photo.zoom } : {}),
+    }
   }
   const image = sharp(source).rotate() // respeta la orientación de la cámara
   const { width, height } = await image.metadata().then((m) =>
@@ -122,14 +143,18 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
   if (widths.length === 0) widths.push(width)
   if (width < 1600) warnings.push(`${rel(source)}: mide ${width} px de ancho; se recomiendan 3000 px`)
 
-  const sourceTime = statSync(source).mtimeMs
+  // Huella del original (peso y fecha): si cambia en cualquier sentido, se rehace todo.
+  // Comparar solo fechas fallaba con fotos reemplazadas por otras más antiguas.
+  const { size, mtimeMs } = statSync(source)
+  const origen = `${size}-${Math.round(mtimeMs)}`
+  const same = previous.get(`${publicBase}/${name}`)?.origen === origen
   const jobs = []
   for (const w of widths) {
     for (const [ext, encode] of Object.entries(FORMATS)) {
       const file = `${name}-${w}.${ext}`
       expected.add(file)
       const target = join(outDir, file)
-      if (existsSync(target) && statSync(target).mtimeMs >= sourceTime) continue
+      if (same && existsSync(target)) continue
       jobs.push(encode(sharp(source).rotate().resize({ width: w })).toFile(target))
     }
   }
@@ -146,11 +171,15 @@ async function processPhoto(folder, photo, outDir, publicBase, expected) {
 
   return {
     src: `${publicBase}/${name}`,
+    origen,
     width,
     height: Math.round(height),
     widths,
     alt: photo.alt.trim(),
     ...(photo.foco ? { foco: photo.foco } : {}),
+    ...(photo.focoMovil ? { focoMovil: photo.focoMovil } : {}),
+    ...(photo.focoTablet ? { focoTablet: photo.focoTablet } : {}),
+    ...(photo.zoom ? { zoom: photo.zoom } : {}),
     color,
   }
 }
@@ -191,14 +220,14 @@ function checkProject(folder, slug, info) {
   if (!SLUG.test(slug)) {
     errors.push(`${where}: el nombre de la carpeta debe ir en minúsculas, sin tildes ni espacios, con guiones (ej: casa-los-robles)`)
   }
-  for (const field of ['titulo', 'lugar', 'arquitecto', 'descripcion']) {
+  for (const field of ['titulo', 'lugar', 'arquitecto']) {
     if (typeof info[field] !== 'string' || !info[field].trim()) errors.push(`${where}: falta "${field}"`)
   }
   if (!Number.isInteger(info['año']) || info['año'] < 1900 || info['año'] > 2100) {
     errors.push(`${where}: "año" debe ser un número, sin comillas (ej: 2025)`)
   }
-  if (typeof info.publicado !== 'string' || !DATE.test(info.publicado) || isNaN(Date.parse(info.publicado))) {
-    errors.push(`${where}: "publicado" debe ser una fecha con formato AAAA-MM-DD (ej: 2026-03-15)`)
+  if (!toIsoDate(info.publicado)) {
+    errors.push(`${where}: "publicado" debe ser una fecha con formato DD-MM-AAAA (ej: 15-03-2026)`)
   }
   if (info.ficha !== undefined && (typeof info.ficha !== 'object' || Array.isArray(info.ficha))) {
     errors.push(`${where}: "ficha" debe ser una lista de pares, ej: { "Superficie": "280 m²" }`)
@@ -252,8 +281,7 @@ async function processProjects() {
       año: info['año'],
       lugar: info.lugar.trim(),
       arquitecto: info.arquitecto.trim(),
-      descripcion: info.descripcion.trim(),
-      publicado: info.publicado,
+      publicado: toIsoDate(info.publicado),
       ficha: info.ficha ?? {},
       portada: images[photos.findIndex((p) => p.archivo === cover)],
       fotos: images,

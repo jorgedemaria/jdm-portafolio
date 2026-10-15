@@ -3,19 +3,79 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router";
 import { useFocusTrap } from "../composables/useFocusTrap";
 import {
+  menuOpen,
+  menuHorizontal,
+  menuBottom,
+  menuHeight,
+  navOverPhotos,
+  navSectionTitle,
+  navContentBottom,
+  navTitlePlain,
+} from "../composables/useMenu";
+import { introLeaving } from "../composables/useIntro";
+import {
   useScrambleReplay,
   useScrambleText,
   syllableRanges,
   pickSyllable,
   SYMBOL_CHARSET,
   SCRAMBLE_CHARSET_LOWER,
+  SCRAMBLE_CHARSET,
 } from "../composables/useScrambleText";
 import { site } from "../data/site";
 
 const route = useRoute();
 const router = useRouter();
 
-const open = ref(false);
+// Título de la sección actual, al lado del logo: entra y sale con letras al azar
+const sectionTitle = useScrambleText(navSectionTitle, {
+  stagger: 35,
+  scramble: 380,
+  tick: 50,
+  keepUnchanged: false,
+  charset: SCRAMBLE_CHARSET_LOWER,
+});
+
+// Estado compartido: el stack de Inicio también lo lee
+const open = menuOpen;
+
+/*
+ * Retícula: va del borde izquierdo del texto del logo al borde derecho del botón del menú,
+ * en 5 columnas (las mismas líneas del stack de Inicio).
+ * - Desde 768 px el menú es una fila que ocupa toda la retícula, un enlace por columna.
+ * - En móvil es una lista vertical del mismo ancho.
+ */
+const logoTextRef = ref(null);
+const menuRef = ref(null);
+const gridWidth = ref(0);
+// El espacio logo → menú es igual al espacio menú → líneas del stack (en todas las pantallas)
+const MENU_GAP = 24;
+const menuTop = ref(null);
+const logoBox = ref(null);
+function measureGrid() {
+  const logo = logoTextRef.value?.getBoundingClientRect();
+  const button = toggleRef.value?.getBoundingClientRect();
+  if (!logo || !button) return;
+  logoBox.value = { left: logo.left, bottom: logo.bottom };
+  gridWidth.value = button.right - logo.left;
+  // El menú se posiciona respecto del botón (su contenedor empieza en el borde superior del botón)
+  menuTop.value = logo.bottom + MENU_GAP - button.top;
+}
+const menuStyle = computed(() => {
+  if (!gridWidth.value) return {};
+  return {
+    width: `${gridWidth.value}px`,
+    ...(menuTop.value !== null ? { top: `${menuTop.value}px` } : {}),
+  };
+});
+// El stack de Inicio usa el borde inferior del menú para bajar sus líneas
+function measureMenu() {
+  const box = menuRef.value?.getBoundingClientRect();
+  if (!box) return;
+  menuBottom.value = box.bottom;
+  menuHeight.value = box.height;
+}
+watch([open, menuStyle], () => nextTick(measureMenu));
 // Al empezar el scroll del stack de fotos y al volver arriba, el logo y el botón pasan por símbolos al azar
 const SYMBOL_SCRAMBLE = { stagger: 35, scramble: 380, tick: 50, charset: SYMBOL_CHARSET };
 const logo = useScrambleReplay(site.wordmark, SYMBOL_SCRAMBLE);
@@ -24,7 +84,14 @@ function playSymbols() {
   logo.play();
   if (!open.value) toggleSymbol.play();
 }
-const logoText = logo.display;
+// Entrada: cuando sube la persiana de la intro, el logo se arma desde vacío con letras al azar
+// y el "+" se baraja con símbolos
+const logoIntro = useScrambleText(
+  computed(() => (introLeaving.value ? site.wordmark : " ".repeat(site.wordmark.length))),
+  { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET },
+);
+watch(introLeaving, (leaving) => leaving && toggleSymbol.play());
+const logoText = computed(() => (logo.playing.value ? logo.display.value : logoIntro.value));
 const toggleText = toggleSymbol.display;
 const toggleScrambling = toggleSymbol.playing;
 
@@ -95,16 +162,27 @@ async function copyEmail() {
 }
 
 // Sin fondo mientras se recorre una sección marcada con data-nav-overlay (p. ej. el stack de fotos)
-const overPhotos = ref(false);
+const overPhotos = navOverPhotos;
 const navRef = ref(null);
 const toggleRef = ref(null);
 
 useFocusTrap(navRef, open);
 
-// "Proyectos" sigue activo dentro del detalle de un proyecto
+// "Proyectos" sigue activo dentro del detalle de un proyecto.
+// Las secciones de Inicio (ej. contacto) solo se marcan al llegar a ellas por el menú.
 function isActive(item) {
-  const path = router.resolve(item.to).path;
-  return path === "/" ? route.path === "/" : route.path.startsWith(path);
+  const { path, hash } = router.resolve(item.to);
+  if (path === "/") return route.path === "/" && route.hash === hash;
+  return route.path.startsWith(path);
+}
+
+// Si ya se está en esa sección, el enlace no cambia la dirección: se cierra el menú y se baja igual
+function goToSection(item, event) {
+  const hash = item.to.hash;
+  if (!hash || route.name !== item.to.name || route.hash !== hash) return;
+  event.preventDefault();
+  close();
+  setTimeout(() => document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" }), 450);
 }
 
 function close({ restoreFocus = false } = {}) {
@@ -132,6 +210,10 @@ function onScroll() {
 }
 
 onMounted(() => {
+  // Medir la retícula cuando la fuente del logo ya cargó, y de nuevo al cambiar el tamaño
+  document.fonts.ready.then(measureGrid);
+  window.addEventListener("resize", measureGrid);
+  window.addEventListener("resize", measureMenu);
   document.addEventListener("keydown", onKeydown);
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("jdm:stack-edge", playSymbols);
@@ -140,19 +222,86 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("resize", measureGrid);
+  window.removeEventListener("resize", measureMenu);
   document.removeEventListener("keydown", onKeydown);
   window.removeEventListener("scroll", onScroll);
   window.removeEventListener("jdm:stack-edge", playSymbols);
 });
+
+/*
+ * Título de sección: va justo debajo del logo (TITLE_GAP) y, con el menú abierto, baja
+ * hasta quedar MENU_GAP px debajo del menú, con la misma curva que la persiana.
+ */
+const TITLE_GAP = 16;
+
+/*
+ * Mientras se ve un título bajo el logo, el fondo crema del navbar se extiende hasta
+ * BACKDROP_GAP px debajo de él: lo que pasa por detrás (p. ej. las fotos de una sección
+ * fija que se suelta) queda tapado. Sigue al título cuando baja por el menú.
+ */
+const BACKDROP_GAP = 16;
+const headerRef = ref(null);
+const backdropShown = computed(
+  () =>
+    !!sectionTitle.value.trim() && menuHorizontal.value && !overPhotos.value && !navTitlePlain.value,
+);
+const backdropHeight = computed(() => {
+  const header = headerRef.value?.offsetHeight ?? 0;
+  if (!backdropShown.value || !header) return 0;
+  return Math.max(0, titleTop.value + titleHeight.value + BACKDROP_GAP - header);
+});
+const sectionTitleRef = ref(null);
+const titleHeight = ref(0);
+const titleTop = computed(() => {
+  if (!logoBox.value) return 0;
+  return open.value && menuBottom.value
+    ? menuBottom.value + MENU_GAP
+    : logoBox.value.bottom + TITLE_GAP;
+});
+const titleStyle = computed(() => {
+  const nav = navRef.value?.getBoundingClientRect();
+  if (!logoBox.value || !nav) return {};
+  return { left: `${logoBox.value.left - nav.left}px`, top: `${titleTop.value - nav.top}px` };
+});
+watch(sectionTitle, () =>
+  nextTick(() => (titleHeight.value = sectionTitleRef.value?.offsetHeight ?? 0)),
+);
+// Lo más bajo del navbar (para que las secciones fijas no queden debajo)
+watch(
+  [navSectionTitle, open, menuBottom, titleTop, titleHeight, logoBox],
+  () => {
+    const titleShown = navSectionTitle.value && menuHorizontal.value;
+    if (titleShown) navContentBottom.value = titleTop.value + titleHeight.value;
+    else if (open.value) navContentBottom.value = menuBottom.value;
+    else navContentBottom.value = logoBox.value?.bottom ?? 0;
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <header
+    ref="headerRef"
     :class="[
       'fixed inset-x-0 top-0 z-50 p-2 transition-colors duration-150',
       overPhotos ? 'bg-transparent' : 'bg-fondo',
     ]"
   >
+    <!--
+      Extensión del fondo para tapar lo que pasa detrás del título de sección. Solo se anima
+      con el menú; al cambiar de sección aparece y desaparece en el acto.
+    -->
+    <div
+      aria-hidden="true"
+      :class="[
+        'absolute inset-x-0 top-full bg-fondo',
+        !backdropShown
+          ? 'transition-none'
+          : 'transition-[height] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+      ]"
+      :style="{ height: `${backdropHeight}px` }"
+    />
     <!-- Clic fuera del menú lo cierra -->
     <div
       v-if="open"
@@ -167,29 +316,49 @@ onBeforeUnmount(() => {
         aria-label="Principal"
         class="flex h-16 items-center justify-between p-2 lg:h-20"
       >
+        <div class="flex items-center">
         <RouterLink
           :to="{ name: 'home' }"
-          class="ml-1 px-3 text-h3 font-extrabold whitespace-nowrap text-primario sm:ml-2 sm:text-logo xl:ml-8"
+          class="ml-1 px-3 text-h3 font-extrabold whitespace-nowrap text-fondo sm:ml-2 sm:text-logo xl:ml-8"
         >
           <span class="sr-only">{{ site.name }} — inicio</span>
-          <span aria-hidden="true" class="whitespace-pre">{{ logoText }}</span>
+          <!-- Logo en un bloque verde; el bloque empieza en la primera línea de la retícula -->
+          <span
+            ref="logoTextRef"
+            aria-hidden="true"
+            class="block bg-primario px-1.5 pt-2 pb-1 whitespace-pre"
+            >{{ logoText }}</span
+          >
         </RouterLink>
+        </div>
 
         <div class="relative xl:mr-8">
+          <!-- Mismo alto que el bloque del logo: 36 px en móvil, 48 px desde 640 px -->
           <button
             ref="toggleRef"
             type="button"
             :class="[
-              'grid size-10 shrink-0 place-items-center transition-colors duration-300',
-              open ? 'bg-primario text-fondo' : 'text-primario hover:bg-primario hover:text-fondo',
+              'relative grid size-9 shrink-0 cursor-pointer place-items-center overflow-hidden border border-primario bg-primario transition-colors duration-200 sm:size-12',
+              open ? 'text-primario delay-200' : 'text-fondo delay-0',
             ]"
             :aria-expanded="open"
             aria-controls="menu-principal"
             @click="open = !open"
           >
             <span class="sr-only">{{ open ? "Cerrar menú" : "Abrir menú" }}</span>
+            <!--
+              Relleno crema: sube desde abajo como persiana al abrir y vuelve a bajar al cerrar.
+              El "+" pasa a verde con un pequeño retraso, cuando la persiana ya lo cubrió.
+            -->
+            <span
+              :class="[
+                'absolute inset-0 bg-fondo transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+                open ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
+              ]"
+              aria-hidden="true"
+            />
             <!-- Mientras se baraja, el "+" se muestra como texto con símbolos al azar -->
-            <span v-if="toggleScrambling" class="text-boton leading-none" aria-hidden="true">{{
+            <span v-if="toggleScrambling" class="relative text-boton leading-none" aria-hidden="true">{{
               toggleText
             }}</span>
             <!-- "+" que gira a "×" al abrir -->
@@ -201,8 +370,8 @@ onBeforeUnmount(() => {
               ]"
               aria-hidden="true"
             >
-              <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-current" />
-              <span class="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-current" />
+              <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current" />
+              <span class="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-current" />
             </span>
           </button>
 
@@ -212,21 +381,27 @@ onBeforeUnmount(() => {
           -->
           <div
             id="menu-principal"
+            ref="menuRef"
             :class="[
-              'absolute top-full right-0 flex w-[calc(100vw-2rem)] flex-col overflow-hidden border border-primario bg-transparent sm:w-72',
+              'absolute top-full right-0 flex flex-col overflow-hidden border border-primario bg-transparent md:grid md:grid-cols-5',
               'transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
               open ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
+            :style="menuStyle"
             :inert="!open"
           >
-            <ul class="flex flex-col divide-y divide-primario border-b border-primario">
+            <!-- Desde 768 px: los 4 enlaces en las columnas 1 a 4, separados por líneas -->
+            <ul
+              class="flex flex-col divide-y divide-primario border-b border-primario md:col-span-4 md:grid md:grid-cols-4 md:divide-x md:divide-y-0 md:border-b-0"
+            >
               <li v-for="(item, i) in site.nav" :key="item.label">
                 <RouterLink
                   :to="item.to"
                   :aria-label="item.label"
+                  @click="goToSection(item, $event)"
                   @mouseenter="scrambleMenuItem(i)"
                   @focus="scrambleMenuItem(i)"
-                  class="flex items-center justify-between gap-2 bg-transparent px-4 py-2.5 text-right text-boton text-primario transition-colors duration-200 ease-out hover:bg-primario hover:text-fondo focus-visible:-outline-offset-4"
+                  class="flex h-full items-center justify-between gap-2 bg-fondo px-4 py-2.5 text-right text-boton text-primario transition-colors duration-200 ease-out hover:bg-primario hover:text-fondo focus-visible:-outline-offset-4 md:px-3"
                 >
                   <!-- El "*" de la página activa va a la izquierda; el texto, a la derecha -->
                   <span class="w-3 shrink-0 text-center" aria-hidden="true">{{
@@ -236,10 +411,11 @@ onBeforeUnmount(() => {
                 </RouterLink>
               </li>
             </ul>
+            <!-- "escríbeme": columna 5 -->
             <button
               type="button"
               :aria-label="`Copiar correo ${site.email}`"
-              class="flex cursor-pointer items-center justify-end bg-acento px-4 py-2.5 text-right text-boton text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo"
+              class="flex cursor-pointer items-center justify-end bg-primario px-4 py-2.5 text-right text-boton text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo md:border-l md:border-primario md:px-3"
               @click="copyEmail"
               @mouseenter="ctaHover = true"
               @mouseleave="ctaHover = false"
@@ -252,6 +428,23 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </nav>
+
+      <!--
+        Sección actual justo debajo del logo, del mismo tamaño (desde 768 px). Nunca toca el
+        menú: al abrir baja primero (rápido) y el menú se despliega 0,2 s después; al cerrar,
+        el menú se recoge primero y el título sube 0,3 s después. La sección conserva su
+        título para lectores de pantalla.
+      -->
+      <span
+        v-if="sectionTitle"
+        ref="sectionTitleRef"
+        aria-hidden="true"
+        :class="[
+          'pointer-events-none absolute hidden font-display text-logo font-semibold whitespace-pre text-texto transition-[top] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] md:block',
+        ]"
+        :style="titleStyle"
+        >{{ sectionTitle }}</span
+      >
     </div>
   </header>
 </template>

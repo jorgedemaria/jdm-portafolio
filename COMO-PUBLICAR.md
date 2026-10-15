@@ -53,13 +53,8 @@ Lo más fácil es copiar el `info.json` de otro proyecto y cambiar los datos:
   "año": 2026,
   "lugar": "Santiago, Chile",
   "arquitecto": "Estudio Ejemplo",
-  "descripcion": "Vivienda unifamiliar de hormigón visto…",
-  "publicado": "2026-03-15",
+  "publicado": "15-03-2026",
   "portada": "01.jpg",
-  "ficha": {
-    "Programa": "Vivienda unifamiliar",
-    "Superficie": "280 m²"
-  },
   "fotos": [
     { "archivo": "01.jpg", "alt": "Fachada norte de hormigón al atardecer" },
     { "archivo": "02.jpg", "alt": "Escalera interior con luz cenital" }
@@ -69,11 +64,10 @@ Lo más fácil es copiar el `info.json` de otro proyecto y cambiar los datos:
 
 | Campo | Qué es |
 |---|---|
-| `titulo`, `lugar`, `arquitecto`, `descripcion` | Texto, entre comillas |
+| `titulo`, `lugar`, `arquitecto` | Texto, entre comillas |
 | `año` | Número, **sin comillas** |
-| `publicado` | Fecha en formato `AAAA-MM-DD`. **El proyecto con la fecha más reciente es el "Último proyecto" de Inicio** |
+| `publicado` | Fecha en formato `DD-MM-AAAA` (día-mes-año). **Los 3 proyectos con la fecha más reciente salen en "últimos trabajos" de Inicio** |
 | `portada` | La foto que se ve en el listado de proyectos |
-| `ficha` | Opcional. Datos extra de la ficha técnica, los que quieras |
 | `fotos` | El orden de la galería. Cada foto lleva `alt`: una descripción de lo que se ve (para lectores de pantalla y Google) |
 
 En la galería, las fotos horizontales van a todo el ancho y las verticales seguidas se ponen de a dos.

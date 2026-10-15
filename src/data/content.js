@@ -15,12 +15,7 @@ export const projects = content.proyectos
 
 export const latestProject = projects[0] ?? null
 
-export const findProject = (slug) => projects.find((p) => p.slug === slug) ?? null
+// Los 3 más recientes, para "últimos trabajos" en Inicio
+export const latestProjects = projects.slice(0, 3)
 
-// Proyecto anterior (más reciente) y siguiente (más antiguo); la lista da la vuelta
-export function neighbors(slug) {
-  const i = projects.findIndex((p) => p.slug === slug)
-  if (i === -1 || projects.length < 2) return { previous: null, next: null }
-  const at = (n) => projects[(n + projects.length) % projects.length]
-  return { previous: at(i - 1), next: at(i + 1) }
-}
+export const findProject = (slug) => projects.find((p) => p.slug === slug) ?? null

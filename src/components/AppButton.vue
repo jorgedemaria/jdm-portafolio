@@ -9,7 +9,7 @@ import { RouterLink } from 'vue-router'
  * Clic: la flecha sale por la esquina superior derecha y vuelve por la inferior izquierda.
  */
 const props = defineProps({
-  // 'primario' usa el color acento (como en Figma); 'secundario' usa el verde primario
+  // 'primario' y 'secundario' usan el verde primario (el acento ya no se usa)
   variant: { type: String, default: 'primario' },
   // 'sm' reproduce las medidas del navbar; 'md' para llamadas a la acción en página
   size: { type: String, default: 'sm' },
@@ -32,8 +32,8 @@ const attrs = computed(() => {
 
 const variants = {
   primario: {
-    outer: 'bg-acento',
-    inner: 'bg-fondo text-acento group-hover:bg-acento group-hover:text-fondo',
+    outer: 'bg-primario',
+    inner: 'bg-fondo text-primario group-hover:bg-primario group-hover:text-fondo',
   },
   secundario: {
     outer: 'bg-primario',

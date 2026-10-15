@@ -1,0 +1,21 @@
+{
+  "titulo": "Casa Punucapa",
+  "año": 2023,
+  "lugar": "Valdivia, Chile",
+  "arquitecto": "Caroca / Ojeda Arquitectura",
+  "publicado": "10-05-2026",
+  "portada": "01.jpg",
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "La casa asoma entre el bosque al final de un camino de ripio" },
+    { "archivo": "02.jpg", "alt": "Fachada de zinc negro y madera clara, con la leñera al costado" },
+    { "archivo": "03.jpg", "alt": "Volumen negro de dos aguas y una pérgola translúcida sobre la terraza" },
+    { "archivo": "04.jpg", "alt": "Terraza de madera bajo la pérgola, con un balcón arriba" },
+    { "archivo": "05.jpg", "alt": "Un sendero entre árboles lleva a la casa" },
+    { "archivo": "06.jpg", "alt": "Entrada forrada en madera, con botas y chaquetas listas para salir" },
+    { "archivo": "07.jpg", "alt": "Cocina de muebles verde azulado, mesones de madera y piso de baldosas" },
+    { "archivo": "08.jpg", "alt": "Una persona lee en el sofá junto a un ventanal abierto al bosque" },
+    { "archivo": "09.jpg", "alt": "Cocina con repisas de madera llenas de frascos y plantas" },
+    { "archivo": "10.jpg", "alt": "Dormitorio blanco con clósets de muro a muro y una ventana al bosque" },
+    { "archivo": "11.jpg", "alt": "Escalera iluminada por un tragaluz, con una planta colgando" }
+  ]
+}

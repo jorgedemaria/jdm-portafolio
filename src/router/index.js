@@ -23,12 +23,8 @@ const routes = [
     component: () => import('../views/AboutView.vue'),
     meta: { title: 'Sobre mí' },
   },
-  {
-    path: '/contacto',
-    name: 'contact',
-    component: () => import('../views/ContactView.vue'),
-    meta: { title: 'Contacto' },
-  },
+  // Contacto es una sección de Inicio; la dirección antigua lleva hasta ella
+  { path: '/contacto', redirect: { name: 'home', hash: '#contacto' } },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -52,7 +48,12 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition
-    if (to.hash) return { el: to.hash }
+    // Ir a una sección: se espera a que termine el cambio de página y se cierre el menú
+    if (to.hash) {
+      return new Promise((resolve) =>
+        setTimeout(() => resolve({ el: to.hash, behavior: 'smooth' }), from.name === to.name ? 450 : 600),
+      )
+    }
     return { top: 0 }
   },
 })

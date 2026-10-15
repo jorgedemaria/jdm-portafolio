@@ -1,0 +1,16 @@
+{
+  "titulo": "Portuaria Corral",
+  "año": 2024,
+  "lugar": "Valdivia, Chile",
+  "arquitecto": "Caroca / Ojeda Arquitectura",
+  "publicado": "14-10-2026",
+  "portada": "01.jpg",
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "Galpón de zinc negro bajo un cielo amplio, con maquinaria pesada estacionada al frente" },
+    { "archivo": "02.jpg", "alt": "Interior del taller: cargadores frontales amarillos bajo una estructura metálica con lucarnas" },
+    { "archivo": "03.jpg", "alt": "Pasillo angosto entre muros negros y mallas, con luz cenital" },
+    { "archivo": "04.jpg", "alt": "Pañol de marcos naranjos y malla metálica, con mesones de trabajo al frente" },
+    { "archivo": "05.jpg", "alt": "Edificio alargado de zinc negro con una franja de ventanas, sobre estacionamientos" },
+    { "archivo": "06.jpg", "alt": "Un cargador frontal asoma por el gran portón abierto del galpón" }
+  ]
+}

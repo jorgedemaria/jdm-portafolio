@@ -58,13 +58,19 @@
 @utility page {
   margin-inline: auto;
   max-width: 90rem;
-  /* + los 8 px (px-2) de la sección que lo contiene = 32 / 36 / 60 px, como el logo */
-  padding-inline: 1.5rem;
+  /*
+   * Sumando los 8 px (px-2) de la sección que lo contiene, el contenido va del comienzo
+   * del logo al final del botón del menú:
+   *   izquierda 32 / 36 / 60 px  ·  derecha 16 / 16 / 48 px (móvil / desde sm / desde xl)
+   */
+  padding-left: 1.5rem;
+  padding-right: 0.5rem;
   @media (width >= 40rem) {
-    padding-inline: 1.75rem;
+    padding-left: 1.75rem;
   }
   @media (width >= 80rem) {
-    padding-inline: 3.25rem;
+    padding-left: 3.25rem;
+    padding-right: 2.5rem;
   }
 }
 

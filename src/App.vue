@@ -1,9 +1,35 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import AppNav from "./components/AppNav.vue";
 import AppIntro from "./components/AppIntro.vue";
+import AppFooter from "./components/AppFooter.vue";
+import {
+  menuOpen,
+  menuHeight,
+  menuHorizontal,
+  navOverPhotos,
+  navSectionTitle,
+} from "./composables/useMenu";
 
 const showIntro = ref(true);
+
+/*
+ * Al abrir el menú, el contenido (y el pie) bajan lo que mide el menú + 24 px, así el menú
+ * nunca queda encima de nada. Sobre el stack de fotos no: ahí bajan solo sus líneas.
+ * Con un título de sección bajo el logo se usa el mismo ritmo que ese título.
+ */
+const MENU_GAP = 24;
+const contentPush = computed(() =>
+  menuOpen.value && !navOverPhotos.value && menuHeight.value ? menuHeight.value + MENU_GAP : 0,
+);
+const titleBelowLogo = computed(() => !!navSectionTitle.value && menuHorizontal.value);
+const pushClass = computed(() => {
+  if (titleBelowLogo.value)
+    return menuOpen.value
+      ? "duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+      : "delay-300 duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]";
+  return "duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]";
+});
 </script>
 
 <template>
@@ -15,11 +41,18 @@ const showIntro = ref(true);
     Saltar al contenido
   </a>
   <AppNav />
-  <RouterView v-slot="{ Component, route }">
-    <Transition name="page" mode="out-in">
-      <main id="contenido" :key="route.path" tabindex="-1" class="outline-none">
-        <component :is="Component" />
-      </main>
-    </Transition>
-  </RouterView>
+  <!-- Columna de al menos una pantalla de alto: el contenido crece y el pie queda siempre al fondo -->
+  <div
+    :class="['flex min-h-svh flex-col transition-transform', pushClass]"
+    :style="contentPush ? { transform: `translateY(${contentPush}px)` } : null"
+  >
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page" mode="out-in">
+        <main id="contenido" :key="route.path" tabindex="-1" class="flex-1 outline-none">
+          <component :is="Component" />
+        </main>
+      </Transition>
+    </RouterView>
+    <AppFooter />
+  </div>
 </template>

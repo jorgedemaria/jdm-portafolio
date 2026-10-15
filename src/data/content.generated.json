@@ -2,64 +2,74 @@
   "inicio": [
     {
       "src": "/images/inicio/01",
+      "origen": "4264784-1782862461748",
       "width": 3000,
-      "height": 2000,
+      "height": 1875,
       "widths": [
         800,
         1600,
         2400
       ],
-      "alt": "Edificio de fachada blanca con un volumen inclinado de vidrio y un cuerpo en voladizo, visto desde abajo contra un cielo claro",
-      "color": "#f8f8f8"
+      "alt": "Auditorio con cielo de madera perforada y luminarias lineales, filas de sillas de madera y cuero a ambos lados de un pasillo central hacia una pantalla",
+      "foco": "64% 10%",
+      "focoMovil": "52% 25%",
+      "focoTablet": "52% 25%",
+      "zoom": 1.1,
+      "color": "#281808"
     },
     {
       "src": "/images/inicio/02",
-      "width": 3000,
-      "height": 4246,
+      "origen": "5202079-1752852541668",
+      "width": 2400,
+      "height": 3000,
       "widths": [
         800,
         1600,
         2400
       ],
-      "alt": "Volúmenes blancos apilados de un edificio residencial con ventanas en retícula, sobre un cielo celeste",
-      "foco": "50% 35%",
-      "color": "#c8d8e8"
+      "alt": "Patio de un colegio visto a través de una ventana desenfocada: una cubierta oscura sobre pilares amarillos, un edificio blanco y árboles altos detrás",
+      "foco": "50% 55%",
+      "color": "#a89888"
     },
     {
       "src": "/images/inicio/03",
+      "origen": "5402997-1763155103829",
       "width": 3000,
-      "height": 2000,
+      "height": 1687,
       "widths": [
         800,
         1600,
         2400
       ],
-      "alt": "Torres de oficinas con muro cortina de vidrio vistas en contrapicado bajo un cielo nublado",
-      "color": "#181818"
+      "alt": "Casa de planchas metálicas negras con un volumen central de madera, rodeada de árboles y vegetación en un día nublado",
+      "color": "#f8f8f8"
     },
     {
       "src": "/images/inicio/04",
+      "origen": "3447411-1782862452611",
       "width": 3000,
-      "height": 2000,
+      "height": 2250,
       "widths": [
         800,
         1600,
         2400
       ],
-      "alt": "Rascacielos fotografiados desde la base, convergiendo hacia un cielo cubierto de niebla",
-      "color": "#181818"
+      "alt": "Oficinas con muros de vidrio y marcos blancos frente a un hall de piso claro y luminarias lineales en el cielo",
+      "foco": "30% 50%",
+      "color": "#a89878"
     },
     {
       "src": "/images/inicio/05",
+      "origen": "3176451-1773121336838",
       "width": 3000,
-      "height": 2000,
+      "height": 1687,
       "widths": [
         800,
         1600,
         2400
       ],
-      "alt": "Casa contemporánea de madera oscura y grandes ventanales iluminados al anochecer, con un árbol en el jardín",
-      "color": "#181818"
+      "alt": "Edificio alargado de revestimiento metálico negro con una franja de ventanas y estacionamiento bajo el volumen, bajo un cielo azul con nubes",
+      "color": "#7898b8"
     }
   ],
   "categorias": [
@@ -68,234 +78,367 @@
       "nombre": "Casas"
     },
     {
-      "slug": "edificios",
-      "nombre": "Edificios"
+      "slug": "comercial",
+      "nombre": "Comercial"
     },
     {
-      "slug": "urbanos",
-      "nombre": "Urbanos"
+      "slug": "industrial",
+      "nombre": "Industrial"
     }
   ],
   "proyectos": [
     {
-      "slug": "casa-ejemplo",
+      "slug": "libreria-780",
+      "categoria": {
+        "slug": "comercial",
+        "nombre": "Comercial"
+      },
+      "titulo": "Librería 780",
+      "año": 2025,
+      "lugar": "Valdivia, Chile",
+      "arquitecto": "Caroca / Ojeda Arquitectura",
+      "publicado": "2026-10-14",
+      "ficha": {},
+      "portada": {
+        "src": "/images/proyectos/libreria-780/01",
+        "origen": "5945549-1757972390000",
+        "width": 3000,
+        "height": 2400,
+        "widths": [
+          800,
+          1600,
+          2400
+        ],
+        "alt": "Estanterías de madera clara repletas de mochilas, cuadernos y libros",
+        "color": "#c88808"
+      },
+      "fotos": [
+        {
+          "src": "/images/proyectos/libreria-780/01",
+          "origen": "5945549-1757972390000",
+          "width": 3000,
+          "height": 2400,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Estanterías de madera clara repletas de mochilas, cuadernos y libros",
+          "color": "#c88808"
+        },
+        {
+          "src": "/images/proyectos/libreria-780/02",
+          "origen": "5938875-1757972327455",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Pasillo de la librería, con el letrero 780 al fondo y dos clientas mirando",
+          "color": "#c88808"
+        },
+        {
+          "src": "/images/proyectos/libreria-780/03",
+          "origen": "5860593-1757974009863",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Letrero colgante de Librería 780 sobre vitrinas iluminadas y estantes amarillos",
+          "color": "#f8c888"
+        },
+        {
+          "src": "/images/proyectos/libreria-780/04",
+          "origen": "5227987-1757972335246",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Una niña dibuja en una mesa, rodeada de estanterías",
+          "color": "#b87808"
+        }
+      ]
+    },
+    {
+      "slug": "industrial-portuaria-corral",
+      "categoria": {
+        "slug": "industrial",
+        "nombre": "Industrial"
+      },
+      "titulo": "Portuaria Corral",
+      "año": 2024,
+      "lugar": "Valdivia, Chile",
+      "arquitecto": "Caroca / Ojeda Arquitectura",
+      "publicado": "2026-10-14",
+      "ficha": {},
+      "portada": {
+        "src": "/images/proyectos/industrial-portuaria-corral/01",
+        "origen": "2932473-1773121409830",
+        "width": 3000,
+        "height": 1687,
+        "widths": [
+          800,
+          1600,
+          2400
+        ],
+        "alt": "Galpón de zinc negro bajo un cielo amplio, con maquinaria pesada estacionada al frente",
+        "color": "#c8d8e8"
+      },
+      "fotos": [
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/01",
+          "origen": "2932473-1773121409830",
+          "width": 3000,
+          "height": 1687,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Galpón de zinc negro bajo un cielo amplio, con maquinaria pesada estacionada al frente",
+          "color": "#c8d8e8"
+        },
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/02",
+          "origen": "4828145-1773121380350",
+          "width": 3000,
+          "height": 2250,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Interior del taller: cargadores frontales amarillos bajo una estructura metálica con lucarnas",
+          "color": "#181818"
+        },
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/03",
+          "origen": "3979341-1773121386013",
+          "width": 2250,
+          "height": 3000,
+          "widths": [
+            800,
+            1600
+          ],
+          "alt": "Pasillo angosto entre muros negros y mallas, con luz cenital",
+          "color": "#181818"
+        },
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/04",
+          "origen": "3478789-1773121399804",
+          "width": 3000,
+          "height": 1688,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Pañol de marcos naranjos y malla metálica, con mesones de trabajo al frente",
+          "color": "#181818"
+        },
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/05",
+          "origen": "3176451-1773121336838",
+          "width": 3000,
+          "height": 1687,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Edificio alargado de zinc negro con una franja de ventanas, sobre estacionamientos",
+          "color": "#7898b8"
+        },
+        {
+          "src": "/images/proyectos/industrial-portuaria-corral/06",
+          "origen": "4631441-1773121419077",
+          "width": 3000,
+          "height": 2250,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Un cargador frontal asoma por el gran portón abierto del galpón",
+          "color": "#181818"
+        }
+      ]
+    },
+    {
+      "slug": "casa-punucapa",
       "categoria": {
         "slug": "casas",
         "nombre": "Casas"
       },
-      "titulo": "Casa de ejemplo",
-      "año": 2026,
-      "lugar": "Ciudad, País",
-      "arquitecto": "Estudio de ejemplo",
-      "descripcion": "Proyecto de ejemplo para mostrar cómo se ve una casa en el portafolio. Reemplaza este texto por una descripción breve: el encargo, el lugar y lo que buscaste mostrar con las fotografías.",
-      "publicado": "2026-09-20",
-      "ficha": {
-        "Programa": "Vivienda unifamiliar",
-        "Superficie": "280 m²"
-      },
-      "portada": {
-        "src": "/images/proyectos/casa-ejemplo/01",
-        "width": 3000,
-        "height": 1990,
-        "widths": [
-          800,
-          1600,
-          2400
-        ],
-        "alt": "Casa blanca de dos pisos con terraza y piscina en primer plano, bajo un cielo azul con nubes",
-        "color": "#e8e8e8"
-      },
-      "fotos": [
-        {
-          "src": "/images/proyectos/casa-ejemplo/01",
-          "width": 3000,
-          "height": 1990,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Casa blanca de dos pisos con terraza y piscina en primer plano, bajo un cielo azul con nubes",
-          "color": "#e8e8e8"
-        },
-        {
-          "src": "/images/proyectos/casa-ejemplo/02",
-          "width": 3000,
-          "height": 2000,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Fachada de casa contemporánea blanca con aleros de madera, reflejada en la piscina",
-          "color": "#e8e8e8"
-        },
-        {
-          "src": "/images/proyectos/casa-ejemplo/03",
-          "width": 3000,
-          "height": 2040,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Living de doble altura con un muro revestido en madera y un sofá blanco",
-          "color": "#d8d8d8"
-        },
-        {
-          "src": "/images/proyectos/casa-ejemplo/04",
-          "width": 3000,
-          "height": 2000,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Casa de un piso con grandes ventanales junto a una piscina, enmarcada por vegetación",
-          "color": "#080808"
-        }
-      ]
-    },
-    {
-      "slug": "edificio-ejemplo",
-      "categoria": {
-        "slug": "edificios",
-        "nombre": "Edificios"
-      },
-      "titulo": "Edificio de ejemplo",
-      "año": 2025,
-      "lugar": "Ciudad, País",
-      "arquitecto": "Estudio de ejemplo",
-      "descripcion": "Proyecto de ejemplo con fotos verticales y horizontales mezcladas, para ver cómo se ordena la galería. Reemplaza este texto por la descripción del proyecto.",
+      "titulo": "Casa Punucapa",
+      "año": 2023,
+      "lugar": "Valdivia, Chile",
+      "arquitecto": "Caroca / Ojeda Arquitectura",
       "publicado": "2026-05-10",
-      "ficha": {
-        "Programa": "Vivienda colectiva",
-        "Pisos": "8"
-      },
-      "portada": {
-        "src": "/images/proyectos/edificio-ejemplo/01",
-        "width": 3000,
-        "height": 4000,
-        "widths": [
-          800,
-          1600,
-          2400
-        ],
-        "alt": "Edificio residencial de fachada oscura y ladrillo visto, fotografiado en contrapicado contra el cielo",
-        "color": "#080828"
-      },
-      "fotos": [
-        {
-          "src": "/images/proyectos/edificio-ejemplo/01",
-          "width": 3000,
-          "height": 4000,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Edificio residencial de fachada oscura y ladrillo visto, fotografiado en contrapicado contra el cielo",
-          "color": "#080828"
-        },
-        {
-          "src": "/images/proyectos/edificio-ejemplo/02",
-          "width": 3000,
-          "height": 4499,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Muros curvos de ladrillo naranja que se abren hacia un cielo azul intenso",
-          "color": "#5888d8"
-        },
-        {
-          "src": "/images/proyectos/edificio-ejemplo/03",
-          "width": 3000,
-          "height": 1993,
-          "widths": [
-            800,
-            1600,
-            2400
-          ],
-          "alt": "Torres de oficinas con muro cortina de vidrio vistas desde la calle",
-          "color": "#f8f8f8"
-        }
-      ]
-    },
-    {
-      "slug": "espacio-publico-ejemplo",
-      "categoria": {
-        "slug": "urbanos",
-        "nombre": "Urbanos"
-      },
-      "titulo": "Espacio público de ejemplo",
-      "año": 2025,
-      "lugar": "Ciudad, País",
-      "arquitecto": "Oficina de ejemplo",
-      "descripcion": "Proyecto urbano de ejemplo. Reemplaza este texto por la descripción del proyecto.",
-      "publicado": "2025-11-02",
       "ficha": {},
       "portada": {
-        "src": "/images/proyectos/espacio-publico-ejemplo/01",
+        "src": "/images/proyectos/casa-punucapa/01",
+        "origen": "7565786-1763155103638",
         "width": 3000,
-        "height": 2000,
+        "height": 3000,
         "widths": [
           800,
           1600,
           2400
         ],
-        "alt": "Vista de la ciudad al atardecer con una avenida iluminada que la atraviesa",
+        "alt": "La casa asoma entre el bosque al final de un camino de ripio",
         "color": "#f8f8f8"
       },
       "fotos": [
         {
-          "src": "/images/proyectos/espacio-publico-ejemplo/01",
+          "src": "/images/proyectos/casa-punucapa/01",
+          "origen": "7565786-1763155103638",
           "width": 3000,
-          "height": 2000,
+          "height": 3000,
           "widths": [
             800,
             1600,
             2400
           ],
-          "alt": "Vista de la ciudad al atardecer con una avenida iluminada que la atraviesa",
+          "alt": "La casa asoma entre el bosque al final de un camino de ripio",
           "color": "#f8f8f8"
         },
         {
-          "src": "/images/proyectos/espacio-publico-ejemplo/02",
+          "src": "/images/proyectos/casa-punucapa/02",
+          "origen": "5402997-1763155103829",
           "width": 3000,
-          "height": 2000,
+          "height": 1687,
           "widths": [
             800,
             1600,
             2400
           ],
-          "alt": "Avenida entre rascacielos con peatones cruzando y taxis detenidos",
-          "color": "#182828"
+          "alt": "Fachada de zinc negro y madera clara, con la leñera al costado",
+          "color": "#f8f8f8"
         },
         {
-          "src": "/images/proyectos/espacio-publico-ejemplo/03",
+          "src": "/images/proyectos/casa-punucapa/03",
+          "origen": "6121675-1763155112321",
           "width": 3000,
-          "height": 3752,
+          "height": 2400,
           "widths": [
             800,
             1600,
             2400
           ],
-          "alt": "Calle entre edificios altos de noche, con el pavimento mojado reflejando las luces",
-          "color": "#282838"
+          "alt": "Volumen negro de dos aguas y una pérgola translúcida sobre la terraza",
+          "color": "#181818"
         },
         {
-          "src": "/images/proyectos/espacio-publico-ejemplo/04",
+          "src": "/images/proyectos/casa-punucapa/04",
+          "origen": "7532473-1763155135197",
           "width": 3000,
-          "height": 1845,
+          "height": 3000,
           "widths": [
             800,
             1600,
             2400
           ],
-          "alt": "Vista aérea de una ciudad densa frente al mar al amanecer",
-          "color": "#182838"
+          "alt": "Terraza de madera bajo la pérgola, con un balcón arriba",
+          "color": "#181818"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/05",
+          "origen": "6902742-1763155144814",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Un sendero entre árboles lleva a la casa",
+          "color": "#282818"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/06",
+          "origen": "5449352-1763155149890",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Entrada forrada en madera, con botas y chaquetas listas para salir",
+          "color": "#181818"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/07",
+          "origen": "5161147-1763155154940",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Cocina de muebles verde azulado, mesones de madera y piso de baldosas",
+          "color": "#d8b898"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/08",
+          "origen": "6410223-1763155199503",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Una persona lee en el sofá junto a un ventanal abierto al bosque",
+          "color": "#b89878"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/09",
+          "origen": "5151140-1763155226144",
+          "width": 2400,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Cocina con repisas de madera llenas de frascos y plantas",
+          "color": "#c8a878"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/10",
+          "origen": "5683803-1763155239285",
+          "width": 3000,
+          "height": 3000,
+          "widths": [
+            800,
+            1600,
+            2400
+          ],
+          "alt": "Dormitorio blanco con clósets de muro a muro y una ventana al bosque",
+          "color": "#d8c8b8"
+        },
+        {
+          "src": "/images/proyectos/casa-punucapa/11",
+          "origen": "3685060-1763155275157",
+          "width": 2000,
+          "height": 3000,
+          "widths": [
+            800,
+            1600
+          ],
+          "alt": "Escalera iluminada por un tragaluz, con una planta colgando",
+          "color": "#a89878"
         }
       ]
     }

@@ -1,0 +1,14 @@
+{
+  "titulo": "Librería 780",
+  "año": 2025,
+  "lugar": "Valdivia, Chile",
+  "arquitecto": "Caroca / Ojeda Arquitectura",
+  "publicado": "14-10-2026",
+  "portada": "01.jpg",
+  "fotos": [
+    { "archivo": "01.jpg", "alt": "Estanterías de madera clara repletas de mochilas, cuadernos y libros" },
+    { "archivo": "02.jpg", "alt": "Pasillo de la librería, con el letrero 780 al fondo y dos clientas mirando" },
+    { "archivo": "03.jpg", "alt": "Letrero colgante de Librería 780 sobre vitrinas iluminadas y estantes amarillos" },
+    { "archivo": "04.jpg", "alt": "Una niña dibuja en una mesa, rodeada de estanterías" }
+  ]
+}
