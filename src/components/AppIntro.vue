@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { site } from "../data/site";
 import { introLeaving } from "../composables/useIntro";
 import TypingCaret from "./TypingCaret.vue";
+import { pauseSmoothScroll, resumeSmoothScroll } from "../composables/useSmoothScroll";
 
 /*
  * Pantalla de entrada: el nombre aparece sílaba por sílaba y, cada vez, unas pocas sílabas
@@ -156,6 +157,8 @@ function scramble({ initial, final, stagger = STAGGER, scrambleTime = SCRAMBLE, 
 
 onMounted(async () => {
   document.documentElement.style.overflow = "hidden";
+  // El scroll suave también se detiene mientras está la intro
+  pauseSmoothScroll();
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reducedMotion) display.value = [...target];
@@ -181,6 +184,7 @@ onMounted(async () => {
   introLeaving.value = true;
   await wait(EXIT_DURATION);
   document.documentElement.style.overflow = "";
+  resumeSmoothScroll();
   emit("done");
 });
 
@@ -188,6 +192,7 @@ onBeforeUnmount(() => {
   timers.forEach(clearTimeout);
   cancelAnimationFrame(frame);
   document.documentElement.style.overflow = "";
+  resumeSmoothScroll();
 });
 </script>
 

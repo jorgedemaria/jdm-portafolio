@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { scrollToElement, scrollToTopNow } from '../composables/useSmoothScroll'
 
 const routes = [
   { path: '/', name: 'home', component: HomeView, meta: { title: null } },
@@ -48,13 +49,18 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition
-    // Ir a una sección: se espera a que termine el cambio de página y se cierre el menú
+    // Ir a una sección: se espera a que termine el cambio de página y se cierre el menú, y se
+    // baja con el mismo scroll suave del sitio (ver useSmoothScroll)
     if (to.hash) {
       return new Promise((resolve) =>
-        setTimeout(() => resolve({ el: to.hash, behavior: 'smooth' }), from.name === to.name ? 450 : 600),
+        setTimeout(() => {
+          scrollToElement(to.hash)
+          resolve(false)
+        }, from.name === to.name ? 450 : 600),
       )
     }
-    return { top: 0 }
+    scrollToTopNow()
+    return false
   },
 })
 

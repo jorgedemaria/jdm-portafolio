@@ -13,6 +13,7 @@ import {
   navTitlePlain,
 } from "../composables/useMenu";
 import { introLeaving } from "../composables/useIntro";
+import { scrollToElement } from "../composables/useSmoothScroll";
 import {
   useScrambleReplay,
   useScrambleText,
@@ -182,7 +183,7 @@ function goToSection(item, event) {
   if (!hash || route.name !== item.to.name || route.hash !== hash) return;
   event.preventDefault();
   close();
-  setTimeout(() => document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" }), 450);
+  setTimeout(() => scrollToElement(hash), 450);
 }
 
 function close({ restoreFocus = false } = {}) {
