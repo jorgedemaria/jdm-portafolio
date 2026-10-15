@@ -6,7 +6,7 @@ Guía rápida para agregar proyectos, cambiar las fotos de Inicio y publicar la 
 
 ```
 1. Exportar fotos (JPG, 3000 px)  →  2. Carpeta + info.json  →  3. npm run fotos
-→  4. Revisar con npm run dev    →  5. git add / commit / push  →  6. Netlify publica solo
+→  4. Revisar con npm run dev    →  5. git add / commit / push  →  6. Vercel publica solo
 ```
 
 ---
@@ -92,7 +92,7 @@ git commit -m "Nuevo proyecto: Casa Los Robles"
 git push
 ```
 
-En un minuto aproximadamente Netlify publica la web. Si algo falla, Netlify mantiene la versión anterior: la web nunca queda rota.
+En un minuto aproximadamente Vercel publica la web. Si algo falla, Vercel mantiene la versión anterior: la web nunca queda rota.
 
 > También puedes hacerlo con botones: en VS Code, panel **Source Control** (el ícono de ramas), escribe el mensaje, **Commit** y luego **Sync Changes**.
 
@@ -130,12 +130,12 @@ Están en `content/inicio/`. Reemplaza las fotos y edita `content/inicio/info.js
 2. En VS Code, abre el panel **Source Control** y pulsa **Publish Branch** (o **Publish to GitHub**).
 3. Inicia sesión con GitHub cuando lo pida y elige **repositorio privado**.
 
-### Conectar Netlify
+### Conectar Vercel
 
-1. Crea una cuenta en [netlify.com](https://www.netlify.com) entrando con tu cuenta de GitHub.
-2. **Add new site → Import an existing project → GitHub** y elige el repositorio `jdm-portfolio`.
-3. Netlify lee la configuración del archivo `netlify.toml`: no hay que cambiar nada. Pulsa **Deploy**.
-4. Te da una dirección tipo `nombre-al-azar.netlify.app`. En **Domain management** puedes cambiarla o conectar tu propio dominio.
+1. Crea una cuenta en [vercel.com](https://vercel.com) entrando con tu cuenta de GitHub (plan **Hobby**, gratis).
+2. **Add New… → Project** y elige el repositorio `jdm-portafolio` (si no aparece, pulsa **Adjust GitHub App Permissions** y dale acceso).
+3. Vercel lee la configuración del archivo `vercel.json`: no hay que cambiar nada. Pulsa **Deploy**.
+4. Te da una dirección tipo `nombre.vercel.app`. En **Settings → Domains** puedes cambiarla o conectar tu propio dominio.
 
 Desde ahí, cada `git push` publica la web automáticamente.
 
