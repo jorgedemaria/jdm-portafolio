@@ -11,9 +11,10 @@ import {
   navSectionTitle,
   navContentBottom,
   navTitleAction,
+  contactInView,
 } from "../composables/useMenu";
 import { introLeaving } from "../composables/useIntro";
-import { scrollToElement } from "../composables/useSmoothScroll";
+import { jumpToSection } from "../composables/useSmoothScroll";
 import {
   useScrambleReplay,
   useScrambleText,
@@ -21,7 +22,6 @@ import {
   pickSyllable,
   SYMBOL_CHARSET,
   SCRAMBLE_CHARSET_LOWER,
-  SCRAMBLE_CHARSET,
 } from "../composables/useScrambleText";
 import { site } from "../data/site";
 
@@ -29,7 +29,8 @@ const route = useRoute();
 const router = useRouter();
 
 // Título de la sección actual, al lado del logo: entra y sale con letras al azar
-const sectionTitle = useScrambleText(navSectionTitle, {
+// Con la sección de contacto en pantalla no se muestra ningún título (ej. "últimos registros")
+const sectionTitle = useScrambleText(computed(() => (contactInView.value ? "" : navSectionTitle.value)), {
   stagger: 35,
   scramble: 380,
   tick: 50,
@@ -39,6 +40,9 @@ const sectionTitle = useScrambleText(navSectionTitle, {
 
 // Estado compartido: el stack de Inicio también lo lee
 const open = menuOpen;
+
+// Con la sección de contacto en pantalla el logo se esconde, salvo con el menú abierto
+const logoHidden = computed(() => contactInView.value && !open.value);
 
 /*
  * Retícula: va del borde izquierdo del texto del logo al borde derecho del botón del menú,
@@ -89,7 +93,7 @@ function playSymbols() {
 // y el "+" se baraja con símbolos
 const logoIntro = useScrambleText(
   computed(() => (introLeaving.value ? site.wordmark : " ".repeat(site.wordmark.length))),
-  { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET },
+  { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
 );
 watch(introLeaving, (leaving) => leaving && toggleSymbol.play());
 const logoText = computed(() => (logo.playing.value ? logo.display.value : logoIntro.value));
@@ -177,13 +181,14 @@ function isActive(item) {
   return route.path.startsWith(path);
 }
 
-// Si ya se está en esa sección, el enlace no cambia la dirección: se cierra el menú y se baja igual
+// Si ya se está en esa sección, el enlace no cambia la dirección: se cierra el menú y se salta igual
 function goToSection(item, event) {
   const hash = item.to.hash;
   if (!hash || route.name !== item.to.name || route.hash !== hash) return;
   event.preventDefault();
   close();
-  setTimeout(() => scrollToElement(hash), 450);
+  const el = document.getElementById(hash.slice(1));
+  if (el) jumpToSection(el);
 }
 
 function close({ restoreFocus = false } = {}) {
@@ -232,35 +237,12 @@ onBeforeUnmount(() => {
   window.removeEventListener("jdm:stack-edge", playSymbols);
 });
 
-/*
- * Título de sección: va justo debajo del logo (TITLE_GAP) y, con el menú abierto, baja
- * hasta quedar MENU_GAP px debajo del menú, con la misma curva que la persiana.
- */
-const TITLE_GAP = 16;
-
-const sectionTitleRef = ref(null);
-const titleHeight = ref(0);
-const titleTop = computed(() => {
-  if (!logoBox.value) return 0;
-  return open.value && menuBottom.value
-    ? menuBottom.value + MENU_GAP
-    : logoBox.value.bottom + TITLE_GAP;
-});
-const titleStyle = computed(() => {
-  const nav = navRef.value?.getBoundingClientRect();
-  if (!logoBox.value || !nav) return {};
-  return { left: `${logoBox.value.left - nav.left}px`, top: `${titleTop.value - nav.top}px` };
-});
-watch(sectionTitle, () =>
-  nextTick(() => (titleHeight.value = sectionTitleRef.value?.offsetHeight ?? 0)),
-);
 // Lo más bajo del navbar (para que las secciones fijas no queden debajo)
 watch(
-  [navSectionTitle, open, menuBottom, titleTop, titleHeight, logoBox],
+  [open, menuBottom, logoBox],
   () => {
-    const titleShown = navSectionTitle.value && menuHorizontal.value;
-    if (titleShown) navContentBottom.value = titleTop.value + titleHeight.value;
-    else if (open.value) navContentBottom.value = menuBottom.value;
+    // El título va en la misma fila que el logo: lo más bajo es el logo, o el menú abierto
+    if (open.value) navContentBottom.value = menuBottom.value;
     else navContentBottom.value = logoBox.value?.bottom ?? 0;
   },
   { immediate: true },
@@ -284,20 +266,60 @@ watch(
         aria-label="Principal"
         class="flex h-16 items-center justify-between p-2 lg:h-20"
       >
-        <div class="flex items-center">
+        <div class="flex min-w-0 items-center">
         <RouterLink
           :to="{ name: 'home' }"
-          class="text-h3 font-extrabold whitespace-nowrap text-fondo sm:text-logo xl:ml-8"
+          :tabindex="logoHidden ? -1 : undefined"
+          class="text-h3 font-extrabold whitespace-nowrap text-primario sm:text-logo xl:ml-8"
         >
           <span class="sr-only">{{ site.name }} — inicio</span>
-          <!-- Logo en un bloque verde; el bloque empieza en la primera línea de la retícula -->
+          <!--
+            Logo en un bloque rosado (acento); el bloque empieza en la primera línea de la retícula.
+            Al llegar a contacto se recoge hacia arriba como persiana (vuelve con el menú abierto)
+          -->
           <span
             ref="logoTextRef"
             aria-hidden="true"
-            class="block bg-primario px-1.5 pt-2 pb-1 whitespace-pre"
+            :class="[
+              'block bg-acento px-6 pt-2 pb-1 whitespace-pre transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+              logoHidden ? '[clip-path:inset(0_0_100%_0)]' : '[clip-path:inset(0)]',
+            ]"
             >{{ logoText }}</span
           >
         </RouterLink>
+        <!--
+          Sección actual a la derecha del logo, en la misma fila y centrada con él (desde 768 px).
+          El menú se abre debajo, así que no se cruzan. Si es larga se corta con "…". La sección conserva su título para lectores de pantalla.
+        -->
+        <!--
+          Título de sección. Con una acción (navTitleAction) lleva una flecha "←" antes, y solo
+          la flecha es un botón (ej. volver desde el detalle de un proyecto); el título es texto.
+        -->
+        <span
+          v-if="sectionTitle"
+          class="pointer-events-none ml-6 hidden min-w-0 items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto md:flex"
+        >
+          <button
+            v-if="navTitleAction"
+            type="button"
+            class="group/arrow pointer-events-auto -my-[0.15em] -ml-[0.15em] cursor-pointer p-[0.15em]"
+            :aria-label="navTitleAction.label"
+            @click="navTitleAction.run()"
+          >
+            <svg
+              class="block size-[0.6em] transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/arrow:-translate-x-1"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />
+            </svg>
+          </button>
+          <!-- Alto de línea 1,3: con el recorte para el "…", las colas (g, p, y) no se cortan -->
+          <span aria-hidden="true" class="min-w-0 overflow-hidden leading-[1.3] text-ellipsis">{{ sectionTitle }}</span>
+        </span>
         </div>
 
         <div class="relative xl:mr-8">
@@ -383,7 +405,11 @@ watch(
             <button
               type="button"
               :aria-label="`Copiar correo ${site.email}`"
-              class="flex cursor-pointer items-center justify-end bg-primario px-4 py-2.5 text-right text-boton text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo md:border-l md:border-primario md:px-3"
+              :class="[
+                'flex cursor-pointer items-center justify-end px-4 py-2.5 text-right text-boton transition-colors duration-200 focus-visible:-outline-offset-4 focus-visible:outline-fondo md:border-l md:border-primario md:px-3',
+                // copiado! en un bloque rosado, como la carita y el correo de contacto
+                copied ? 'bg-acento text-primario' : 'bg-primario text-fondo',
+              ]"
               @click="copyEmail"
               @mouseenter="ctaHover = true"
               @mouseleave="ctaHover = false"
@@ -397,42 +423,6 @@ watch(
         </div>
       </nav>
 
-      <!--
-        Sección actual justo debajo del logo, del mismo tamaño (desde 768 px). Nunca toca el
-        menú: al abrir baja primero (rápido) y el menú se despliega 0,2 s después; al cerrar,
-        el menú se recoge primero y el título sube 0,3 s después. La sección conserva su
-        título para lectores de pantalla.
-      -->
-      <!--
-        Título de sección. Con una acción (navTitleAction) lleva una flecha "←" antes, y solo
-        la flecha es un botón (ej. volver desde el detalle de un proyecto); el título es texto.
-      -->
-      <span
-        v-if="sectionTitle"
-        ref="sectionTitleRef"
-        class="pointer-events-none absolute hidden items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto transition-[top] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] md:flex"
-        :style="titleStyle"
-      >
-        <button
-          v-if="navTitleAction"
-          type="button"
-          class="group/arrow pointer-events-auto -my-[0.15em] -ml-[0.15em] cursor-pointer p-[0.15em]"
-          :aria-label="navTitleAction.label"
-          @click="navTitleAction.run()"
-        >
-          <svg
-            class="block size-[0.6em] transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/arrow:-translate-x-1"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            aria-hidden="true"
-          >
-            <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />
-          </svg>
-        </button>
-        <span aria-hidden="true">{{ sectionTitle }}</span>
-      </span>
     </div>
   </header>
 </template>

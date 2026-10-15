@@ -39,7 +39,7 @@ content/proyectos/
 └── urbanos/
 ```
 
-- El **nombre de la carpeta** es la dirección del proyecto: `casa-los-robles` → `tusitio.com/proyectos/casa-los-robles`.
+- El **nombre de la carpeta** es la dirección del proyecto: `casa-los-robles` → `tusitio.com/registros/casa-los-robles`.
   Usa minúsculas, sin tildes ni espacios, con guiones.
 - La **categoría** es la carpeta donde lo pones. Para una categoría nueva (por ejemplo `industrial`), crea esa carpeta: aparece sola en el filtro de Proyectos.
 
@@ -66,7 +66,7 @@ Lo más fácil es copiar el `info.json` de otro proyecto y cambiar los datos:
 |---|---|
 | `titulo`, `lugar`, `arquitecto` | Texto, entre comillas |
 | `año` | Número, **sin comillas** |
-| `publicado` | Fecha en formato `DD-MM-AAAA` (día-mes-año). **Los 3 proyectos con la fecha más reciente salen en "últimos trabajos" de Inicio** |
+| `publicado` | Fecha en formato `DD-MM-AAAA` (día-mes-año). **Los 3 proyectos con la fecha más reciente salen en "últimos registros" de Inicio** |
 | `portada` | La foto que se ve en el listado de proyectos |
 | `fotos` | El orden de la galería. Cada foto lleva `alt`: una descripción de lo que se ve (para lectores de pantalla y Google) |
 

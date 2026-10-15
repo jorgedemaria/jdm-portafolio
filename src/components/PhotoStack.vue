@@ -318,11 +318,6 @@ function photoStyle(index) {
   }
 }
 
-// En teléfono y tablet, "Desliza" y el contador van pegados al borde de abajo de la foto actual
-const indicatorStyle = computed(() => {
-  if (!shrinkMode.value || !current.value) return null
-  return { transform: `translateY(${timeline.value[current.value - 1].height - viewport.value.height}px)` }
-})
 </script>
 
 <template>
@@ -399,16 +394,15 @@ const indicatorStyle = computed(() => {
 
       <!-- Mismos márgenes que el navbar: "Desliza" alineado con el logo; el final del contador, con el borde del botón del menú (y la última línea) -->
       <div
-        class="absolute inset-x-0 bottom-0 px-2 pb-6 text-cuerpo text-fondo"
-        :style="indicatorStyle"
+        class="absolute inset-x-0 bottom-0 px-2 pb-6 text-cuerpo text-primario"
         aria-hidden="true"
       >
-        <!-- Cada texto en un bloque verde; el bloque empieza en la primera línea y termina en la última -->
+        <!-- Cada texto en un bloque rosado (acento); el bloque empieza en la primera línea y termina en la última -->
         <div class="mx-auto flex max-w-360 items-end justify-between px-2">
           <div class="xl:ml-8">
             <p
               v-if="hint"
-              class="block-text overflow-hidden bg-primario px-1.5 py-0.5 whitespace-pre"
+              class="block-text overflow-hidden bg-acento px-1.5 py-0.5 whitespace-pre"
               :style="{ width: hintWidth ? `${hintWidth}px` : null }"
             >{{ hint }}</p>
           </div>
@@ -420,7 +414,7 @@ const indicatorStyle = computed(() => {
             @pointerleave="counterHover = false"
           >
             <p
-              class="block-text overflow-hidden bg-primario px-1.5 py-0.5 whitespace-pre tabular-nums"
+              class="block-text overflow-hidden bg-acento px-1.5 py-0.5 whitespace-pre tabular-nums"
               :style="{ width: counterWidth ? `${counterWidth}px` : null }"
             >{{ counter }}</p>
           </div>

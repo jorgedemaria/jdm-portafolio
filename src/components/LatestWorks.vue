@@ -8,7 +8,7 @@ import { useNavSectionTitle } from '../composables/useNavSectionTitle'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 
 /*
- * "últimos trabajos": los 3 proyectos más recientes en una fila.
+ * "últimos registros": los 3 más recientes en una fila.
  * Desde 1024 px la sección se queda fija mientras se hace scroll (hijack) y los proyectos
  * aparecen uno tras otro de izquierda a derecha; al terminar hay una pausa y la página sigue.
  * En pantallas más chicas van uno debajo del otro, con scroll normal.
@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
  * Título: se arma desde vacío con letras al azar, de izquierda a derecha (como el nombre
  * de la intro), cada vez que la sección entra en pantalla.
  */
-const TITLE = 'últimos trabajos'
+const TITLE = 'últimos registros'
 const titleShown = ref(false)
 const titleText = useScrambleText(
   computed(() => (titleShown.value ? TITLE : ' '.repeat(TITLE.length))),
@@ -233,7 +233,7 @@ const facts = (project) => [
 </script>
 
 <template>
-  <section ref="root" aria-labelledby="ultimos-trabajos" class="relative text-primario lg:h-[260svh]">
+  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario lg:h-[260svh]">
     <!-- Fija en escritorio; el contenido empieza siempre debajo del navbar (no se centra, así no queda tapado en pantallas bajas) -->
     <div class="px-2 pt-28 pb-28 lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:pt-32 lg:pb-16">
       <div
@@ -248,7 +248,7 @@ const facts = (project) => [
       >
         <!-- El texto animado se oculta a lectores de pantalla; leen el título completo -->
         <h2
-          id="ultimos-trabajos"
+          id="ultimos-registros"
           ref="titleRef"
           :aria-label="TITLE"
           class="font-display text-h2 whitespace-pre text-texto md:sr-only"
@@ -257,7 +257,7 @@ const facts = (project) => [
         </h2>
 
         <!--
-          Los 3 proyectos en una fila, centrada en el espacio bajo el título. Fotos verticales
+          Los 3 registros en una fila, centrada en el espacio bajo el título. Fotos verticales
           (3:4) cuyo ancho se ajusta a la altura de la pantalla; el primero alineado con el
           logo, el último con el botón del menú y separación mínima de 4rem entre ellos.
         -->
@@ -286,7 +286,7 @@ const facts = (project) => [
                 >
                 <!-- Tarjeta con borde (foto y grilla), unida a la etiqueta de arriba; el título va afuera -->
                 <div class="relative border border-primario">
-                <!-- La foto repite el enlace de "ver proyecto"; se oculta a lectores de pantalla y al teclado -->
+                <!-- La foto repite el enlace de "ver registro"; se oculta a lectores de pantalla y al teclado -->
                 <RouterLink :to="projectLink(project)" class="block" tabindex="-1" aria-hidden="true">
                   <!-- La foto cambia sola cada cierto tiempo, salvo con el cursor encima -->
                   <CardPhoto
@@ -322,7 +322,7 @@ const facts = (project) => [
                     :to="projectLink(project)"
                     class="group/link flex items-center justify-end border-t border-primario bg-primario px-3 py-2.5 text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo"
                   >
-                    ver proyecto
+                    ver registro
                     <span class="sr-only">: {{ project.titulo }}</span>
                     <!-- Al pasar el cursor (o con el foco) aparece la flecha ↗, como en "ver todo" -->
                     <span
@@ -361,7 +361,7 @@ const facts = (project) => [
             :to="{ name: 'projects' }"
             class="see-all block overflow-hidden bg-primario px-1.5 py-0.5 text-cuerpo whitespace-pre text-fondo"
             :style="{ ...revealStyle(projects.length - 1), width: seeAllWidth ? `${seeAllWidth}px` : null }"
-            aria-label="ver todos los proyectos"
+            aria-label="ver todos los registros"
             @pointerenter="seeAllHover = true"
             @pointerleave="seeAllHover = false"
             @focus="seeAllHover = true"

@@ -107,7 +107,7 @@ const mobileTitle = useScrambleText(
 )
 
 /*
- * Botón para volver a donde se llegó: últimos trabajos (Inicio), todos los proyectos o una
+ * Botón para volver a donde se llegó: últimos registros (Inicio), todos los registros o una
  * categoría. Vue Router guarda la página anterior en history.state.back; si se entró directo
  * a la dirección del proyecto, lleva a la lista de proyectos.
  */
@@ -115,11 +115,11 @@ const router = useRouter()
 const backPath = ref(null)
 const backLabel = computed(() => {
   const back = backPath.value
-  if (!back) return 'ver proyectos'
-  if (back === '/' || back.startsWith('/#')) return 'volver a últimos trabajos'
+  if (!back) return 'ver registros'
+  if (back === '/' || back.startsWith('/#')) return 'volver a últimos registros'
   const categoria = new URLSearchParams(back.split('?')[1] ?? '').get('categoria')
-  if (back.startsWith('/proyectos?') && categoria) return `volver a ${categoria.replace(/-/g, ' ')}`
-  if (back.startsWith('/proyectos')) return 'volver a proyectos'
+  if (back.startsWith('/registros?') && categoria) return `volver a ${categoria.replace(/-/g, ' ')}`
+  if (back.startsWith('/registros')) return 'volver a registros'
   return 'volver'
 })
 function goBack() {

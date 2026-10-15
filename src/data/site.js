@@ -2,8 +2,9 @@
 export const site = {
   name: 'Jorge de María',
   // Texto de la animación de entrada, separado en palabras y sílabas
-  nameSyllables: [['Jor', 'ge'], ['de'], ['Ma', 'rí', 'a'], [':)']],
-  wordmark: 'JORGE DE MARÍA',
+  // La intro termina como el logo ("*") y después sale la carita
+  nameSyllables: [['jor', 'ge'], ['de'], ['ma', 'rí', 'a'], ['*'], [':)']],
+  wordmark: 'jorge de maría *',
   email: 'jorgedemaria@pm.me',
   // Completa estos datos para que aparezcan en el pie de página (vacíos = ocultos)
   instagram: 'jorgedemaria63', // sin @
@@ -12,7 +13,7 @@ export const site = {
   // Menú en minúsculas. silabas: el mismo texto con "·" entre sílabas, para la animación
   nav: [
     { label: 'inicio', silabas: 'i·ni·cio', to: { name: 'home' } },
-    { label: 'proyectos', silabas: 'pro·yec·tos', to: { name: 'projects' } },
+    { label: 'registros', silabas: 're·gis·tros', to: { name: 'projects' } },
     { label: 'sobre mí', silabas: 'so·bre mí', to: { name: 'about' } },
     // Contacto es una sección de Inicio, no una página aparte
     { label: 'contacto', silabas: 'con·tac·to', to: { name: 'home', hash: '#contacto' } },

@@ -23,7 +23,7 @@ onMounted(() => (titleShown.value = true))
 const titleSize = `min(1.5rem, calc((100vw - 3.5rem) / ${TITLE.length * 0.6}))`
 const LINKS = [
   { label: 'ir al inicio', to: { name: 'home' } },
-  { label: 'ver proyectos', to: { name: 'projects' } },
+  { label: 'ver registros', to: { name: 'projects' } },
 ]
 // +0,34em: el margen interno del bloque verde, igual que en contacto
 const linkSize = `min(2.25rem, calc((100vw - 3.5rem) / ${Math.max(...LINKS.map((l) => l.label.length)) * 0.6 + 0.34}))`

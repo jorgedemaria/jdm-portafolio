@@ -26,7 +26,7 @@ if (!showIntro.value) introLeaving.value = true;
  * Con un título de sección bajo el logo se usa el mismo ritmo que ese título.
  */
 const MENU_GAP = 24;
-// En Inicio no se baja nada (asomaría el fondo crema); "últimos trabajos" se corre por su cuenta
+// En Inicio no se baja nada (asomaría el fondo crema); "últimos registros" se corre por su cuenta
 const route = useRoute();
 const contentPush = computed(() =>
   menuOpen.value && !navOverPhotos.value && menuHeight.value && route.name !== "home"

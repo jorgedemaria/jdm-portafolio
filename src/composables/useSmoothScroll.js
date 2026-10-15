@@ -27,13 +27,25 @@ export function resumeSmoothScroll() {
   lenis?.start()
 }
 
-// Baja suave hasta un elemento (o su hash, ej. '#contacto'). getElementById y no querySelector:
-// un hash como '#2024' no es un selector válido y lanzaría un error
-export function scrollToElement(target) {
+// Baja suave hasta un elemento (o su hash, ej. '#contacto'), o salta de una con immediate.
+// getElementById y no querySelector: un hash como '#2024' no es un selector válido
+export function scrollToElement(target, { immediate = false } = {}) {
   const el = typeof target === 'string' ? document.getElementById(decodeURIComponent(target.slice(1))) : target
   if (!el) return
-  if (lenis) lenis.scrollTo(el, { duration: 1.4 })
-  else el.scrollIntoView({ behavior: 'smooth' })
+  // Lenis limita el destino al alto de página que tiene medido, y lo mide un instante tarde: al
+  // llegar desde una página más corta aún recuerda ese alto y no bajaría. Se vuelve a medir antes
+  lenis?.resize()
+  if (lenis) lenis.scrollTo(el, immediate ? { immediate: true, force: true } : { duration: 1.4 })
+  else el.scrollIntoView({ behavior: immediate ? 'instant' : 'smooth' })
+}
+
+// Salta a una sección (ej. contacto) y la descubre subiendo desde abajo como persiana, con la
+// misma curva que el resto del sitio. Con movimiento reducido solo salta
+const REVEAL = { duration: 700, easing: 'cubic-bezier(0.6, 0, 0.3, 1)' }
+export function jumpToSection(el) {
+  scrollToElement(el, { immediate: true })
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  el.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0)' }], REVEAL)
 }
 
 // Salta arriba sin animación (al cambiar de página)

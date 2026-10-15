@@ -4,8 +4,8 @@ import CardPhoto from './CardPhoto.vue'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 
 /*
- * Tarjeta de proyecto con el mismo diseño que las de "últimos trabajos": foto, título chico
- * y una grilla tipo menú (año, lugar, arquitectura y "ver proyecto"). La foto respeta la
+ * Tarjeta de proyecto con el mismo diseño que las de "últimos registros": foto, título chico
+ * y una grilla tipo menú (año, lugar, arquitectura y "ver registro"). La foto respeta la
  * proporción real de la portada.
  */
 const props = defineProps({
@@ -15,6 +15,14 @@ const props = defineProps({
 })
 
 const ratio = computed(() => `${props.project.portada.width} / ${props.project.portada.height}`)
+// La destacada va a todo el ancho, pero nunca más alta que la pantalla: deja aire para el
+// navbar arriba y para el título debajo de la foto
+const cardStyle = computed(() => ({
+  '--ratio': ratio.value,
+  ...(props.featured
+    ? { width: `min(100%, calc((100svh - 12rem) * ${props.project.portada.width / props.project.portada.height}))` }
+    : {}),
+}))
 const sizes = computed(() =>
   props.featured ? '(min-width: 1440px) 1360px, 100vw' : '(min-width: 1440px) 680px, (min-width: 768px) 48vw, 100vw',
 )
@@ -32,8 +40,8 @@ const facts = computed(() => [
 ])
 
 /*
- * El título se arma desde vacío con letras al azar (como el nombre de la intro) cuando
- * entra en pantalla; al salir del todo se reinicia para repetirse.
+ * El título se arma desde vacío con letras al azar (como el nombre de la intro) la primera
+ * vez que entra en pantalla; después queda fijo.
  */
 const titleEl = ref(null)
 const shown = ref(false)
@@ -48,9 +56,10 @@ onMounted(() => {
     return
   }
   observer = new IntersectionObserver(([entry]) => {
-    if (entry.intersectionRatio >= 0.8) shown.value = true
-    else if (!entry.isIntersecting) shown.value = false
-  }, { threshold: [0, 0.8] })
+    if (entry.intersectionRatio < 0.8) return
+    shown.value = true
+    observer.disconnect()
+  }, { threshold: 0.8 })
   observer.observe(titleEl.value)
 })
 onBeforeUnmount(() => observer?.disconnect())
@@ -60,11 +69,11 @@ onBeforeUnmount(() => observer?.disconnect())
   <!-- Pasar el cursor por la foto o el título abre la grilla -->
   <article
     class="group/card relative"
-    :style="{ '--ratio': ratio }"
+    :style="cardStyle"
     @pointerenter="hovered = true"
     @pointerleave="hovered = false"
   >
-    <!-- La foto repite el enlace de "ver proyecto"; se oculta a lectores de pantalla y al teclado -->
+    <!-- La foto repite el enlace de "ver registro"; se oculta a lectores de pantalla y al teclado -->
     <RouterLink :to="link" class="block" tabindex="-1" aria-hidden="true">
       <CardPhoto
         :project="project"
@@ -113,7 +122,7 @@ onBeforeUnmount(() => observer?.disconnect())
           :to="link"
           class="group/link flex items-center justify-end border-t border-primario bg-primario px-3 py-2.5 text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo"
         >
-          ver proyecto
+          ver registro
           <span class="sr-only">: {{ project.titulo }}</span>
           <!-- Al pasar el cursor (o con el foco) aparece la flecha ↗, como en "ver todo" -->
           <span

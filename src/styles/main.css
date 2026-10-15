@@ -11,10 +11,11 @@
 @theme {
   /* Colores */
   --color-*: initial;
-  --color-fondo: #F4F6FA;
-  --color-primario: #0054E3; /* azul Windows XP; el verde original era #207349 */
-  --color-acento: #f2b8c6; /* rosado, todavía sin uso en el sitio */
-  --color-texto: #101010;
+  /* Paleta "salvia y rosa" (las demás quedan para probar en /guia) */
+  --color-fondo: #f5f1e8;
+  --color-primario: #3d6b4f;
+  --color-acento: #f4b6c2; /* rosado: bloque del logo y correo de contacto */
+  --color-texto: #1a1a1a;
 
   /*
    * Familias. Regla de uso:

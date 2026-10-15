@@ -8,7 +8,7 @@ import { useNavSectionTitle } from '../composables/useNavSectionTitle'
 
 const route = useRoute()
 const root = ref(null)
-useNavSectionTitle(root, 'proyectos')
+useNavSectionTitle(root, 'registros')
 
 // La categoría elegida vive en la dirección (?categoria=casas), así se puede compartir
 const active = computed(() =>
@@ -62,10 +62,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="root" class="px-2 pt-32 pb-16 md:pt-44">
+  <section ref="root" class="px-2 pt-32 pb-16 md:pt-24 lg:pt-28">
     <div class="page">
       <!-- Desde 768 px el título se muestra debajo del logo (navbar), con su animación -->
-      <h1 class="font-display text-h1 md:sr-only">Proyectos</h1>
+      <h1 class="font-display text-h1 md:sr-only">registros</h1>
 
       <!-- Ancho de una columna de la retícula (como cada enlace del menú); a todo el ancho en móvil -->
       <nav ref="filterRef" aria-label="Filtrar por categoría" class="relative z-10 mt-10 md:mt-0 md:w-1/5">
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
           <ProjectCard :project="project" :featured="isFeatured(i)" />
         </li>
       </ul>
-      <p v-else class="mt-6">Todavía no hay proyectos en esta categoría.</p>
+      <p v-else class="mt-6">Todavía no hay registros en esta categoría.</p>
     </div>
   </section>
 </template>

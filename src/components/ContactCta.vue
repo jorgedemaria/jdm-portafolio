@@ -9,6 +9,7 @@ import {
 } from '../composables/useScrambleText'
 import { useCopyEmail } from '../composables/useCopyEmail'
 import { useCaret, CARET_LINGER } from '../composables/useCaret'
+import { contactInView } from '../composables/useMenu'
 import TypingCaret from './TypingCaret.vue'
 
 /*
@@ -122,6 +123,19 @@ const promptVisible = computed(() => prompt.value.trimEnd())
 const EMAIL_CHARS = site.email.length + 3
 const emailSize = `min(6rem, calc((100vw - 3.5rem) / ${EMAIL_CHARS * 0.6}))`
 
+// Avisa al navbar cuando se ve la sección (el logo se recoge); también con movimiento reducido
+let viewObserver
+onMounted(() => {
+  viewObserver = new IntersectionObserver(([entry]) => (contactInView.value = entry.intersectionRatio >= 0.4), {
+    threshold: [0, 0.4],
+  })
+  viewObserver.observe(root.value)
+})
+onBeforeUnmount(() => {
+  viewObserver?.disconnect()
+  contactInView.value = false
+})
+
 let observer
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -144,7 +158,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section id="contacto" ref="root" aria-label="Contacto" class="flex min-h-[calc(100svh-14.4375rem)] flex-col md:min-h-[calc(100svh-7.9375rem)] xl:min-h-[calc(100svh-5rem)] justify-center px-2 py-16">
+  <section id="contacto" ref="root" aria-label="Contacto" class="flex min-h-[calc(100svh-var(--footer-h,4rem))] flex-col justify-center px-2 py-16">
     <div class="page flex w-full flex-col">
       <!--
         Frase en un bloque verde, como el logo. El ancho completo queda reservado (invisible) y
@@ -173,9 +187,11 @@ onBeforeUnmount(() => {
           :aria-label="`Copiar correo ${site.email}`"
           @click="copy"
         >
-          <span aria-hidden="true">{{ emailTyped }}<TypingCaret :state="emailCaret" />{{
-            email.slice(emailTyped.length)
-          }}</span>
+          <!-- El correo va marcado en rosado (acento), como con destacador, a medida que se escribe -->
+          <span aria-hidden="true"
+            ><span v-if="emailTyped" class="bg-acento px-[0.1em]">{{ emailTyped }}</span
+            ><TypingCaret :state="emailCaret" />{{ email.slice(emailTyped.length) }}</span
+          >
         </button>
         <!--
           La carita va separada del correo por un espacio. Al hacerle clic también copia el correo
@@ -184,7 +200,7 @@ onBeforeUnmount(() => {
         <span
           aria-hidden="true"
           :class="[
-            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
+            'ml-[0.6em] inline-block cursor-pointer bg-acento px-[0.1em] whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
             copied && 'rotate-90',
           ]"
           @click="copy"

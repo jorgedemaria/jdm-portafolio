@@ -36,10 +36,10 @@ const SCRAMBLED_MAX = 3;
 const SCRAMBLE_ALL = true;
 // Cada cuánto cambia el carácter al azar
 const TICK = 55;
-const CHARSET = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ*#/[]";
+const CHARSET = "abcdefghijklmnñopqrstuvwxyz*#/[]";
 
 // Letras del nombre y, para cada una, el índice de su sílaba (null en los espacios)
-// La carita ":)" entra después del nombre, primero ":" y luego ")" (sin letras al azar)
+// La carita ":)" entra al final, después del "*" del logo: primero ":" y luego ")" (sin letras al azar)
 const SMILEY = ":)";
 const SMILEY_DELAY = 400;
 const SMILEY_GAP = 350;
@@ -53,7 +53,7 @@ site.nameSyllables.forEach((word, w) => {
     syllableOf.push(null);
   }
   word.forEach((syllable) => {
-    for (const char of syllable.toUpperCase()) {
+    for (const char of syllable) {
       target.push(char);
       syllableOf.push(syllableCount);
     }
@@ -66,12 +66,47 @@ const smileyChars = target.flatMap((_, i) => (syllableOf[i] === smileySyllable ?
 const display = ref(target.map(() => " "));
 // Cursor de texto (ver TypingCaret): 'idle' parpadea, 'typing' fijo, 'off' oculto
 const caret = ref("off");
-// Texto hasta el último carácter visible: define hasta dónde llega el bloque verde
+// Texto hasta el último carácter visible: define hasta dónde llega el bloque rosado
 const visibleText = computed(() => display.value.join("").trimEnd());
 // Tamaño grande que siempre cabe en una línea: cada carácter de JetBrains Mono mide 0,6em
-// (+0,34em del margen interno del bloque verde, igual que el del logo)
-const fontSize = `min(6rem, calc((100vw - 2.5rem) / ${target.length * 0.6 + 0.34}))`;
+// (+1,34em del margen interno del bloque, con las mismas proporciones que el del logo)
+const fontSize = `min(6rem, calc((100vw - 2.5rem) / ${target.length * 0.6 + 1.34}))`;
 const leaving = ref(false);
+
+/*
+ * Subtítulo bajo el nombre, en un bloque verde que empieza donde empieza el bloque del nombre.
+ * Cuando el nombre ya está escrito, el cursor salta al subtítulo y lo escribe letra por letra
+ * (sin letras al azar); el bloque crece hasta la última letra. Al salir se borra de derecha a
+ * izquierda, a la vez que el nombre. Su tamaño acompaña al del nombre.
+ */
+const SUBTITLE = "registros de obras";
+const TYPE_SPEED = 75; // ms por letra al escribir
+const ERASE_SPEED = 35; // ms por letra al borrar
+const SUBTITLE_HOLD = 1500; // quieto, entero, antes de que salga la intro
+const subtitleCount = ref(0);
+const subtitleText = computed(() => SUBTITLE.slice(0, subtitleCount.value));
+const subtitleCaret = ref("off");
+const subtitleStyle = {
+  fontSize: `calc(${fontSize} * 0.45)`,
+  marginTop: `calc(${fontSize} * 0.25)`,
+};
+
+async function typeSubtitle() {
+  caret.value = "off";
+  subtitleCaret.value = "typing";
+  for (let i = 1; i <= SUBTITLE.length; i++) {
+    subtitleCount.value = i;
+    await wait(TYPE_SPEED);
+  }
+  subtitleCaret.value = "idle";
+}
+async function eraseSubtitle() {
+  subtitleCaret.value = "off";
+  for (let i = SUBTITLE.length - 1; i >= 0; i--) {
+    subtitleCount.value = i;
+    await wait(ERASE_SPEED);
+  }
+}
 
 let timers = [];
 let frame = 0;
@@ -162,8 +197,10 @@ onMounted(async () => {
   pauseSmoothScroll();
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  if (reducedMotion) display.value = [...target];
-  else {
+  if (reducedMotion) {
+    display.value = [...target];
+    subtitleCount.value = SUBTITLE.length;
+  } else {
     caret.value = "idle";
     await wait(CARET_LEAD);
     await scramble({
@@ -172,11 +209,14 @@ onMounted(async () => {
       stagger: ENTER_STAGGER,
       scrambleTime: ENTER_SCRAMBLE,
     });
+    await typeSubtitle();
   }
 
-  await Promise.all([wait(MIN_DURATION), Promise.race([pageLoaded(), wait(MAX_WAIT)])]);
+  // Quieta para que se alcance a leer el subtítulo (y a que cargue la página, con un tope)
+  await Promise.all([wait(Math.max(MIN_DURATION, SUBTITLE_HOLD)), Promise.race([pageLoaded(), wait(MAX_WAIT)])]);
 
-  // Salida: se borra al revés, de derecha a izquierda
+  // Salida: se borra al revés, de derecha a izquierda (el subtítulo, a la vez)
+  if (!reducedMotion) eraseSubtitle();
   if (!reducedMotion) await scramble({ initial: (i) => target[i], final: () => " ", reverse: true });
   caret.value = "off";
 
@@ -208,10 +248,15 @@ onBeforeUnmount(() => {
   >
     <!--
       El ancho completo queda reservado (invisible) para que el nombre no se mueva; el bloque
-      verde solo llega hasta el último carácter visible: crece hacia la derecha al entrar y
+      rosado solo llega hasta el último carácter visible: crece hacia la derecha al entrar y
       se achica hacia la izquierda al salir.
     -->
-    <!-- prettier-ignore -->
-    <p class="relative leading-none font-extrabold whitespace-pre text-fondo" :style="{ fontSize }"><span class="invisible block px-[0.17em] pt-[0.22em] pb-[0.11em]">{{ target.join("") }}</span><span v-if="visibleText || caret !== 'off'" class="absolute top-0 left-0 bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em]">{{ visibleText }}<TypingCaret :state="caret" /></span></p>
+    <div>
+      <!-- prettier-ignore -->
+      <p class="relative leading-none font-extrabold whitespace-pre text-primario" :style="{ fontSize }"><span class="invisible block px-[0.67em] pt-[0.22em] pb-[0.11em]">{{ target.join("") }}</span><span v-if="visibleText || caret !== 'off'" class="absolute top-0 left-0 bg-acento px-[0.67em] pt-[0.22em] pb-[0.11em]">{{ visibleText }}<TypingCaret :state="caret" /></span></p>
+      <!-- Igual que el nombre: ancho reservado (invisible) y el bloque verde hasta la última letra -->
+      <!-- prettier-ignore -->
+      <p class="relative leading-none whitespace-pre text-fondo" :style="subtitleStyle"><span class="invisible block px-[0.4em] py-[0.15em]">{{ SUBTITLE }}</span><span v-if="subtitleText || subtitleCaret !== 'off'" class="absolute top-0 left-0 bg-primario px-[0.4em] py-[0.15em]">{{ subtitleText }}<TypingCaret :state="subtitleCaret" /></span></p>
+    </div>
   </div>
 </template>

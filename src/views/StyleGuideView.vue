@@ -1,6 +1,200 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { paletas, aplicarPaleta, paletaGuardada } from '../composables/usePaleta'
+import ProjectCard from '../components/ProjectCard.vue'
+import ProjectFacts from '../components/ProjectFacts.vue'
+import ResponsiveImage from '../components/ResponsiveImage.vue'
+import { projects, heroPhotos } from '../data/content'
+import { site } from '../data/site'
+
+// Vista previa: partes reales del sitio (o réplicas fieles) con la paleta elegida
+const sample = projects[0]
+const sampleFacts = sample
+  ? [
+      ['año', String(sample.año)],
+      ['lugar', sample.lugar],
+      ['arquitectura', sample.arquitecto],
+    ]
+  : []
+const samplePhoto = heroPhotos[0]
+const menuItems = site.nav.map((item) => item.label)
+
+// Propuestas de color para el logo: cada una es una lista de partes { texto, clases }
+const wordmarkFirst = site.wordmark.split(' ').slice(0, -1).join(' ') + ' '
+const wordmarkLast = site.wordmark.split(' ').at(-1)
+const logoVariants = [
+  { nombre: 'anterior', partes: [{ t: site.wordmark, c: 'bg-primario text-fondo' }] },
+  { nombre: 'bloque rosado (en uso)', partes: [{ t: site.wordmark, c: 'bg-acento text-primario' }] },
+  { nombre: 'letra rosada', partes: [{ t: site.wordmark, c: 'bg-primario text-acento' }] },
+  {
+    nombre: 'dos tonos',
+    partes: [
+      { t: wordmarkFirst, c: 'bg-primario text-fondo' },
+      { t: wordmarkLast, c: 'bg-acento text-primario' },
+    ],
+  },
+  { nombre: 'contorno', partes: [{ t: site.wordmark, c: 'border-2 border-primario bg-fondo text-primario' }] },
+  { nombre: 'sombra rosada', partes: [{ t: site.wordmark, c: 'bg-primario text-fondo shadow-[0.25rem_0.25rem_0_var(--color-acento)]' }] },
+  { nombre: 'tinta', partes: [{ t: site.wordmark, c: 'bg-texto text-fondo' }] },
+  { nombre: 'rosado y tinta', partes: [{ t: site.wordmark, c: 'bg-acento text-texto' }] },
+]
+
+/*
+ * Propuestas de forma para el logo, sobre el bloque actual (rosado, letra en primario, mismo
+ * aire): cambia el texto (lineas: una o varias líneas) o el espaciado entre letras (extra).
+ */
+const logoForms = [
+  { nombre: 'en uso', lineas: [site.wordmark] },
+  { nombre: 'anterior', lineas: ['JORGE DE MARÍA'] },
+  { nombre: 'minúsculas', lineas: ['jorge de maría'] },
+  { nombre: 'como se escribe', lineas: ['Jorge de María'] },
+  { nombre: 'minúsculas y carita', lineas: ['jorge de maría :)'] },
+  { nombre: 'sílabas', lineas: ['jor·ge de ma·rí·a'] },
+  { nombre: 'guiones bajos', lineas: ['jorge_de_maría'] },
+  { nombre: 'entre corchetes', lineas: ['[jorge de maría]'] },
+  { nombre: 'con cursor', lineas: ['jorge de maría_'] },
+  { nombre: 'en dos líneas', lineas: ['jorge', 'de maría'] },
+  { nombre: 'apretado', lineas: ['jorgedemaría'], extra: 'tracking-[-0.06em]' },
+  { nombre: 'iniciales', lineas: ['jdm'] },
+  { nombre: 'iniciales y carita', lineas: ['j.d.m :)'] },
+]
+
+/*
+ * Propuestas para el mensaje de inicio (la intro): el nombre y el subtítulo en distintas
+ * composiciones. disposicion: 'abajo', 'arriba', 'derecha' (subtítulo alineado al final del
+ * bloque), 'linea' (todo en una línea) o 'pestana' (subtítulo pegado bajo el bloque).
+ */
+const introName = site.nameSyllables.map((word) => word.join('')).join(' ')
+const introVariants = [
+  { nombre: 'anterior', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] pl-[1.5em] text-primario' },
+  { nombre: 'subtítulo en bloque verde (en uso)', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] bg-primario px-[0.4em] py-[0.15em] text-fondo' },
+  { nombre: 'subtítulo en bloque rosado', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] bg-acento px-[0.4em] py-[0.15em] text-primario' },
+  { nombre: 'pestaña bajo el bloque', disposicion: 'pestana', bloque: 'bg-acento text-primario', sub: 'bg-primario px-[0.6em] py-[0.3em] text-fondo' },
+  { nombre: 'a la derecha', disposicion: 'derecha', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] text-primario' },
+  { nombre: 'arriba, como antetítulo', disposicion: 'arriba', bloque: 'bg-acento text-primario', sub: 'mb-[0.6em] pl-[1.5em] text-primario' },
+  {
+    nombre: 'técnico, entre corchetes',
+    disposicion: 'abajo',
+    bloque: 'bg-acento text-primario',
+    sub: 'mt-[0.8em] pl-[1.5em] tracking-[0.12em] text-primario uppercase',
+    texto: '[ registros de obras ]',
+  },
+  { nombre: 'subtítulo en Sora', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.5em] pl-[1.5em] font-display font-semibold text-texto' },
+  { nombre: 'todo en una línea', disposicion: 'linea', bloque: 'bg-acento text-primario', sub: 'text-primario', texto: '— registros de obras' },
+  { nombre: 'nombre sin bloque, subtítulo en bloque', disposicion: 'abajo', bloque: 'text-primario', sub: 'mt-[0.6em] ml-[1.5em] bg-acento px-[0.4em] py-[0.15em] text-primario' },
+]
+
+// Propuestas para contacto: fondo de la sección, frase, correo y carita
+const contactVariants = [
+  { nombre: 'anterior', seccion: '', frase: 'bg-primario text-fondo', correo: 'text-primario', carita: 'text-primario' },
+  { nombre: 'frase rosada', seccion: '', frase: 'bg-acento text-primario', correo: 'text-primario', carita: 'text-primario' },
+  {
+    nombre: 'carita rosada',
+    seccion: '',
+    frase: 'bg-primario text-fondo',
+    correo: 'text-primario',
+    carita: 'bg-acento px-[0.1em] text-primario',
+  },
+  {
+    nombre: 'correo marcado (en uso)',
+    seccion: '',
+    frase: 'bg-primario text-fondo',
+    correo: 'bg-acento px-[0.1em] text-primario',
+    carita: 'text-primario',
+  },
+  {
+    nombre: 'subrayado rosado',
+    seccion: '',
+    frase: 'text-primario',
+    correo: 'text-primario underline decoration-acento decoration-[0.18em] underline-offset-[0.14em]',
+    carita: 'text-primario',
+  },
+  {
+    nombre: 'sección rosada',
+    seccion: 'bg-acento',
+    frase: 'bg-primario text-fondo',
+    correo: 'text-primario',
+    carita: 'text-primario',
+  },
+  {
+    nombre: 'sección en primario',
+    seccion: 'bg-primario',
+    frase: 'bg-acento text-primario',
+    correo: 'text-fondo',
+    carita: 'text-acento',
+  },
+]
+
+/*
+ * Propuestas para el pie: los datos reales del sitio con distintos tratamientos.
+ * tipo: 'grilla' (como el actual), 'grande' (nombre gigante arriba de la grilla) o 'linea'
+ * (todo en una línea). En la grilla: lineas = borde y color de las divisiones, celda = fondo de
+ * cada celda, etiqueta y dato = texto, correo = estilo extra de la celda del correo.
+ */
+const footerData = [
+  { label: 'fotografía de arquitectura', value: site.name.toLowerCase() },
+  { label: 'correo', value: site.email },
+  ...(site.instagram ? [{ label: 'instagram', value: `@${site.instagram}` }] : []),
+  ...(site.telefono ? [{ label: 'teléfono', value: site.telefono }] : []),
+  ...(site.ubicacion ? [{ label: 'ubicación', value: site.ubicacion }] : []),
+  { label: '©', value: String(new Date().getFullYear()) },
+]
+const gridFooter = { lineas: 'border border-primario bg-primario', celda: 'bg-fondo', etiqueta: 'text-primario', dato: 'text-primario' }
+const footerVariants = [
+  { nombre: 'anterior', tipo: 'grilla', ...gridFooter },
+  { nombre: 'como las fichas', tipo: 'grilla', ...gridFooter, etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'correo destacado', tipo: 'grilla', ...gridFooter, correo: '[&_dd]:w-fit [&_dd]:bg-acento [&_dd]:px-1' },
+  { nombre: 'celdas rosadas', tipo: 'grilla', ...gridFooter, celda: 'bg-acento', etiqueta: 'font-light text-primario' },
+  {
+    nombre: 'en primario',
+    tipo: 'grilla',
+    lineas: 'border border-primario bg-fondo',
+    celda: 'bg-primario',
+    etiqueta: 'text-acento',
+    dato: 'text-fondo',
+  },
+  { nombre: 'solo líneas horizontales', tipo: 'grilla', ...gridFooter, lineas: 'border-y border-primario bg-fondo', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'nombre gigante', tipo: 'grande', ...gridFooter },
+  { nombre: 'una línea (en uso)', tipo: 'linea' },
+]
+
+/*
+ * Propuestas para el hover de los enlaces tipo menú (menú, filtro de categorías, "ver proyecto").
+ * Son reales: pasa el cursor por cada lista para probarlas.
+ */
+const hoverVariants = [
+  { nombre: 'relleno primario (en uso)', c: 'hover:bg-primario hover:text-fondo' },
+  { nombre: 'relleno rosado', c: 'hover:bg-acento' },
+  { nombre: 'rosado y letra texto', c: 'hover:bg-acento hover:text-texto' },
+  { nombre: 'subrayado rosado', c: 'hover:underline hover:decoration-acento hover:decoration-[0.2em] hover:underline-offset-[0.25em]' },
+  { nombre: 'barra rosada a la izquierda', c: 'hover:shadow-[inset_0.375rem_0_0_var(--color-acento)]' },
+  { nombre: 'relleno primario y letra rosada', c: 'hover:bg-primario hover:text-acento' },
+  { nombre: 'contorno rosado', c: 'hover:shadow-[inset_0_0_0_0.1875rem_var(--color-acento)]' },
+  { nombre: 'relleno tinta', c: 'hover:bg-texto hover:text-fondo' },
+]
+
+/*
+ * Propuestas para las fichas (todas iguales: últimos trabajos, proyectos y detalle).
+ * caja: el borde y el fondo; lineas: las divisiones; etiqueta y dato: el texto de cada fila;
+ * primera: estilo extra de la primera fila (opcional).
+ */
+const fichaVariants = [
+  { nombre: 'en uso', caja: 'border border-primario bg-fondo', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'fondo rosado', caja: 'border border-primario bg-acento', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  {
+    nombre: 'primera fila rosada',
+    caja: 'border border-primario bg-fondo',
+    lineas: 'divide-primario',
+    etiqueta: 'font-light text-primario',
+    dato: 'text-texto',
+    primera: 'bg-acento',
+  },
+  { nombre: 'solo líneas, sin caja', caja: 'border-y border-primario', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'líneas punteadas', caja: 'border border-primario bg-fondo', lineas: 'divide-primario divide-dashed', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'borde rosado', caja: 'border-2 border-acento bg-fondo', lineas: 'divide-acento', etiqueta: 'font-light text-primario', dato: 'text-texto' },
+  { nombre: 'invertida en primario', caja: 'border border-primario bg-primario', lineas: 'divide-fondo/30', etiqueta: 'font-light text-acento', dato: 'text-fondo' },
+  { nombre: 'etiquetas en bloque rosado', caja: 'border border-primario bg-fondo', lineas: 'divide-primario', etiqueta: 'w-fit bg-acento px-1 text-primario', dato: 'text-texto' },
+]
 
 const colors = [
   { name: 'fondo', class: 'bg-fondo border border-texto' },
@@ -64,6 +258,266 @@ const type = [
         <li v-for="c in colors" :key="c.name">
           <div :class="['aspect-square', c.class]" />
           <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="g-vista">
+      <h2 id="g-vista" class="font-display text-h3">Vista previa</h2>
+      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
+        Partes del sitio con la paleta elegida. Cambia de paleta arriba y mira cómo se ven.
+      </p>
+
+      <div class="mt-8 grid gap-10 lg:grid-cols-2">
+        <!-- Navbar con el menú abierto: "proyectos" con el cursor encima, "escríbeme" al final -->
+        <div>
+          <h3 class="text-etiqueta text-texto/60">navbar y menú abierto</h3>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="bg-acento px-1.5 pt-2 pb-1 text-h3 font-extrabold whitespace-pre text-primario">{{
+              site.wordmark
+            }}</span>
+            <span class="grid size-9 place-items-center border border-primario bg-fondo text-primario">×</span>
+          </div>
+          <div class="mt-4 grid gap-px border border-primario bg-primario sm:grid-cols-5">
+            <span
+              v-for="(label, i) in menuItems"
+              :key="label"
+              :class="[
+                'flex justify-between gap-2 px-3 py-2.5 text-boton',
+                i === 1 ? 'bg-primario text-fondo' : 'bg-fondo text-primario',
+              ]"
+            >
+              <span>{{ i === 0 ? '*' : '' }}</span>{{ label }}
+            </span>
+            <span class="bg-primario px-3 py-2.5 text-right text-boton text-fondo">{{ site.cta.label }}</span>
+          </div>
+        </div>
+
+        <!-- Stack de Inicio: foto, retícula y los bloques de "Desliza" y el contador -->
+        <div>
+          <h3 class="text-etiqueta text-texto/60">stack de fotos de inicio</h3>
+          <div v-if="samplePhoto" class="relative mt-3 aspect-video overflow-hidden">
+            <ResponsiveImage v-bind="samplePhoto" fill sizes="(min-width: 1024px) 50vw, 100vw" />
+            <div class="absolute inset-x-6 inset-y-4">
+              <span
+                v-for="n in 6"
+                :key="n"
+                class="absolute inset-y-0 w-px bg-primario"
+                :style="{ left: `${((n - 1) / 5) * 100}%` }"
+              />
+            </div>
+            <span class="absolute bottom-3 left-6 bg-primario px-1.5 py-0.5 text-cuerpo text-fondo">Desliza</span>
+            <span class="absolute right-6 bottom-3 bg-primario px-1.5 py-0.5 text-cuerpo text-fondo tabular-nums"
+              >1 / 5</span
+            >
+          </div>
+        </div>
+
+        <!-- Tarjeta de proyecto real (pasa el cursor para ver la ficha) y la ficha del detalle -->
+        <div v-if="sample">
+          <h3 class="text-etiqueta text-texto/60">tarjeta de proyecto (pasa el cursor)</h3>
+          <div class="mt-3 max-w-sm">
+            <ProjectCard :project="sample" />
+          </div>
+        </div>
+        <div v-if="sample">
+          <h3 class="text-etiqueta text-texto/60">ficha del detalle de proyecto</h3>
+          <ProjectFacts :project="sample" :facts="sampleFacts" class="mt-3 max-w-sm" />
+        </div>
+
+        <!-- Contacto: frase en bloque y correo grande -->
+        <div class="lg:col-span-2">
+          <h3 class="text-etiqueta text-texto/60">contacto</h3>
+          <p class="mt-3 w-fit bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em] text-[1.5rem] leading-none font-extrabold text-fondo">
+            ¿necesitas fotos? escríbeme:
+          </p>
+          <p class="mt-4 text-[clamp(1.5rem,5vw,3.5rem)] leading-none font-extrabold break-all text-primario">
+            <span class="bg-acento px-[0.1em]">{{ site.email }}</span> :)
+          </p>
+        </div>
+      </div>
+
+      <!-- Propuestas de color para el logo (bloque del navbar) -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para el logo</h3>
+      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <li v-for="(v, i) in logoVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">L{{ i + 1 }}. {{ v.nombre }}</p>
+          <p class="mt-3 flex w-fit text-h3 font-extrabold whitespace-pre">
+            <span v-for="parte in v.partes" :key="parte.t" :class="['px-1.5 pt-2 pb-1', parte.c]">{{ parte.t }}</span>
+          </p>
+        </li>
+      </ul>
+
+      <!-- Propuestas de forma para el logo: mismo bloque, distinto texto -->
+      <h3 class="mt-16 font-display text-h4">Propuestas de forma para el logo</h3>
+      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
+        El mismo bloque del logo actual, con otras formas de escribir el nombre.
+      </p>
+      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <li v-for="(v, i) in logoForms" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">LF{{ i + 1 }}. {{ v.nombre }}</p>
+          <p
+            :class="[
+              'mt-3 w-fit bg-acento px-6 pt-2 pb-1 text-h3 leading-none font-extrabold whitespace-pre text-primario sm:text-logo',
+              v.extra,
+            ]"
+          >
+            <template v-for="(linea, j) in v.lineas" :key="linea"><br v-if="j" />{{ linea }}</template>
+          </p>
+        </li>
+      </ul>
+
+      <!-- Propuestas para el mensaje de inicio: pantallas de muestra, sin animación -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para el mensaje de inicio</h3>
+      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
+        Cómo queda la pantalla de entrada con el nombre y "registros de obras", sin la animación.
+      </p>
+      <ul class="mt-6 grid gap-8 md:grid-cols-2">
+        <li v-for="(v, i) in introVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">I{{ i + 1 }}. {{ v.nombre }}</p>
+          <div class="mt-3 grid aspect-video place-items-center border border-texto/10 bg-fondo px-4">
+            <div
+              :class="[
+                'flex text-[clamp(1rem,2.4vw,1.6rem)]',
+                v.disposicion === 'linea' ? 'flex-wrap items-baseline gap-x-[0.6em]' : 'flex-col',
+                v.disposicion === 'arriba' && 'flex-col-reverse',
+                v.disposicion === 'derecha' && 'items-end',
+              ]"
+            >
+              <p :class="['w-fit px-[0.67em] pt-[0.22em] pb-[0.11em] leading-none font-extrabold whitespace-pre', v.bloque]">
+                {{ introName }}
+              </p>
+              <p :class="['w-fit text-[0.45em] leading-none whitespace-pre', v.sub]">{{ v.texto ?? 'registros de obras' }}</p>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Propuestas para contacto (cierre de Inicio) -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para contacto</h3>
+      <ul class="mt-6 grid gap-8 lg:grid-cols-2">
+        <li v-for="(v, i) in contactVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">C{{ i + 1 }}. {{ v.nombre }}</p>
+          <div :class="['mt-3 p-5', v.seccion || 'border border-texto/10']">
+            <p
+              :class="[
+                'w-fit px-[0.17em] pt-[0.22em] pb-[0.11em] text-[1.25rem] leading-none font-extrabold',
+                v.frase,
+              ]"
+            >
+              ¿necesitas fotos? escríbeme:
+            </p>
+            <p class="mt-4 text-[clamp(1.25rem,3vw,2.25rem)] leading-none font-extrabold break-all">
+              <span :class="v.correo">{{ site.email }}</span> <span :class="v.carita">:)</span>
+            </p>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Propuestas para el pie (footer) -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para el pie</h3>
+      <ul class="mt-6 flex flex-col gap-12">
+        <li v-for="(v, i) in footerVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">P{{ i + 1 }}. {{ v.nombre }}</p>
+
+          <!-- Nombre gigante en bloque rosado, como el logo, sobre la grilla -->
+          <p
+            v-if="v.tipo === 'grande'"
+            class="mt-3 w-fit bg-acento px-[0.17em] pt-[0.22em] pb-[0.11em] text-[clamp(2rem,7vw,5.5rem)] leading-none font-extrabold whitespace-nowrap text-primario"
+          >
+            {{ site.wordmark }}
+          </p>
+
+          <!-- Todo en una línea, separado por puntos, sobre una línea fina -->
+          <p
+            v-if="v.tipo === 'linea'"
+            class="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-primario pt-3 text-cuerpo-sm text-primario"
+          >
+            <template v-for="(d, j) in footerData" :key="d.label">
+              <span v-if="j" aria-hidden="true">·</span>
+              <span :class="j === 1 && 'bg-acento px-1'">{{ d.value }}</span>
+            </template>
+          </p>
+
+          <!-- Grilla: las líneas son el fondo que asoma por 1 px entre celdas, como el pie real -->
+          <dl v-else :class="['mt-3 grid gap-px sm:grid-cols-3 xl:grid-cols-6', v.lineas]">
+            <div
+              v-for="(d, j) in footerData"
+              :key="d.label"
+              :class="['flex flex-col gap-1 px-3 py-2', v.celda, j === 1 && v.correo]"
+            >
+              <dt :class="['text-etiqueta', v.etiqueta]">{{ d.label }}</dt>
+              <dd :class="['text-cuerpo-sm whitespace-nowrap', v.dato]">{{ d.value }}</dd>
+            </div>
+          </dl>
+        </li>
+      </ul>
+
+      <!-- Propuestas para el hover: listas tipo menú, pasa el cursor para probarlas -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para el hover</h3>
+      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">Pasa el cursor por cada lista para probarla.</p>
+      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <li v-for="(v, i) in hoverVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">H{{ i + 1 }}. {{ v.nombre }}</p>
+          <div class="mt-3 grid gap-px border border-primario bg-primario">
+            <a
+              v-for="label in menuItems.slice(0, 3)"
+              :key="label"
+              href="#g-vista"
+              :class="[
+                'bg-fondo px-3 py-2.5 text-right text-boton text-primario transition-colors duration-200 ease-out',
+                v.c,
+              ]"
+              @click.prevent
+              >{{ label }}</a
+            >
+          </div>
+        </li>
+      </ul>
+
+      <!-- Propuestas para las fichas: una sola para últimos trabajos, proyectos y detalle -->
+      <h3 class="mt-16 font-display text-h4">Propuestas para las fichas</h3>
+      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
+        La que elijas se aplica igual en últimos trabajos, proyectos y el detalle de cada proyecto.
+      </p>
+      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <li v-for="(v, i) in fichaVariants" :key="v.nombre">
+          <p class="text-etiqueta text-texto/60">F{{ i + 1 }}. {{ v.nombre }}</p>
+          <dl :class="['mt-3 divide-y text-cuerpo-sm', v.caja, v.lineas]">
+            <div
+              v-for="([label, value], row) in sampleFacts"
+              :key="label"
+              :class="['flex items-baseline justify-between gap-4 px-3 py-2.5', row === 0 && v.primera]"
+            >
+              <dt :class="v.etiqueta">{{ label }}</dt>
+              <dd :class="['text-right', v.dato]">{{ value }}</dd>
+            </div>
+          </dl>
+        </li>
+      </ul>
+
+      <!--
+        Otros usos posibles del acento (rosado).
+      -->
+      <h3 class="mt-16 font-display text-h4">Otros usos del rosado</h3>
+      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
+        En uso: el logo, el correo de contacto, los bloques sobre las fotos, la carita y el "copiado!".
+      </p>
+      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <li>
+          <p class="text-etiqueta text-texto/60">1. bloques sobre las fotos (en uso)</p>
+          <div v-if="samplePhoto" class="relative mt-3 aspect-[4/3] overflow-hidden">
+            <ResponsiveImage v-bind="samplePhoto" fill sizes="25vw" />
+            <span class="absolute bottom-3 left-3 bg-acento px-1.5 py-0.5 text-cuerpo text-primario">Desliza</span>
+            <span class="absolute right-3 bottom-3 bg-acento px-1.5 py-0.5 text-cuerpo text-primario">1 / 5</span>
+          </div>
+        </li>
+        <li>
+          <p class="text-etiqueta text-texto/60">2. carita y "copiado!" (en uso)</p>
+          <p class="mt-3 text-[2.5rem] leading-none font-extrabold text-primario">
+            <span class="bg-acento px-[0.1em]">:)</span>
+          </p>
+          <p class="mt-4 w-fit bg-acento px-1.5 py-0.5 text-cuerpo-sm text-primario">copiado!</p>
         </li>
       </ul>
     </section>

@@ -42,6 +42,9 @@ export const navTitleAction = shallowRef(null)
 // abierto o el título de sección. Las secciones fijas lo usan para no quedar debajo.
 export const navContentBottom = ref(0)
 
+// Se está viendo la sección de contacto: el logo se recoge hacia arriba (ver ContactCta)
+export const contactInView = ref(false)
+
 if (typeof window !== 'undefined') {
   const horizontal = window.matchMedia('(width >= 48rem)')
   const columns = GRID_BREAKPOINTS.map((b) => ({ ...b, list: window.matchMedia(b.query) }))

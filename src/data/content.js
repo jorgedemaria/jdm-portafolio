@@ -15,7 +15,7 @@ export const projects = content.proyectos
 
 export const latestProject = projects[0] ?? null
 
-// Los 3 más recientes, para "últimos trabajos" en Inicio
+// Los 3 más recientes, para "últimos registros" en Inicio
 export const latestProjects = projects.slice(0, 3)
 
 export const findProject = (slug) => projects.find((p) => p.slug === slug) ?? null
