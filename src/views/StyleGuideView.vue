@@ -1,11 +1,26 @@
 <script setup>
-import AppButton from '../components/AppButton.vue'
+import { ref, onMounted } from 'vue'
+import { paletas, aplicarPaleta, paletaGuardada } from '../composables/usePaleta'
 
 const colors = [
-  { name: 'fondo', hex: '#F1F0E2', class: 'bg-fondo border border-texto' },
-  { name: 'primario', hex: '#207349', class: 'bg-primario' },
-  { name: 'texto', hex: '#101010', class: 'bg-texto' },
+  { name: 'fondo', class: 'bg-fondo border border-texto' },
+  { name: 'primario', class: 'bg-primario' },
+  { name: 'acento', class: 'bg-acento' },
+  { name: 'texto', class: 'bg-texto' },
 ]
+
+// Paleta en prueba: cambia todo el sitio y se recuerda al recorrerlo (ver usePaleta)
+const activa = ref(paletaGuardada())
+const hex = ref({})
+function readColors() {
+  const style = getComputedStyle(document.documentElement)
+  hex.value = Object.fromEntries(colors.map((c) => [c.name, style.getPropertyValue(`--color-${c.name}`).trim()]))
+}
+function choose(nombre) {
+  activa.value = aplicarPaleta(nombre)
+  readColors()
+}
+onMounted(readColors)
 
 const type = [
   { token: 'h1', class: 'font-display text-h1', sample: 'Nave de producción, planta norte' },
@@ -27,10 +42,28 @@ const type = [
 
     <section class="mt-16" aria-labelledby="g-colores">
       <h2 id="g-colores" class="font-display text-h3">Colores</h2>
+      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
+        Paleta en prueba: cambia todo el sitio (solo aquí, en desarrollo). La publicada es la de main.css.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button
+          v-for="p in paletas"
+          :key="p.nombre"
+          type="button"
+          :aria-pressed="activa === p.nombre"
+          :class="[
+            'cursor-pointer border border-primario px-3 py-1.5 text-cuerpo-sm',
+            activa === p.nombre ? 'bg-primario text-fondo' : 'text-primario hover:bg-primario hover:text-fondo',
+          ]"
+          @click="choose(p.nombre)"
+        >
+          {{ p.nombre }}
+        </button>
+      </div>
       <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <li v-for="c in colors" :key="c.name">
           <div :class="['aspect-square', c.class]" />
-          <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ c.hex }}</span></p>
+          <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
         </li>
       </ul>
     </section>
@@ -43,19 +76,6 @@ const type = [
           <dd :class="t.class">{{ t.sample }}</dd>
         </div>
       </dl>
-    </section>
-
-    <section class="mt-16" aria-labelledby="g-botones">
-      <h2 id="g-botones" class="font-display text-h3">Botones</h2>
-      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">Pasa el cursor para ver el hover y usa Tab para ver el foco.</p>
-      <div class="mt-8 flex flex-wrap items-center gap-6">
-        <AppButton>Escríbeme</AppButton>
-        <AppButton disabled>Desactivado</AppButton>
-      </div>
-      <div class="mt-6 flex flex-wrap items-center gap-6">
-        <AppButton size="md">Escríbeme</AppButton>
-        <AppButton size="md" :arrow="false" type="submit">Enviar mensaje</AppButton>
-      </div>
     </section>
     </div>
   </div>

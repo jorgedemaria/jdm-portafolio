@@ -425,7 +425,7 @@ watch(
             viewBox="0 0 12 12"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.25"
+            stroke-width="1.5"
             aria-hidden="true"
           >
             <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />

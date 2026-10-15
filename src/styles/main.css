@@ -5,16 +5,23 @@
 
 /*
  * Design tokens — fuente: Figma "jdm-portafolio" › guía de estilos.
- * La paleta se restringe a los tres colores de la hoja de estilos.
+ * Esta es la paleta publicada. Otras para probar están en composables/usePaleta.js (/guia).
  */
 @theme {
   /* Colores */
   --color-*: initial;
-  --color-fondo: #f1f0e2;
-  --color-primario: #207349;
+  --color-fondo: #F4F6FA;
+  --color-primario: #0054E3; /* azul Windows XP; el verde original era #207349 */
+  --color-acento: #f2b8c6; /* rosado, todavía sin uso en el sitio */
   --color-texto: #101010;
 
-  /* Familias */
+  /*
+   * Familias. Regla de uso:
+   * - Sora 600 (font-display): nombres. Títulos de página y de sección, y nombres de proyectos.
+   * - JetBrains Mono 800 (font-extrabold): la voz del sitio. Logo, intro, mensajes y llamadas a
+   *   la acción en bloques (contacto, 404).
+   * - JetBrains Mono 400: todo lo demás (texto, menú, fichas, pie).
+   */
   --font-*: initial;
   --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
@@ -79,7 +86,7 @@
   }
 
   p {
-    @apply leading-lectura;
+    @apply leading-lectura text-pretty;
   }
 
   :focus-visible {
@@ -100,24 +107,6 @@
   }
 }
 
-/* Flecha de AppButton al hacer clic: sale por arriba a la derecha y vuelve por abajo a la izquierda */
-@keyframes arrow-through {
-  0% {
-    transform: translate(0, 0);
-  }
-  45% {
-    transform: translate(160%, -160%);
-  }
-  45.01% {
-    transform: translate(-160%, 160%);
-  }
-  100% {
-    transform: translate(0, 0);
-  }
-}
-.animate-arrow-through {
-  animation: arrow-through 520ms cubic-bezier(0.6, 0, 0.3, 1);
-}
 /* Transición entre páginas */
 .page-enter-active,
 .page-leave-active {

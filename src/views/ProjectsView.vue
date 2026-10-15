@@ -21,6 +21,10 @@ const visible = computed(() =>
 
 const filters = [{ slug: null, nombre: 'Todos' }, ...categories]
 
+const isFeatured = (i) => i === 0 && visible.value[0].portada.width > visible.value[0].portada.height
+// Columna derecha (desfasada): cuenta desde después del destacado, si lo hay
+const isRight = (i) => (i - (isFeatured(0) ? 1 : 0)) % 2 === 1
+
 /*
  * Selector de categoría con la estética del menú: un botón con la categoría elegida y,
  * al abrirlo, una lista de enlaces que baja como persiana. Se cierra al elegir, con Escape
@@ -113,12 +117,17 @@ onBeforeUnmount(() => {
         </ul>
       </nav>
 
-      <ul
-        v-if="visible.length"
-        class="mt-6 grid gap-x-6 gap-y-14 md:grid-cols-2 xl:grid-cols-3"
-      >
-        <li v-for="project in visible" :key="project.slug">
-          <ProjectCard :project="project" />
+      <!--
+        Dos columnas con la de la derecha desfasada hacia abajo; cada foto en su proporción real.
+        El proyecto más reciente va a todo el ancho si su portada es horizontal.
+      -->
+      <ul v-if="visible.length" class="mt-6 grid gap-x-10 gap-y-16 md:grid-cols-2 md:items-start">
+        <li
+          v-for="(project, i) in visible"
+          :key="project.slug"
+          :class="[isFeatured(i) && 'md:col-span-2', isRight(i) && 'md:mt-24']"
+        >
+          <ProjectCard :project="project" :featured="isFeatured(i)" />
         </li>
       </ul>
       <p v-else class="mt-6">Todavía no hay proyectos en esta categoría.</p>

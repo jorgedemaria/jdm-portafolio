@@ -5,11 +5,19 @@ import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScram
 
 /*
  * Tarjeta de proyecto con el mismo diseño que las de "últimos trabajos": foto, título chico
- * y una grilla tipo menú (año, lugar, arquitectura y "ver proyecto").
+ * y una grilla tipo menú (año, lugar, arquitectura y "ver proyecto"). La foto respeta la
+ * proporción real de la portada.
  */
 const props = defineProps({
   project: { type: Object, required: true },
+  // A todo el ancho de la grilla (el proyecto más reciente)
+  featured: { type: Boolean, default: false },
 })
+
+const ratio = computed(() => `${props.project.portada.width} / ${props.project.portada.height}`)
+const sizes = computed(() =>
+  props.featured ? '(min-width: 1440px) 1360px, 100vw' : '(min-width: 1440px) 680px, (min-width: 768px) 48vw, 100vw',
+)
 
 // Con el cursor encima, la foto de esta tarjeta no cambia (ver CardPhoto)
 const hovered = ref(false)
@@ -50,19 +58,24 @@ onBeforeUnmount(() => observer?.disconnect())
 
 <template>
   <!-- Pasar el cursor por la foto o el título abre la grilla -->
-  <article class="group/card relative" @pointerenter="hovered = true" @pointerleave="hovered = false">
+  <article
+    class="group/card relative"
+    :style="{ '--ratio': ratio }"
+    @pointerenter="hovered = true"
+    @pointerleave="hovered = false"
+  >
     <!-- La foto repite el enlace de "ver proyecto"; se oculta a lectores de pantalla y al teclado -->
     <RouterLink :to="link" class="block" tabindex="-1" aria-hidden="true">
       <CardPhoto
         :project="project"
         :paused="hovered"
-        ratio="4 / 3"
-        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 46vw, 100vw"
+        :ratio="ratio"
+        :sizes="sizes"
       />
     </RouterLink>
     <h2
       ref="titleEl"
-      class="mt-3 font-display text-cuerpo leading-snug font-semibold text-texto"
+      class="mt-3 font-display text-cuerpo leading-snug font-semibold text-balance text-texto"
     >
       <RouterLink
         :to="link"
@@ -75,14 +88,15 @@ onBeforeUnmount(() => observer?.disconnect())
 
     <!--
       Grilla tipo menú, del alto de su contenido. En pantallas con cursor se apoya en el borde
-      inferior de la foto (caja invisible de la misma proporción 4:3) y sube como persiana
+      inferior de la foto (caja invisible de la misma proporción que la foto) y sube como persiana
       desde abajo al pasar el cursor (o al llegar con el teclado).
       En pantallas táctiles va debajo del título y se ve siempre.
     -->
     <div
-      class="mt-4 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-0 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:flex [@media(hover:hover)]:aspect-[4/3] [@media(hover:hover)]:flex-col [@media(hover:hover)]:justify-end"
+      class="mt-4 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-0 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:flex [@media(hover:hover)]:aspect-(--ratio) [@media(hover:hover)]:flex-col [@media(hover:hover)]:justify-end"
     >
       <div
+        :class="featured && 'md:w-1/2'"
         class="pointer-events-auto flex flex-col border border-primario bg-fondo text-cuerpo-sm transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] group-focus-within/card:[clip-path:inset(0)] group-hover/card:[clip-path:inset(0)] [@media(hover:hover)]:[clip-path:inset(100%_0_0_0)]"
       >
         <dl class="divide-y divide-primario">

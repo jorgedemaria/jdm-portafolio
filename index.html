@@ -3,10 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#F1F0E2" />
+    <meta name="theme-color" content="#F4F6FA" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content="Jorge de María — fotografía de arquitectura e instalaciones industriales." />
     <title>Jorge de María — Fotografía de arquitectura</title>
+
+    <!-- Vista previa al compartir el link (WhatsApp, Instagram, LinkedIn…). La dirección del
+         sitio sale de VITE_SITE_URL en .env -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Jorge de María" />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:title" content="Jorge de María — Fotografía de arquitectura" />
+    <meta property="og:description" content="Fotografía de arquitectura e instalaciones industriales." />
+    <meta property="og:image" content="%VITE_SITE_URL%/images/inicio/01-1600.jpg" />
+    <meta property="og:image:width" content="1600" />
+    <meta property="og:image:height" content="1000" />
+    <meta property="og:image:alt" content="Auditorio con cielo de madera perforada y filas de sillas de madera y cuero" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="app"></div>

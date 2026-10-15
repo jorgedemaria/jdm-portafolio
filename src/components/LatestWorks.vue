@@ -339,7 +339,7 @@ const facts = (project) => [
                 </div>
                 <h3
                   :ref="(el) => (cardTitleEls[i] = el)"
-                  class="mt-3 font-display text-cuerpo leading-snug font-semibold text-texto"
+                  class="mt-3 font-display text-cuerpo leading-snug font-semibold text-balance text-texto"
                 >
                   <RouterLink
                     :to="projectLink(project)"
