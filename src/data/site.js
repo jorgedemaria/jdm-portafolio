@@ -1,9 +1,7 @@
 // Datos generales del sitio. Edita aquí textos de navegación y contacto.
 export const site = {
   name: 'Jorge de María',
-  // Texto de la animación de entrada, separado en palabras y sílabas
-  // La intro termina como el logo ("*") y después sale la carita
-  nameSyllables: [['jor', 'ge'], ['de'], ['ma', 'rí', 'a'], ['*'], [':)']],
+  // Logo (en Inicio, al entrar, se escribe con una carita en vez del "*"; ver AppNav)
   wordmark: 'jorge de maría *',
   email: 'jorgedemaria@pm.me',
   // Completa estos datos para que aparezcan en el pie de página (vacíos = ocultos)

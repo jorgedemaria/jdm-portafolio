@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, watchEffect, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFocusTrap } from "../composables/useFocusTrap";
 import {
@@ -10,10 +10,11 @@ import {
   navOverPhotos,
   navSectionTitle,
   navContentBottom,
-  navTitleAction,
   contactInView,
+  logoShrink,
+  menuTextX,
 } from "../composables/useMenu";
-import { introLeaving } from "../composables/useIntro";
+import { introLeaving, NAV_DELAY } from "../composables/useIntro";
 import { jumpToSection } from "../composables/useSmoothScroll";
 import {
   useScrambleReplay,
@@ -24,6 +25,8 @@ import {
   SCRAMBLE_CHARSET_LOWER,
 } from "../composables/useScrambleText";
 import { site } from "../data/site";
+import { useCaret } from "../composables/useCaret";
+import TypingCaret from "./TypingCaret.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -41,6 +44,74 @@ const sectionTitle = useScrambleText(computed(() => (contactInView.value ? "" : 
 // Estado compartido: el stack de Inicio también lo lee
 const open = menuOpen;
 
+// Desde 1024 px el menú queda siempre desplegado: no se cierra y el botón se oculta
+const pinned = ref(false);
+// En prueba (para comparar): con el menú desplegado, los enlaces van en la fila del logo, a su
+// derecha, en vez de debajo. false vuelve al menú debajo del logo
+const MENU_BESIDE_LOGO = true;
+const beside = computed(() => pinned.value && MENU_BESIDE_LOGO);
+let pinQuery;
+function updatePinned() {
+  pinned.value = pinQuery.matches;
+  open.value = pinned.value;
+  nextTick(measureMonument);
+}
+
+/*
+ * Logo monumento, solo al comienzo de Inicio: arriba el nombre ocupa todo el ancho, del borde del
+ * logo al de los enlaces, justo debajo de la fila del menú; al bajar se achica de forma continua
+ * hasta su tamaño de logo, fijo arriba a la izquierda. En las demás páginas es siempre el logo
+ * chico. Se hace con transform sobre el texto (el enlace conserva su tamaño de logo, así nada más
+ * se mueve). --cabecera: dónde termina la cabecera (el nombre grande en Inicio, la fila del menú en
+ * el resto), para que las páginas y la retícula del stack empiecen debajo (ver App.vue).
+ */
+const MONUMENT_GAP = 16;
+const navRowRef = ref(null);
+const rightRef = ref(null);
+// small / big: dónde termina la cabecera con el logo chico y con el nombre gigante
+const monument = ref({ scale: 1, lift: 0, distance: 1, small: 0, big: 0 });
+const scrollY = ref(0);
+function measureMonument() {
+  const link = logoLinkRef.value?.$el.getBoundingClientRect();
+  const right = rightRef.value?.getBoundingClientRect();
+  const row = navRowRef.value?.getBoundingClientRect();
+  const text = logoTextRef.value;
+  if (!link || !right || !row || !text?.offsetWidth) return;
+  const small = row.bottom + MONUMENT_GAP;
+  if (route.name !== "home") {
+    monument.value = { scale: 1, lift: 0, distance: 1, small, big: small };
+    logoShrink.value = 0;
+    document.documentElement.style.setProperty("--cabecera", `${small}px`);
+    return;
+  }
+  // Cabe con la carita (":)", un carácter más que "*"), que se ve al salir de la intro
+  const charWidth = text.offsetWidth / logoText.value.length;
+  const scale = Math.max(1, (right.right - link.left) / (charWidth * (site.wordmark.length + 1)));
+  const lift = row.bottom - link.top;
+  const bottom = row.bottom + text.offsetHeight * scale;
+  // El nombre termina de achicarse cuando la página subió lo que mide de más
+  monument.value = { scale, lift, distance: Math.max(1, bottom - link.bottom), small, big: bottom + MONUMENT_GAP };
+  logoShrink.value = monument.value.distance;
+  document.documentElement.style.setProperty("--cabecera", `${bottom + MONUMENT_GAP}px`);
+}
+// Al cambiar de página se vuelve a medir (el nombre gigante es solo de Inicio)
+watch(() => route.name, () => nextTick(measureMonument));
+// 0 = nombre gigante, 1 = logo chico (según cuánto se bajó)
+const shrink = computed(() => Math.min(scrollY.value / monument.value.distance, 1));
+const logoStyle = computed(() => {
+  const { scale, lift } = monument.value;
+  const p = shrink.value;
+  return { transform: `translateY(${lift * (1 - p)}px) scale(${scale + (1 - scale) * p})` };
+});
+// --cabecera-viva: dónde termina la cabecera en este momento del scroll (la franja crema detrás del
+// navbar la sigue: se achica junto con el nombre al bajar y vuelve a crecer al subir)
+watchEffect(() => {
+  const { small, big } = monument.value;
+  if (!big) return;
+  const live = small + (big - small) * (1 - shrink.value);
+  document.documentElement.style.setProperty("--cabecera-viva", `${live}px`);
+});
+
 // Con la sección de contacto en pantalla el logo se esconde, salvo con el menú abierto
 const logoHidden = computed(() => contactInView.value && !open.value);
 
@@ -51,6 +122,7 @@ const logoHidden = computed(() => contactInView.value && !open.value);
  * - En móvil es una lista vertical del mismo ancho.
  */
 const logoTextRef = ref(null);
+const logoLinkRef = ref(null);
 const menuRef = ref(null);
 const gridWidth = ref(0);
 // El espacio logo → menú es igual al espacio menú → líneas del stack (en todas las pantallas)
@@ -58,19 +130,21 @@ const MENU_GAP = 24;
 const menuTop = ref(null);
 const logoBox = ref(null);
 function measureGrid() {
-  const logo = logoTextRef.value?.getBoundingClientRect();
+  // El enlace, no el texto: el texto se agranda con transform (ver logo monumento)
+  const logo = logoLinkRef.value?.$el.getBoundingClientRect();
   const button = toggleRef.value?.getBoundingClientRect();
   if (!logo || !button) return;
   logoBox.value = { left: logo.left, bottom: logo.bottom };
   gridWidth.value = button.right - logo.left;
-  // El menú se posiciona respecto del botón (su contenedor empieza en el borde superior del botón)
-  menuTop.value = logo.bottom + MENU_GAP - button.top;
+  // El menú se posiciona respecto del botón (su contenedor empieza en el borde superior del botón).
+  // En Inicio, con el nombre gigante, empieza debajo de él (--cabecera-viva)
+  menuTop.value = `calc(max(${logo.bottom + MENU_GAP}px, var(--cabecera-viva, 0px)) - ${button.top}px)`;
 }
 const menuStyle = computed(() => {
-  if (!gridWidth.value) return {};
+  if (!gridWidth.value || beside.value) return {};
   return {
     width: `${gridWidth.value}px`,
-    ...(menuTop.value !== null ? { top: `${menuTop.value}px` } : {}),
+    ...(menuTop.value !== null ? { top: menuTop.value } : {}),
   };
 });
 // El stack de Inicio usa el borde inferior del menú para bajar sus líneas
@@ -78,9 +152,19 @@ function measureMenu() {
   const box = menuRef.value?.getBoundingClientRect();
   if (!box) return;
   menuBottom.value = box.bottom;
-  menuHeight.value = box.height;
+  // En la fila del logo el menú no ocupa espacio debajo: la página no se corre por él
+  menuHeight.value = beside.value ? 0 : box.height;
+  // Con el menú en la fila: dónde empieza el texto del primer enlace, medido desde el borde del logo
+  // (la columna de ubicación y año del pie empieza ahí, ver AppFooter)
+  const first = menuRef.value.querySelector("li a span:last-child")?.getBoundingClientRect();
+  const logo = logoLinkRef.value?.$el.getBoundingClientRect();
+  if (beside.value && first && logo) document.documentElement.style.setProperty("--menu-inicio", `${first.left - logo.left}px`);
+  else document.documentElement.style.removeProperty("--menu-inicio");
+  menuTextX.value = beside.value && first ? first.left : 0;
 }
-watch([open, menuStyle], () => nextTick(measureMenu));
+watch([open, menuStyle, beside], () => nextTick(measureMenu));
+// En Inicio el menú abierto sube con el nombre al bajar: la franja crema detrás lo sigue
+watch(scrollY, () => open.value && !pinned.value && measureMenu());
 // Al empezar el scroll del stack de fotos y al volver arriba, el logo y el botón pasan por símbolos al azar
 const SYMBOL_SCRAMBLE = { stagger: 35, scramble: 380, tick: 50, charset: SYMBOL_CHARSET };
 const logo = useScrambleReplay(site.wordmark, SYMBOL_SCRAMBLE);
@@ -89,14 +173,57 @@ function playSymbols() {
   logo.play();
   if (!open.value) toggleSymbol.play();
 }
-// Entrada: cuando sube la persiana de la intro, el logo se arma desde vacío con letras al azar
-// y el "+" se baraja con símbolos
-const logoIntro = useScrambleText(
-  computed(() => (introLeaving.value ? site.wordmark : " ".repeat(site.wordmark.length))),
-  { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
+/*
+ * Entrada, al entrar por Inicio: lo primero que se ve es el logo (gigante) escribiéndose con
+ * letras al azar y un cursor, con una carita en vez del "*". Al terminar, tras FACE_DELAY la carita
+ * se baraja con símbolos hasta el "*", y NAV_DELAY después se marca introLeaving: recién ahí
+ * aparecen los elementos del navbar y luego el stack (ver useIntro). En otras páginas (o navegando
+ * dentro del sitio) el logo está completo desde el principio.
+ */
+const FACE = ":)";
+const ENDING = site.wordmark.at(-1);
+const PREFIX = site.wordmark.slice(0, -1);
+const TYPE_DELAY = 300; // antes de empezar a escribir
+const FACE_DELAY = 500; // entre que termina de escribirse y la carita pasa al "*"
+const typed = ref(introLeaving.value);
+const typing = ref(false);
+const typedText = useScrambleText(
+  computed(() => (typed.value ? PREFIX + FACE : " ".repeat(PREFIX.length + FACE.length))),
+  { stagger: 60, scramble: 500, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER, playing: typing },
 );
+const { state: logoCaret } = useCaret(typing);
+// Terminado el logo: la carita pasa al "*" y, una pausa después (NAV_DELAY), entra el resto
+const typedDone = ref(introLeaving.value);
+let typeTimer = 0;
+watch(typing, (now) => {
+  if (now || !typed.value) return;
+  typedDone.value = true;
+  typeTimer = setTimeout(() => {
+    face.value = ENDING;
+    typeTimer = setTimeout(() => (introLeaving.value = true), NAV_DELAY);
+  }, FACE_DELAY);
+});
+onMounted(() => {
+  if (introLeaving.value) return;
+  typeTimer = setTimeout(() => {
+    typed.value = true;
+    // Con movimiento reducido el logo aparece completo, con el "*", y el resto de inmediato
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      typedDone.value = true;
+      face.value = ENDING;
+      introLeaving.value = true;
+    }
+  }, TYPE_DELAY);
+});
+
+const face = ref(introLeaving.value ? ENDING : FACE);
 watch(introLeaving, (leaving) => leaving && toggleSymbol.play());
-const logoText = computed(() => (logo.playing.value ? logo.display.value : logoIntro.value));
+onBeforeUnmount(() => clearTimeout(typeTimer));
+const faceText = useScrambleText(face, { ...SYMBOL_SCRAMBLE, keepUnchanged: false });
+const logoText = computed(() => {
+  if (logo.playing.value) return logo.display.value;
+  return typedDone.value ? PREFIX + faceText.value : typedText.value;
+});
 const toggleText = toggleSymbol.display;
 const toggleScrambling = toggleSymbol.playing;
 
@@ -114,16 +241,23 @@ const menuItems = menuEntries.map((item) => ({
 }));
 const menuText = computed(() => menuItems.map((item) => item.replay.display.value));
 let menuTimers = [];
-watch(open, (isOpen) => {
+function playMenuEntrance() {
   menuTimers.forEach(clearTimeout);
-  if (!isOpen) {
-    ctaHover.value = false;
-    return;
-  }
   menuTimers = menuItems.map((item, i) =>
     setTimeout(() => item.replay.play(pickSyllable(item.ranges)), i * MENU_ITEM_STAGGER),
   );
+}
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    menuTimers.forEach(clearTimeout);
+    ctaHover.value = false;
+    return;
+  }
+  playMenuEntrance();
 });
+// En la entrada de Inicio los elementos del navbar aparecen recién cuando el logo terminó de
+// escribirse (ver navShown); el menú desplegado de desktop se arma en ese momento
+watch(introLeaving, (leaving) => leaving && open.value && playMenuEntrance());
 
 // Al pasar el cursor (o enfocar con teclado) un enlace, se desordena una sílaba al azar
 function scrambleMenuItem(i) {
@@ -171,7 +305,8 @@ const overPhotos = navOverPhotos;
 const navRef = ref(null);
 const toggleRef = ref(null);
 
-useFocusTrap(navRef, open);
+// Desplegado fijo en desktop no atrapa el foco: el resto de la página sigue usable
+useFocusTrap(navRef, computed(() => open.value && !pinned.value));
 
 // "Proyectos" sigue activo dentro del detalle de un proyecto.
 // Las secciones de Inicio (ej. contacto) solo se marcan al llegar a ellas por el menú.
@@ -192,6 +327,7 @@ function goToSection(item, event) {
 }
 
 function close({ restoreFocus = false } = {}) {
+  if (pinned.value) return;
   open.value = false;
   if (restoreFocus) toggleRef.value?.focus();
 }
@@ -214,6 +350,7 @@ watch(
 );
 
 function onScroll() {
+  scrollY.value = window.scrollY;
   const overlay = document.querySelector("[data-nav-overlay]");
   // Basta con que asome cualquier parte de la sección para quitar el fondo
   overPhotos.value = !!overlay && overlay.getBoundingClientRect().bottom > 0;
@@ -221,29 +358,45 @@ function onScroll() {
 
 onMounted(() => {
   // Medir la retícula cuando la fuente del logo ya cargó, y de nuevo al cambiar el tamaño
-  document.fonts.ready.then(measureGrid);
+  document.fonts.ready.then(() => {
+    measureGrid();
+    measureMonument();
+  });
   window.addEventListener("resize", measureGrid);
+  window.addEventListener("resize", measureMonument);
   window.addEventListener("resize", measureMenu);
   document.addEventListener("keydown", onKeydown);
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("jdm:stack-edge", playSymbols);
+  pinQuery = window.matchMedia("(width >= 64rem)");
+  pinQuery.addEventListener("change", updatePinned);
+  updatePinned();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", measureGrid);
+  window.removeEventListener("resize", measureMonument);
   window.removeEventListener("resize", measureMenu);
   document.removeEventListener("keydown", onKeydown);
   window.removeEventListener("scroll", onScroll);
   window.removeEventListener("jdm:stack-edge", playSymbols);
+  pinQuery?.removeEventListener("change", updatePinned);
 });
+
+// Borde inferior del título cuando va debajo del menú (ver beside)
+const sectionTitleRef = ref(null);
+const titleBottom = ref(0);
+watch([sectionTitle, beside], () =>
+  nextTick(() => (titleBottom.value = sectionTitleRef.value?.getBoundingClientRect().bottom ?? 0)),
+);
 
 // Lo más bajo del navbar (para que las secciones fijas no queden debajo)
 watch(
-  [open, menuBottom, logoBox],
+  [open, menuBottom, logoBox, titleBottom, beside],
   () => {
-    // El título va en la misma fila que el logo: lo más bajo es el logo, o el menú abierto
-    if (open.value) navContentBottom.value = menuBottom.value;
-    else navContentBottom.value = logoBox.value?.bottom ?? 0;
+    const bottom = open.value ? menuBottom.value : (logoBox.value?.bottom ?? 0);
+    // Con el menú en la fila del logo, el título va debajo de él y es lo más bajo
+    navContentBottom.value = beside.value && sectionTitle.value.trim() ? Math.max(bottom, titleBottom.value) : bottom;
   },
   { immediate: true },
 );
@@ -252,9 +405,25 @@ watch(
 <template>
   <!-- Navbar siempre transparente, en todas las páginas -->
   <header class="fixed inset-x-0 top-0 z-50 p-2">
+    <!--
+      Franja crema plana detrás del navbar, del alto de la cabecera en este momento (--cabecera-viva):
+      en Inicio, alta con el nombre gigante; al bajar, su borde de abajo sube junto con el nombre
+      (como persiana) hasta quedar como fondo del navbar, y vuelve a crecer al subir
+    -->
+    <div class="absolute inset-x-0 top-0 -z-10 h-(--cabecera-viva,0px) bg-fondo" aria-hidden="true" />
+    <!-- Con el menú abierto en pantallas chicas, la franja crema baja como persiana hasta cubrirlo -->
+    <div
+      v-if="!pinned"
+      :class="[
+        'absolute inset-x-0 top-0 -z-10 bg-fondo transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+        open ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+      ]"
+      :style="{ height: `${menuBottom + 16}px` }"
+      aria-hidden="true"
+    />
     <!-- Clic fuera del menú lo cierra -->
     <div
-      v-if="open"
+      v-if="open && !pinned"
       class="fixed inset-0"
       aria-hidden="true"
       @click="close()"
@@ -263,90 +432,92 @@ watch(
     <div ref="navRef" class="relative mx-auto max-w-360">
       <!-- Logo a la izquierda, botón del menú a la derecha -->
       <nav
+        ref="navRowRef"
         aria-label="Principal"
         class="flex h-16 items-center justify-between p-2 lg:h-20"
       >
         <div class="flex min-w-0 items-center">
         <RouterLink
+          ref="logoLinkRef"
           :to="{ name: 'home' }"
           :tabindex="logoHidden ? -1 : undefined"
-          class="text-h3 font-extrabold whitespace-nowrap text-primario sm:text-logo xl:ml-8"
+          translate="no"
+          :class="[
+            'group/logo shrink-0 text-h3 leading-[0.85] font-extrabold tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
+          ]"
         >
           <span class="sr-only">{{ site.name }} — inicio</span>
           <!--
-            Logo en un bloque rosado (acento); el bloque empieza en la primera línea de la retícula.
-            Al llegar a contacto se recoge hacia arriba como persiana (vuelve con el menú abierto)
+            Logo monumento (ver logoStyle): el nombre, sin bloque, empieza en la primera línea de
+            la retícula; siempre verde, sobre la franja crema del navbar. Al llegar a
+            contacto se recoge hacia arriba como persiana (vuelve con el menú abierto)
           -->
           <span
             ref="logoTextRef"
             aria-hidden="true"
             :class="[
-              'block bg-acento px-6 pt-2 pb-1 whitespace-pre transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+              // pb: espacio para las colas (j, g) dentro del recorte de la persiana
+              // Subrayado rosado al pasar, como los enlaces del menú (grosor según el tamaño del logo)
+              'inline-block origin-top-left pb-[0.2em] whitespace-pre decoration-acento decoration-[0.06em] underline-offset-[0.12em] group-hover/logo:underline transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
               logoHidden ? '[clip-path:inset(0_0_100%_0)]' : '[clip-path:inset(0)]',
             ]"
-            >{{ logoText }}</span
+            :style="logoStyle"
+            >{{ logoText.trimEnd() }}<TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
           >
         </RouterLink>
         <!--
           Sección actual a la derecha del logo, en la misma fila y centrada con él (desde 768 px).
           El menú se abre debajo, así que no se cruzan. Si es larga se corta con "…". La sección conserva su título para lectores de pantalla.
         -->
-        <!--
-          Título de sección. Con una acción (navTitleAction) lleva una flecha "←" antes, y solo
-          la flecha es un botón (ej. volver desde el detalle de un proyecto); el título es texto.
-        -->
         <span
           v-if="sectionTitle"
-          class="pointer-events-none ml-6 hidden min-w-0 items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto md:flex"
+          ref="sectionTitleRef"
+          :class="[
+            'pointer-events-none hidden min-w-0 items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto md:flex',
+            // Con el menú en la fila: debajo de él, alineado con su borde derecho (p-2 del nav y
+            // xl:mr-8 del menú); si no, a la derecha del logo
+            beside ? 'absolute top-full right-2 mt-2 xl:right-10' : 'ml-6',
+          ]"
         >
-          <button
-            v-if="navTitleAction"
-            type="button"
-            class="group/arrow pointer-events-auto -my-[0.15em] -ml-[0.15em] cursor-pointer p-[0.15em]"
-            :aria-label="navTitleAction.label"
-            @click="navTitleAction.run()"
-          >
-            <svg
-              class="block size-[0.6em] transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/arrow:-translate-x-1"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              aria-hidden="true"
-            >
-              <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />
-            </svg>
-          </button>
           <!-- Alto de línea 1,3: con el recorte para el "…", las colas (g, p, y) no se cortan -->
           <span aria-hidden="true" class="min-w-0 overflow-hidden leading-[1.3] text-ellipsis">{{ sectionTitle }}</span>
         </span>
         </div>
 
-        <div class="relative xl:mr-8">
+        <!--
+          Con el menú en la fila del logo, este bloque empieza en la primera línea interior de la
+          retícula de tercios del stack (1/3 del ancho entre el borde del logo y el del botón) y
+          llega al borde derecho: 2/3 de la fila (desde xl, sin los márgenes xl:ml-8 y xl:mr-8).
+          min-w-max: si los enlaces no caben (pantallas angostas), empieza antes
+        -->
+        <!--
+          Elementos del navbar (menú, o el botón en pantallas chicas): en la entrada de Inicio bajan
+          como persiana cuando el logo terminó de escribirse (introLeaving); después aparece el stack
+        -->
+        <div
+          ref="rightRef"
+          :inert="!introLeaving"
+          :class="[
+            'relative shrink-0 xl:mr-8',
+            beside && 'flex items-center',
+          ]"
+        >
           <!-- Mismo alto que el bloque del logo: 36 px en móvil, 48 px desde 640 px -->
           <button
             ref="toggleRef"
             type="button"
             :class="[
-              'relative grid size-9 shrink-0 cursor-pointer place-items-center overflow-hidden border border-primario bg-primario transition-colors duration-200 sm:size-12',
-              open ? 'text-primario delay-200' : 'text-fondo delay-0',
+              // lg:invisible y no hidden: el botón sigue midiendo, el menú se ubica respecto de él
+              'relative grid size-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] sm:size-12 lg:invisible',
+              beside && 'hidden',
+              // Entrada de Inicio: baja como persiana cuando el logo terminó de escribirse
+              introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
             :aria-expanded="open"
             aria-controls="menu-principal"
             @click="open = !open"
           >
             <span class="sr-only">{{ open ? "Cerrar menú" : "Abrir menú" }}</span>
-            <!--
-              Relleno crema: sube desde abajo como persiana al abrir y vuelve a bajar al cerrar.
-              El "+" pasa a verde con un pequeño retraso, cuando la persiana ya lo cubrió.
-            -->
-            <span
-              :class="[
-                'absolute inset-0 bg-fondo transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
-                open ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
-              ]"
-              aria-hidden="true"
-            />
             <!-- Mientras se baraja, el "+" se muestra como texto con símbolos al azar -->
             <span v-if="toggleScrambling" class="relative text-boton leading-none" aria-hidden="true">{{
               toggleText
@@ -366,23 +537,32 @@ watch(
           </button>
 
           <!--
-            Menú transparente: borde verde y una línea entre cada enlace.
-            Baja en persiana desde el borde inferior del botón.
+            Menú de texto, sin cajas, como en escritorio. En pantallas chicas baja en persiana bajo
+            el logo: en lista en móvil, en una fila de borde a borde de la retícula desde 768 px
           -->
           <div
             id="menu-principal"
             ref="menuRef"
             :class="[
-              'absolute top-full right-0 flex flex-col overflow-hidden border border-primario bg-transparent md:grid md:grid-cols-5',
+              beside ? 'static' : 'absolute top-full right-0',
+              // En la fila del logo cada enlace tiene su propio ancho: al pasar por escríbeme
+              // solo crece él (en la grilla de 5 columnas iguales crecerían todos)
+              // En la fila: 5 celdas iguales, cada una al menos del ancho del correo (ch = una letra
+              // del mono en text-boton), así al mostrarlo en escríbeme no se sale ni mueve a las demás
+              // Desde 1024 px: enlaces de texto en la esquina, sin cajas (sobre la franja crema)
+              beside
+                ? 'flex items-center gap-6 text-boton text-primario'
+                : 'flex flex-col text-primario md:flex-row md:items-center md:justify-between',
               'transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
-              open ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+              open && introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
             :style="menuStyle"
             :inert="!open"
           >
             <!-- Desde 768 px: los 4 enlaces en las columnas 1 a 4, separados por líneas -->
             <ul
-              class="flex flex-col divide-y divide-primario border-b border-primario md:col-span-4 md:grid md:grid-cols-4 md:divide-x md:divide-y-0 md:border-b-0"
+              :class="
+beside ? 'flex items-center gap-6' : 'flex flex-col md:flex-row md:gap-6'"
             >
               <li v-for="(item, i) in site.nav" :key="item.label">
                 <RouterLink
@@ -391,12 +571,12 @@ watch(
                   @click="goToSection(item, $event)"
                   @mouseenter="scrambleMenuItem(i)"
                   @focus="scrambleMenuItem(i)"
-                  class="flex h-full items-center justify-between gap-2 bg-fondo px-4 py-2.5 text-right text-boton text-primario transition-colors duration-200 ease-out hover:bg-primario hover:text-fondo focus-visible:-outline-offset-4 md:px-3"
+                  :class="[
+                    'flex items-center py-2.5 text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
+                    isActive(item) && 'underline',
+                  ]"
                 >
-                  <!-- El "*" de la página activa va a la izquierda; el texto, a la derecha -->
-                  <span class="w-3 shrink-0 text-center" aria-hidden="true">{{
-                    isActive(item) ? "*" : ""
-                  }}</span>
+                  <!-- La página activa queda subrayada en rosado, como al pasar el cursor -->
                   <span class="whitespace-pre" aria-hidden="true">{{ menuText[i] }}</span>
                 </RouterLink>
               </li>
@@ -406,10 +586,11 @@ watch(
               type="button"
               :aria-label="`Copiar correo ${site.email}`"
               :class="[
-                'flex cursor-pointer items-center justify-end px-4 py-2.5 text-right text-boton transition-colors duration-200 focus-visible:-outline-offset-4 focus-visible:outline-fondo md:border-l md:border-primario md:px-3',
-                // copiado! en un bloque rosado, como la carita y el correo de contacto
-                copied ? 'bg-acento text-primario' : 'bg-primario text-fondo',
+                // py: el subrayado queda dentro del recorte de la persiana del menú
+                'w-fit cursor-pointer py-2.5 text-left text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
+                copied && 'bg-acento px-1 text-primario',
               ]"
+              title="clickea :)"
               @click="copyEmail"
               @mouseenter="ctaHover = true"
               @mouseleave="ctaHover = false"

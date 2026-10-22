@@ -1,12 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useNavSectionTitle } from '../composables/useNavSectionTitle'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 import { useCopyEmail } from '../composables/useCopyEmail'
 import { site } from '../data/site'
-
-const root = ref(null)
-useNavSectionTitle(root, 'sobre mí')
 
 /*
  * Mientras se escribe la página: un mensaje con dos enlaces en bloque rosado que se arman con
@@ -31,22 +27,22 @@ let timer = 0
 onMounted(() => (timer = setTimeout(() => (shown.value = true), START_DELAY)))
 onBeforeUnmount(() => clearTimeout(timer))
 
-const block = 'bg-acento px-[0.2em] whitespace-pre text-primario decoration-1 underline-offset-4 hover:underline'
+// Enlaces con el subrayado rosado del resto del sitio (sin bloque)
+const block = 'whitespace-pre text-primario underline decoration-acento decoration-2 underline-offset-4'
 </script>
 
 <template>
-  <section ref="root" class="px-2 pt-32 pb-16 md:pt-24 lg:pt-28">
+  <section class="px-2 pt-6 pb-16">
     <div class="page">
-      <!-- Desde 768 px el título se muestra debajo del logo (navbar), con su animación -->
-      <h1 class="font-display text-h1 md:sr-only">sobre mí</h1>
+      <h1 class="font-display text-h1">Sobre mí</h1>
 
-      <p class="mt-6 max-w-[60ch] md:mt-0">
+      <p class="mt-6 max-w-[60ch]">
         aún no sé quién soy, mientras revisa mis
         <RouterLink :to="{ name: 'projects' }" :class="block" :aria-label="PROJECTS"
           ><span aria-hidden="true">{{ projectsText }}</span></RouterLink
         >
         o
-        <button type="button" :class="['cursor-pointer', block]" :aria-label="`Copiar correo ${site.email}`" @click="copy">
+        <button type="button" :class="['cursor-pointer', block]" :aria-label="`Copiar correo ${site.email}`" title="clickea :)" @click="copy">
           <span aria-hidden="true">{{ writeMeText }}</span></button
         >.
       </p>

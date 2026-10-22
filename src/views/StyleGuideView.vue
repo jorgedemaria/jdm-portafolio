@@ -3,9 +3,63 @@ import { ref, onMounted } from 'vue'
 import { paletas, aplicarPaleta, paletaGuardada } from '../composables/usePaleta'
 import ProjectCard from '../components/ProjectCard.vue'
 import ProjectFacts from '../components/ProjectFacts.vue'
+import SystemMock from '../components/SystemMock.vue'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
 import { projects, heroPhotos } from '../data/content'
 import { site } from '../data/site'
+
+/*
+ * Propuestas de sistema para navbar + ficha + pie, coherentes con la retícula de tercios. Las
+ * tres primeras son las opciones conversadas; las tres últimas, direcciones de tasteskill
+ * (design-taste-frontend, sector arquitectura), adaptadas a la paleta y la letra del sitio.
+ */
+const systemVariants = [
+  {
+    id: 'ficha',
+    nombre: 'Ficha técnica',
+    origen: 'industrial-brutalist-ui',
+    texto: 'El navbar es una regla de tres tercios, igual que la ficha y el pie: logo, título del registro y enlaces como texto. Arriba y abajo de la galería, las mismas tres líneas.',
+  },
+  {
+    id: 'minimo',
+    nombre: 'Mínimo',
+    origen: 'minimalist-ui',
+    texto: 'Los mismos tercios, sin bloques ni líneas: todo texto chico, como un pie de imprenta. Las fotos dominan; el subrayado rosado marca la página actual.',
+  },
+  {
+    id: 'cajas',
+    nombre: 'Menú en cajas, en tercios',
+    origen: 'opción conversada',
+    texto: 'El menú actual en bloques, ajustado a los tercios: cuatro enlaces en el segundo tercio y "escríbeme" ocupando el tercero. Ficha en lista bajo el segundo tercio y pie en celdas.',
+  },
+  {
+    id: 'lugar',
+    nombre: 'La foto manda',
+    origen: 'tasteskill · place-carries-it',
+    texto: 'La foto principal es el argumento: el menú encima, chico en las esquinas, y el nombre del registro abajo como título de película. La ficha se reduce a una línea y el pie devuelve el nombre a todo el ancho.',
+  },
+  {
+    id: 'monumento',
+    nombre: 'El nombre como monumento',
+    origen: 'tasteskill · name-as-monument',
+    texto: 'El nombre del sitio a todo el ancho, como arquitectura, arriba y otra vez al cerrar. El menú en una esquina; la ficha y el pie en tercios.',
+  },
+  {
+    id: 'oscuro',
+    nombre: 'Cuarto oscuro',
+    origen: 'tasteskill · dark-room',
+    texto: 'Un solo fondo oscuro de arriba a abajo y las fotos como lo único iluminado, como en una sala de exposición. Misma estructura de tercios que la ficha técnica, con letra clara y rosado.',
+  },
+  {
+    id: 'mezcla',
+    nombre: 'Monumento + la foto manda',
+    origen: 'S5 + S4',
+    texto: 'El nombre a todo el ancho con el menú en una esquina (de S5), y todo lo demás de S4: el nombre del registro sobre la foto como título de película, la ficha en una línea y el pie con el nombre grande.',
+  },
+]
+
+// Las maquetas de sistema usan el registro con más fotos, para ver la galería en varias filas
+const mockProject = projects.reduce((most, p) => (p.fotos.length > (most?.fotos.length ?? 0) ? p : most), null)
 
 // Vista previa: partes reales del sitio (o réplicas fieles) con la paleta elegida
 const sample = projects[0]
@@ -57,31 +111,6 @@ const logoForms = [
   { nombre: 'apretado', lineas: ['jorgedemaría'], extra: 'tracking-[-0.06em]' },
   { nombre: 'iniciales', lineas: ['jdm'] },
   { nombre: 'iniciales y carita', lineas: ['j.d.m :)'] },
-]
-
-/*
- * Propuestas para el mensaje de inicio (la intro): el nombre y el subtítulo en distintas
- * composiciones. disposicion: 'abajo', 'arriba', 'derecha' (subtítulo alineado al final del
- * bloque), 'linea' (todo en una línea) o 'pestana' (subtítulo pegado bajo el bloque).
- */
-const introName = site.nameSyllables.map((word) => word.join('')).join(' ')
-const introVariants = [
-  { nombre: 'anterior', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] pl-[1.5em] text-primario' },
-  { nombre: 'subtítulo en bloque verde (en uso)', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] bg-primario px-[0.4em] py-[0.15em] text-fondo' },
-  { nombre: 'subtítulo en bloque rosado', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] bg-acento px-[0.4em] py-[0.15em] text-primario' },
-  { nombre: 'pestaña bajo el bloque', disposicion: 'pestana', bloque: 'bg-acento text-primario', sub: 'bg-primario px-[0.6em] py-[0.3em] text-fondo' },
-  { nombre: 'a la derecha', disposicion: 'derecha', bloque: 'bg-acento text-primario', sub: 'mt-[0.6em] text-primario' },
-  { nombre: 'arriba, como antetítulo', disposicion: 'arriba', bloque: 'bg-acento text-primario', sub: 'mb-[0.6em] pl-[1.5em] text-primario' },
-  {
-    nombre: 'técnico, entre corchetes',
-    disposicion: 'abajo',
-    bloque: 'bg-acento text-primario',
-    sub: 'mt-[0.8em] pl-[1.5em] tracking-[0.12em] text-primario uppercase',
-    texto: '[ registros de obras ]',
-  },
-  { nombre: 'subtítulo en Sora', disposicion: 'abajo', bloque: 'bg-acento text-primario', sub: 'mt-[0.5em] pl-[1.5em] font-display font-semibold text-texto' },
-  { nombre: 'todo en una línea', disposicion: 'linea', bloque: 'bg-acento text-primario', sub: 'text-primario', texto: '— registros de obras' },
-  { nombre: 'nombre sin bloque, subtítulo en bloque', disposicion: 'abajo', bloque: 'text-primario', sub: 'mt-[0.6em] ml-[1.5em] bg-acento px-[0.4em] py-[0.15em] text-primario' },
 ]
 
 // Propuestas para contacto: fondo de la sección, frase, correo y carita
@@ -229,7 +258,7 @@ const type = [
 </script>
 
 <template>
-  <div class="px-2 pt-32 pb-24 lg:pt-40">
+  <div class="px-2 pt-6 pb-24">
     <div class="page">
     <h1 class="font-display text-h1">Guía de estilos</h1>
     <p class="mt-4 text-cuerpo-sm">Solo visible en desarrollo.</p>
@@ -258,6 +287,22 @@ const type = [
         <li v-for="c in colors" :key="c.name">
           <div :class="['aspect-square', c.class]" />
           <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="g-sistema">
+      <h2 id="g-sistema" class="font-display text-h3">Propuestas de sistema: navbar, ficha y pie</h2>
+      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
+        Cómo se ve una página de registro completa en cada propuesta: navbar, foto principal, ficha, galería en
+        tercios (con la misma regla del sitio) y pie. Usa la paleta elegida arriba.
+      </p>
+      <ul v-if="mockProject" class="mt-8 flex flex-col gap-16">
+        <li v-for="(v, i) in systemVariants" :key="v.id">
+          <p class="text-etiqueta text-texto/60">S{{ i + 1 }} · {{ v.origen }}</p>
+          <h3 class="mt-2 font-display text-h4">{{ v.nombre }}</h3>
+          <p class="mt-2 max-w-[70ch] text-cuerpo-sm">{{ v.texto }}</p>
+          <SystemMock class="mt-4" :variant="v.id" :project="mockProject" />
         </li>
       </ul>
     </section>
@@ -364,32 +409,6 @@ const type = [
           >
             <template v-for="(linea, j) in v.lineas" :key="linea"><br v-if="j" />{{ linea }}</template>
           </p>
-        </li>
-      </ul>
-
-      <!-- Propuestas para el mensaje de inicio: pantallas de muestra, sin animación -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para el mensaje de inicio</h3>
-      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
-        Cómo queda la pantalla de entrada con el nombre y "registros de obras", sin la animación.
-      </p>
-      <ul class="mt-6 grid gap-8 md:grid-cols-2">
-        <li v-for="(v, i) in introVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">I{{ i + 1 }}. {{ v.nombre }}</p>
-          <div class="mt-3 grid aspect-video place-items-center border border-texto/10 bg-fondo px-4">
-            <div
-              :class="[
-                'flex text-[clamp(1rem,2.4vw,1.6rem)]',
-                v.disposicion === 'linea' ? 'flex-wrap items-baseline gap-x-[0.6em]' : 'flex-col',
-                v.disposicion === 'arriba' && 'flex-col-reverse',
-                v.disposicion === 'derecha' && 'items-end',
-              ]"
-            >
-              <p :class="['w-fit px-[0.67em] pt-[0.22em] pb-[0.11em] leading-none font-extrabold whitespace-pre', v.bloque]">
-                {{ introName }}
-              </p>
-              <p :class="['w-fit text-[0.45em] leading-none whitespace-pre', v.sub]">{{ v.texto ?? 'registros de obras' }}</p>
-            </div>
-          </div>
         </li>
       </ul>
 

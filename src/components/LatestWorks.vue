@@ -1,10 +1,9 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import CardPhoto from './CardPhoto.vue'
 import { useScrollProgress } from '../composables/useScrollProgress'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { menuOpen, navContentBottom } from '../composables/useMenu'
-import { useNavSectionTitle } from '../composables/useNavSectionTitle'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 
 /*
@@ -124,7 +123,7 @@ onBeforeUnmount(() => {
  * Título: se arma desde vacío con letras al azar, de izquierda a derecha (como el nombre
  * de la intro), cada vez que la sección entra en pantalla.
  */
-const TITLE = 'últimos registros'
+const TITLE = 'Últimos registros'
 const titleShown = ref(false)
 const titleText = useScrambleText(
   computed(() => (titleShown.value ? TITLE : ' '.repeat(TITLE.length))),
@@ -140,9 +139,6 @@ onMounted(() => {
   if (titleRef.value) titleObserver.observe(titleRef.value)
 })
 onBeforeUnmount(() => titleObserver?.disconnect())
-
-// Mientras la sección está bajo el navbar, su título se muestra debajo del logo
-useNavSectionTitle(root, TITLE)
 
 /*
  * Títulos de los proyectos: se arman desde vacío con letras al azar (como el nombre de la
@@ -190,11 +186,6 @@ const seeAllText = useScrambleText(seeAllTarget, {
   tick: 45,
   charset: SCRAMBLE_CHARSET_LOWER,
 })
-// El bloque se achica o agranda suave al ancho del texto final (medido en una copia invisible)
-const seeAllMeasure = ref(null)
-const seeAllWidth = ref(null)
-const measureSeeAll = () => (seeAllWidth.value = seeAllMeasure.value?.offsetWidth ?? null)
-watch([seeAllTarget, seeAllHover], () => nextTick(measureSeeAll))
 watch(seeAllHover, (hover) => {
   if (!hover) return
   clearTimeout(winkBack)
@@ -203,8 +194,6 @@ watch(seeAllHover, (hover) => {
 let winkTimer
 let winkBack
 onMounted(() => {
-  document.fonts?.ready.then(measureSeeAll)
-  window.addEventListener('resize', measureSeeAll)
   if (reducedMotion.value) return
   winkTimer = setInterval(() => {
     if (seeAllHover.value) return
@@ -215,7 +204,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearInterval(winkTimer)
   clearTimeout(winkBack)
-  window.removeEventListener('resize', measureSeeAll)
 })
 
 // Tarjeta con el cursor encima (su foto no cambia mientras tanto)
@@ -224,12 +212,6 @@ const hoveredCard = ref(null)
 const projectLink = (project) => ({ name: 'project', params: { slug: project.slug } })
 const categoryLink = (project) => ({ name: 'projects', query: { categoria: project.categoria.slug } })
 
-// Datos de la grilla de cada proyecto (misma estructura que el menú: filas separadas por líneas)
-const facts = (project) => [
-  ['año', String(project.año)],
-  ['lugar', project.lugar],
-  ['arquitectura', project.arquitecto],
-]
 </script>
 
 <template>
@@ -257,36 +239,23 @@ const facts = (project) => [
         </h2>
 
         <!--
-          Los 3 registros en una fila, centrada en el espacio bajo el título. Fotos verticales
-          (3:4) cuyo ancho se ajusta a la altura de la pantalla; el primero alineado con el
-          logo, el último con el botón del menú y separación mínima de 4rem entre ellos.
+          Los 3 registros en una fila sobre la retícula de tercios (las mismas líneas del stack
+          que se acaba de ver): cada uno empieza en una línea de tercio. Fotos verticales (3:4)
+          del ancho del tercio menos el aire (2,5rem, como en Registros), sin pasar del alto
+          disponible en la pantalla.
         -->
         <div ref="listRef" class="mt-10 lg:flex lg:flex-1 lg:items-center">
-          <ul class="grid w-full gap-16 lg:flex lg:justify-between lg:gap-16">
+          <ul class="grid w-full gap-16 lg:grid-cols-3 lg:gap-0">
             <li
               v-for="(project, i) in projects"
               :key="project.slug"
               :ref="(el) => (itemEls[i] = el)"
-              class="will-change-[clip-path,transform] lg:w-[min(calc((100%_-_8rem)/3),calc(56svh*0.75))] lg:shrink-0"
+              class="will-change-[clip-path,transform] lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
               :style="revealStyle(i)"
             >
-              <article>
-                <!-- Etiqueta de categoría, del ancho de la tarjeta y pegada a la foto: lleva a Proyectos filtrado por esa categoría (no abre la grilla) -->
-                <RouterLink
-                  :to="categoryLink(project)"
-                  class="flex h-7 items-center border border-b-0 border-primario px-3 text-cuerpo-sm lowercase transition-colors duration-200 hover:bg-primario hover:text-fondo"
-                >
-                  {{ project.categoria.nombre }}
-                </RouterLink>
-                <!-- Foto, título y grilla: pasar el cursor por aquí abre la grilla -->
-                <div
-                  class="group/card relative"
-                  @pointerenter="hoveredCard = project.slug"
-                  @pointerleave="hoveredCard = null"
-                >
-                <!-- Tarjeta con borde (foto y grilla), unida a la etiqueta de arriba; el título va afuera -->
-                <div class="relative border border-primario">
-                <!-- La foto repite el enlace de "ver registro"; se oculta a lectores de pantalla y al teclado -->
+              <!-- Como las tarjetas de Registros: foto, nombre y datos en una línea, sin cajas -->
+              <article @pointerenter="hoveredCard = project.slug" @pointerleave="hoveredCard = null">
+                <!-- La foto repite el enlace del nombre; se oculta a lectores de pantalla y al teclado -->
                 <RouterLink :to="projectLink(project)" class="block" tabindex="-1" aria-hidden="true">
                   <!-- La foto cambia sola cada cierto tiempo, salvo con el cursor encima -->
                   <CardPhoto
@@ -296,47 +265,6 @@ const facts = (project) => [
                     sizes="(min-width: 1024px) 28vw, 100vw"
                   />
                 </RouterLink>
-                <!--
-                  Grilla tipo menú, del alto de su contenido. En pantallas con cursor se apoya en el borde
-                  inferior de la foto y sube como persiana desde abajo al pasar el cursor por el
-                  proyecto (o al llegar con el teclado). En pantallas táctiles va debajo de la foto,
-                  dentro del borde, y se ve siempre.
-                -->
-                <div
-                  class="[@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-0 [@media(hover:hover)]:flex [@media(hover:hover)]:flex-col [@media(hover:hover)]:justify-end"
-                >
-                <div
-                  class="pointer-events-auto flex flex-col border-t border-primario bg-fondo text-cuerpo-sm transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] group-focus-within/card:[clip-path:inset(0)] group-hover/card:[clip-path:inset(0)] [@media(hover:hover)]:[clip-path:inset(100%_0_0_0)]"
-                >
-                  <dl class="divide-y divide-primario">
-                    <div
-                      v-for="[label, value] in facts(project)"
-                      :key="label"
-                      class="flex items-baseline justify-between gap-4 px-3 py-2.5"
-                    >
-                      <dt class="font-light text-primario">{{ label }}</dt>
-                      <dd class="text-right text-texto">{{ value }}</dd>
-                    </div>
-                  </dl>
-                  <RouterLink
-                    :to="projectLink(project)"
-                    class="group/link flex items-center justify-end border-t border-primario bg-primario px-3 py-2.5 text-fondo focus-visible:-outline-offset-4 focus-visible:outline-fondo"
-                  >
-                    ver registro
-                    <span class="sr-only">: {{ project.titulo }}</span>
-                    <!-- Al pasar el cursor (o con el foco) aparece la flecha ↗, como en "ver todo" -->
-                    <span
-                      class="grid w-0 overflow-hidden transition-[width,margin] duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/link:ml-1.5 group-hover/link:w-3 group-focus-visible/link:ml-1.5 group-focus-visible/link:w-3"
-                      aria-hidden="true"
-                    >
-                      <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M3 9 9 3M4 3h5v5" />
-                      </svg>
-                    </span>
-                  </RouterLink>
-                </div>
-                </div>
-                </div>
                 <h3
                   :ref="(el) => (cardTitleEls[i] = el)"
                   class="mt-3 font-display text-cuerpo leading-snug font-semibold text-balance text-texto"
@@ -344,59 +272,44 @@ const facts = (project) => [
                   <RouterLink
                     :to="projectLink(project)"
                     :aria-label="project.titulo"
-                    class="whitespace-pre-wrap decoration-1 underline-offset-4 hover:underline"
+                    class="whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
                   >
                     <span aria-hidden="true">{{ cardTitles[i] }}</span>
                   </RouterLink>
                 </h3>
-                </div>
+                <p class="mt-1 text-cuerpo-sm text-primario">
+                  <RouterLink
+                    :to="categoryLink(project)"
+                    class="lowercase decoration-acento decoration-2 underline-offset-4 hover:underline"
+                    >{{ project.categoria.nombre }}</RouterLink
+                  >
+                  · {{ project.año }} · {{ project.lugar }}
+                </p>
               </article>
             </li>
           </ul>
         </div>
 
-        <!-- Abajo a la derecha: lleva a todos los proyectos. Entra junto con el último proyecto -->
-        <div class="relative mt-12 flex justify-end lg:mt-8">
+        <!-- Abajo a la derecha: lleva a todos los registros. Entra junto con el último -->
+        <div class="mt-12 flex justify-end lg:mt-8">
           <RouterLink
             :to="{ name: 'projects' }"
-            class="see-all block overflow-hidden bg-primario px-1.5 py-0.5 text-cuerpo whitespace-pre text-fondo"
-            :style="{ ...revealStyle(projects.length - 1), width: seeAllWidth ? `${seeAllWidth}px` : null }"
+            class="group/all flex items-center gap-1.5 text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 hover:underline"
+            :style="revealStyle(projects.length - 1)"
             aria-label="ver todos los registros"
             @pointerenter="seeAllHover = true"
             @pointerleave="seeAllHover = false"
             @focus="seeAllHover = true"
             @blur="seeAllHover = false"
           >
-            <!-- La flecha está siempre a la derecha del texto; el ancho del bloque la deja fuera hasta el hover -->
-            <span class="flex w-max items-center gap-1.5" aria-hidden="true">
-              <span>{{ seeAllText }}</span>
-              <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 9 9 3M4 3h5v5" />
-              </svg>
-            </span>
+            <span aria-hidden="true">{{ seeAllText }}</span>
+            <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M3 9 9 3M4 3h5v5" />
+            </svg>
           </RouterLink>
-          <!-- Copia invisible con el contenido final, para medir el ancho del bloque -->
-          <span
-            ref="seeAllMeasure"
-            class="invisible absolute flex items-center gap-1.5 px-1.5 text-cuerpo whitespace-pre"
-            aria-hidden="true"
-          >
-            <span>{{ seeAllTarget }}</span>
-            <span v-if="seeAllHover" class="size-3 shrink-0" />
-          </span>
         </div>
       </div>
     </div>
   </section>
 </template>
 
-<style scoped>
-.see-all {
-  transition: width 350ms cubic-bezier(0.6, 0, 0.3, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .see-all {
-    transition: none;
-  }
-}
-</style>

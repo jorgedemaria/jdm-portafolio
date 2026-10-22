@@ -5,8 +5,8 @@ import { useCopyEmail } from '../composables/useCopyEmail'
 import { useScrambleReplay, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 
 /*
- * Pie de página: sobre una línea fina, los datos en una línea repartidos a lo ancho y separados
- * por puntos (si no caben, siguen en la línea de abajo). Todo en primario; correo, Instagram y
+ * Pie de página: sobre una línea fina, los datos en tres grupos, uno por tercio de la retícula
+ * del sitio (en móvil, en una línea separados por puntos; si no caben, siguen abajo). Todo en primario; correo, Instagram y
  * teléfono llevan un subrayado rosado. Instagram, teléfono y ubicación solo aparecen si están
  * completos en site.js.
  * Cada 10 s un dato al azar se baraja con letras al azar; con el cursor encima del pie se detiene.
@@ -76,7 +76,13 @@ onBeforeUnmount(() => footerObserver?.disconnect())
 <template>
   <footer ref="footerEl" class="px-2 pt-4 pb-4 text-primario" @pointerenter="pause" @pointerleave="resume">
     <div class="page">
-      <ul class="flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-primario pt-3 text-cuerpo-sm">
+      <!--
+        Dos grupos en la retícula de tercios (desde 768 px): correo, Instagram y teléfono juntos en el
+        1º; ubicación y año en el 3º. Desde 1024 px, ubicación y año empiezan donde empiezan los
+        enlaces del navbar (--menu-inicio, lo mide AppNav). En móvil, en una línea separados por puntos (el punto entre
+        grupos solo se ve ahí)
+      -->
+      <ul class="flex flex-wrap gap-x-3 gap-y-1 border-t border-primario pt-3 text-cuerpo-sm md:grid md:grid-cols-3 lg:grid-cols-[var(--menu-inicio,66.666%)_1fr] lg:gap-x-0">
         <li class="whitespace-nowrap">
           <!-- Correo: al hacer clic se copia y se lee "copiado!" -->
           <button
@@ -88,29 +94,22 @@ onBeforeUnmount(() => footerObserver?.disconnect())
             <span aria-hidden="true">{{ copied ? 'copiado!' : shown('correo') }}</span>
           </button>
           <span class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</span>
-        </li>
-
-        <li v-if="site.instagram" class="whitespace-nowrap">
-          <span class="mr-3" aria-hidden="true">·</span>
-          <a :href="instagramUrl" target="_blank" rel="noopener" :class="link">
+          <span v-if="site.instagram || site.telefono" class="mx-3" aria-hidden="true">·</span>
+          <a v-if="site.instagram" :href="instagramUrl" target="_blank" rel="noopener" :class="link">
             <span class="sr-only">Instagram {{ values.instagram }}</span><span aria-hidden="true">{{ shown('instagram') }}</span>
           </a>
-        </li>
-
-        <li v-if="site.telefono" class="whitespace-nowrap">
-          <span class="mr-3" aria-hidden="true">·</span>
-          <a :href="telefonoHref" :class="link">
+          <span v-if="site.instagram && site.telefono" class="mx-3" aria-hidden="true">·</span>
+          <a v-if="site.telefono" :href="telefonoHref" :class="link">
             <span class="sr-only">Teléfono {{ values.telefono }}</span><span aria-hidden="true">{{ shown('telefono') }}</span>
           </a>
         </li>
 
-        <li v-if="site.ubicacion" class="whitespace-nowrap">
-          <span class="mr-3" aria-hidden="true">·</span>
-          <span class="sr-only">{{ values.ubicacion }}</span><span aria-hidden="true">{{ shown('ubicacion') }}</span>
-        </li>
-
-        <li class="whitespace-nowrap tabular-nums">
-          <span class="mr-3" aria-hidden="true">·</span>
+        <li class="whitespace-nowrap tabular-nums md:col-start-3 lg:col-start-2">
+          <span class="mr-3 md:hidden" aria-hidden="true">·</span>
+          <template v-if="site.ubicacion">
+            <span class="sr-only">{{ values.ubicacion }}</span><span aria-hidden="true">{{ shown('ubicacion') }}</span>
+            <span class="mx-3" aria-hidden="true">·</span>
+          </template>
           <span class="sr-only">© {{ values.año }}</span><span aria-hidden="true">{{ shown('año') }}</span>
         </li>
       </ul>

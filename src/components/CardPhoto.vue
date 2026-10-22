@@ -14,6 +14,9 @@ const props = defineProps({
   sizes: { type: String, required: true },
   // Con el cursor encima la tarjeta no cambia
   paused: { type: Boolean, default: false },
+  // Alto máximo (CSS): la foto mantiene el ancho y, si en su proporción queda más alta, se recorta
+  // arriba y abajo
+  maxHeight: { type: String, default: null },
 })
 
 const photos = cardPhotos(props.project)
@@ -66,7 +69,7 @@ const incomingPhoto = computed(() => (incoming.value === null ? null : photos[in
 
 <template>
   <div class="relative">
-    <ResponsiveImage v-bind="photos[shown]" :ratio="ratio" :sizes="sizes" @loaded="finishSwap" />
+    <ResponsiveImage v-bind="photos[shown]" :ratio="ratio" :sizes="sizes" :style="maxHeight && { width: '100%', maxHeight }" @loaded="finishSwap" />
     <div
       v-if="incomingPhoto"
       :key="incomingPhoto.src"

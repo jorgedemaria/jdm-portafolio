@@ -1,16 +1,11 @@
 <script setup>
-import { ref, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
+import PhotoLightbox from '../components/PhotoLightbox.vue'
 import NotFoundView from './NotFoundView.vue'
-import ProjectFacts from '../components/ProjectFacts.vue'
 import { findProject } from '../data/content'
-import { useNavSectionTitle } from '../composables/useNavSectionTitle'
-import { navTitleAction, menuOpen, menuBottom } from '../composables/useMenu'
 import { useScrollReveal } from '../composables/useScrollReveal'
 import { useScrollProgress } from '../composables/useScrollProgress'
-import { introLeaving, NAV_DURATION } from '../composables/useIntro'
-import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
-import { useRouter } from 'vue-router'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -18,30 +13,18 @@ const props = defineProps({
 
 const project = computed(() => findProject(props.slug))
 
-// Desde 768 px el nombre del proyecto se muestra debajo del logo, con su animación
-const root = ref(null)
-useNavSectionTitle(root, () => project.value?.titulo ?? '')
-
-// En móvil el título está fijo a 80 px (pt-20); con el menú abierto baja hasta MENU_GAP px
-// debajo del menú, el mismo espacio que hay entre el logo y el menú
-const TITLE_TOP = 80
-const MENU_GAP = 24
-const titlePush = computed(() =>
-  menuOpen.value && menuBottom.value ? Math.max(0, menuBottom.value + MENU_GAP - TITLE_TOP) : 0,
-)
-
 watchEffect(() => {
   document.title = project.value
     ? `${project.value.titulo} — Jorge de María`
     : 'Página no encontrada — Jorge de María'
 })
 
-// Datos del proyecto, como la grilla de las tarjetas (filas separadas por líneas)
+// Ficha bajo la primera foto: los datos, sin etiquetas, después de la categoría
 const facts = computed(() => [
-  ['año', String(project.value.año)],
-  ['lugar', project.value.lugar],
-  ['arquitectura', project.value.arquitecto],
-  ...Object.entries(project.value.ficha ?? {}).map(([label, value]) => [label.toLowerCase(), value]),
+  String(project.value.año),
+  project.value.lugar,
+  project.value.arquitecto,
+  ...Object.values(project.value.ficha ?? {}),
 ])
 
 const firstPhoto = computed(() => project.value?.fotos[0])
@@ -96,85 +79,19 @@ const heroStyle = computed(() => {
   }
 })
 
-// Título en móvil (sobre la foto): se arma con letras al azar al aparecer, como en el navbar
-const titleShown = ref(false)
-const mobileTitle = useScrambleText(
-  computed(() => {
-    const title = project.value?.titulo ?? ''
-    return titleShown.value ? title : ' '.repeat(title.length)
-  }),
-  { stagger: 35, scramble: 380, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
-)
-
-/*
- * Botón para volver a donde se llegó: últimos registros (Inicio), todos los registros o una
- * categoría. Vue Router guarda la página anterior en history.state.back; si se entró directo
- * a la dirección del proyecto, lleva a la lista de proyectos.
- */
-const router = useRouter()
-const backPath = ref(null)
-const backLabel = computed(() => {
-  const back = backPath.value
-  if (!back) return 'ver registros'
-  if (back === '/' || back.startsWith('/#')) return 'volver a últimos registros'
-  const categoria = new URLSearchParams(back.split('?')[1] ?? '').get('categoria')
-  if (back.startsWith('/registros?') && categoria) return `volver a ${categoria.replace(/-/g, ' ')}`
-  if (back.startsWith('/registros')) return 'volver a registros'
-  return 'volver'
-})
-function goBack() {
-  if (backPath.value) router.back()
-  else router.push({ name: 'projects' })
-}
-
-// El título móvil se arma al llegar a la página (si está la intro, cuando ya se armó el navbar)
-const TITLE_DELAY = 400
-let titleTimer = 0
-const revealTitle = (delay) => (titleTimer = setTimeout(() => (titleShown.value = true), delay))
-onMounted(() => {
-  backPath.value = window.history.state?.back ?? null
-  // El título del navbar ("← título") lleva de vuelta
-  navTitleAction.value = { label: backLabel.value, run: goBack }
-  if (introLeaving.value) revealTitle(TITLE_DELAY)
-  else {
-    const stop = watch(introLeaving, (leaving) => {
-      if (!leaving) return
-      stop()
-      revealTitle(NAV_DURATION)
-    })
-  }
-})
-onBeforeUnmount(() => {
-  navTitleAction.value = null
-  clearTimeout(titleTimer)
-})
-
-/*
- * Resto de la galería, con el mismo diagrama que la página de Proyectos: dos columnas con la
- * de la derecha desfasada hacia abajo, cada foto completa en su proporción real. La primera
- * va a todo el ancho si es horizontal.
- */
+// Resto de la galería: una columna en los 2 tercios de la derecha, cada foto completa en su proporción real
 const gallery = computed(() => project.value?.fotos.slice(1) ?? [])
-const isWide = (i) => i === 0 && gallery.value[0].width > gallery.value[0].height
-// Columna derecha (desfasada): cuenta desde después de la foto a todo el ancho, si la hay
-const isRight = (i) => (i - (isWide(0) ? 1 : 0)) % 2 === 1
+// Foto abierta a pantalla completa (índice en la galería) o null
+const lightbox = ref(null)
 
-/*
- * La ficha va en el hueco del desfase: arriba de la primera foto de la columna derecha, que
- * así queda corrida hacia abajo por la ficha en vez de por el margen. En móvil (una columna)
- * o si no hay columna derecha, va al comienzo de la galería.
- */
-const firstRight = computed(() => (isWide(0) ? 2 : 1))
-const factsInGap = computed(() => gallery.value.length > firstRight.value)
-
-// Las fotos de la galería se desenrollan con el scroll a medida que aparecen
+// Las fotos de la galería se descubren de izquierda a derecha al aparecer, como en Registros
 const reveal = useScrollReveal()
 </script>
 
 <template>
   <NotFoundView v-if="!project" />
 
-  <article v-else ref="root" class="pb-10">
+  <article v-else class="pb-10">
     <!--
       Primera foto: ocupa toda la pantalla, desde arriba. Mientras se ve, el navbar va sin
       fondo encima de ella (data-nav-overlay, como el stack de Inicio).
@@ -185,65 +102,75 @@ const reveal = useScrollReveal()
         <!-- Marco de la foto: pantalla completa, o achicándose anclado arriba (ver heroFrame) -->
         <div class="absolute inset-x-0 top-0 h-full" :style="heroFrame">
           <ResponsiveImage v-bind="firstPhoto" fill loading="eager" sizes="100vw" />
+
+          <!--
+            El nombre del registro abajo sobre la foto, como título de película. Sube junto con el
+            borde de la foto al achicarse
+          -->
+          <div class="absolute inset-x-0 bottom-0 px-2 pb-6">
+            <div
+              class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] font-semibold tracking-[-0.03em] text-fondo"
+            >
+              <!-- -ml: corrección óptica, el margen propio de la letra grande la corría a la derecha de la ficha -->
+              <h1 class="-ml-[0.035em] text-balance">{{ project.titulo }}</h1>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
 
-    <h1 class="sr-only max-md:hidden">{{ project.titulo }}</h1>
-
+    <!--
+      Como Registros: desde 768 px, la ficha en el 1º tercio, fija bajo el navbar al bajar, con la
+      estética de las categorías; la galería en los otros dos
+    -->
     <div class="px-2">
-      <div class="page">
-        <ProjectFacts :project="project" :facts="facts" :class="['mt-6', factsInGap && 'md:hidden']" />
-        <ul class="mt-6 grid gap-x-10 gap-y-16 md:grid-cols-2 md:items-start lg:mt-10">
-          <li
-            v-for="(photo, i) in gallery"
-            :key="photo.src"
-            :class="[isWide(i) && 'md:col-span-2', isRight(i) && i !== firstRight && 'md:mt-24']"
-          >
-            <ProjectFacts v-if="i === firstRight" :project="project" :facts="facts" class="mb-10 max-md:hidden" />
-            <div :ref="reveal" class="overflow-hidden">
-              <ResponsiveImage
-                v-bind="photo"
-                :sizes="isWide(i) ? '(min-width: 1440px) 1360px, 100vw' : '(min-width: 1440px) 680px, (min-width: 768px) 48vw, 100vw'"
-              />
+      <div class="page mt-6 md:grid md:grid-cols-3 md:items-start lg:mt-10">
+        <ul
+          class="flex flex-wrap gap-x-6 text-boton text-primario md:sticky md:top-[calc(var(--cabecera,0px)+1.5rem)] md:flex-col md:pr-6 lg:pr-10"
+        >
+          <li>
+            <RouterLink
+              :to="{ name: 'projects', query: { categoria: project.categoria.slug } }"
+              class="block w-fit py-2.5 lowercase decoration-acento decoration-2 underline-offset-4 hover:underline md:py-1.5"
+              >{{ project.categoria.nombre }}</RouterLink
+            >
+          </li>
+          <li v-for="fact in facts" :key="fact" class="py-2.5 md:py-1.5">{{ fact }}</li>
+        </ul>
+        <ul class="mt-6 grid gap-y-16 md:col-span-2 md:mt-0">
+          <li v-for="(photo, i) in gallery" :key="photo.src">
+            <!--
+              Ancho máximo para que la foto entera quepa bajo el fondo del navbar (--cabecera), con
+              1,5 rem arriba y abajo: así las verticales se ven completas sin recorrerlas
+            -->
+            <div
+              :ref="reveal"
+              class="overflow-hidden"
+              :style="{ maxWidth: `calc((100svh - var(--cabecera, 0px) - 3rem) * ${photo.width / photo.height})` }"
+            >
+              <button
+                type="button"
+                class="block w-full cursor-zoom-in"
+                :aria-label="`Ver foto ${i + 1} de ${gallery.length} a pantalla completa`"
+                @click="lightbox = i"
+              >
+                <ResponsiveImage v-bind="photo" sizes="(min-width: 1440px) 900px, (min-width: 768px) 66vw, 100vw" />
+              </button>
             </div>
           </li>
         </ul>
       </div>
     </div>
 
-    <!--
-      Título del proyecto con una flecha "←" antes que lleva de vuelta (solo la flecha es el
-      botón). En móvil queda fijo debajo del logo; desde 768 px está en el navbar.
-      Con el menú abierto baja hasta quedar debajo de él, con la misma curva que la persiana.
-    -->
-    <div class="pointer-events-none fixed inset-x-0 top-0 z-40 px-2 pt-20 md:hidden">
-      <div
-        class="page flex items-center gap-[0.25em] font-display text-h1 transition-transform duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]"
-        :style="titlePush ? { transform: `translateY(${titlePush}px)` } : null"
-      >
-        <!-- Solo la flecha es el botón para volver -->
-        <button
-          type="button"
-          class="group/back pointer-events-auto -my-[0.15em] -ml-[0.15em] cursor-pointer p-[0.15em]"
-          :aria-label="backLabel"
-          @click="goBack"
-        >
-          <svg
-            class="block size-[0.6em] transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] group-hover/back:-translate-x-1"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            aria-hidden="true"
-          >
-            <path d="M10.5 6H1.5M5 2.5 1.5 6 5 9.5" />
-          </svg>
-        </button>
-        <h1 class="whitespace-pre-wrap text-balance">
-          <span class="sr-only">{{ project.titulo }}</span><span aria-hidden="true">{{ mobileTitle }}</span>
-        </h1>
-      </div>
-    </div>
+
+    <Transition
+      enter-active-class="transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]"
+      leave-active-class="transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]"
+      enter-from-class="[clip-path:inset(100%_0_0_0)]"
+      leave-to-class="[clip-path:inset(100%_0_0_0)]"
+    >
+      <PhotoLightbox v-if="lightbox !== null" :photos="gallery" :start="lightbox" @close="lightbox = null" />
+    </Transition>
   </article>
 </template>

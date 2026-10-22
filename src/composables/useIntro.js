@@ -1,14 +1,17 @@
 import { ref } from 'vue'
 
 /*
- * Secuencia de entrada del sitio. La intro marca `introLeaving` cuando su persiana
- * empieza a subir; a partir de ahí:
- *   1. el logo y el botón del menú se arman con letras al azar   (NAV_DURATION)
- *   2. las líneas del stack bajan como persiana                  (LINES_DURATION)
- *   3. aparecen "Desliza" y el contador
- * Si la página se abre sin intro (navegando dentro del sitio), todo aparece de inmediato.
+ * Secuencia de entrada del sitio, al entrar por Inicio. El logo del navbar se escribe primero (con
+ * una carita que después pasa al "*") y, NAV_DELAY después de ese cambio, marca `introLeaving`;
+ * a partir de ahí:
+ *   1. aparecen los elementos del navbar (menú o botón)
+ *   2. la primera foto del stack baja como persiana desde el navbar      (NAV_DURATION)
+ *   3. aparecen "Desliza" y el contador                                   (INDICATOR_DELAY)
+ * Si la página se abre en otra página (o se navega dentro del sitio), todo aparece de inmediato.
  */
 export const introLeaving = ref(false)
 
-export const NAV_DURATION = 850
-export const LINES_DURATION = 950
+// Pausa entre que la carita del logo pasa al "*" y aparecen los elementos del navbar
+export const NAV_DELAY = 1300
+export const NAV_DURATION = 900
+export const INDICATOR_DELAY = 1100

@@ -11,7 +11,7 @@ import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScram
  * Mensaje y enlaces como en la sección de contacto: la frase en verde, que se arma con letras
  * al azar, y debajo los enlaces en bloques verdes (como "¿necesitas fotos? escríbeme:").
  */
-const TITLE = 'esta página no existe :('
+const TITLE = 'Esta página no existe :('
 const titleShown = ref(false)
 const title = useScrambleText(
   computed(() => (titleShown.value ? TITLE : ' '.repeat(TITLE.length))),
@@ -132,7 +132,7 @@ const headingText = useScrambleText(heading, {
 </script>
 
 <template>
-  <section class="px-2 pt-32 pb-24 md:pt-44">
+  <section class="px-2 pt-6 pb-24">
     <div class="page">
       <div
         class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
@@ -142,11 +142,11 @@ const headingText = useScrambleText(heading, {
             <span class="sr-only">{{ TITLE }}</span>
             <span aria-hidden="true">{{ title }}</span>
           </h1>
-          <ul class="mt-6 flex flex-col gap-[0.25em] font-extrabold leading-none text-fondo" :style="{ fontSize: linkSize }">
+          <ul class="mt-6 flex flex-col gap-[0.25em] font-extrabold leading-none text-primario" :style="{ fontSize: linkSize }">
             <li v-for="link in LINKS" :key="link.label">
               <RouterLink
                 :to="link.to"
-                class="inline-block bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em] whitespace-pre decoration-[0.06em] underline-offset-[0.12em] hover:underline"
+                class="whitespace-pre underline decoration-acento decoration-[0.08em] underline-offset-[0.12em]"
                 >{{ link.label }}</RouterLink
               >
             </li>

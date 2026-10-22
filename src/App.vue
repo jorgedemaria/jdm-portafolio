@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import AppNav from "./components/AppNav.vue";
-import AppIntro from "./components/AppIntro.vue";
 import AppFooter from "./components/AppFooter.vue";
 import {
   menuOpen,
@@ -14,11 +13,10 @@ import {
 import { introLeaving } from "./composables/useIntro";
 
 /*
- * La intro sale cada vez que se entra por Inicio; al entrar directo a otra página, no. Sin
- * intro, el resto del sitio (logo, datos de un proyecto) se arma de inmediato como si ya hubiera salido.
+ * Entrada: al entrar por Inicio, el logo del navbar se escribe primero y recién entonces aparece el
+ * resto (ver AppNav). Al entrar directo a otra página, todo está desde el principio.
  */
-const showIntro = ref(window.location.pathname === "/");
-if (!showIntro.value) introLeaving.value = true;
+if (window.location.pathname !== "/") introLeaving.value = true;
 
 /*
  * Al abrir el menú, el contenido (y el pie) bajan lo que mide el menú + 24 px, así el menú
@@ -28,6 +26,9 @@ if (!showIntro.value) introLeaving.value = true;
 const MENU_GAP = 24;
 // En Inicio no se baja nada (asomaría el fondo crema); "últimos registros" se corre por su cuenta
 const route = useRoute();
+// Inicio y el detalle empiezan con una foto a pantalla completa bajo el navbar; el resto de las
+// páginas empieza debajo del nombre grande del logo (--cabecera, lo mide AppNav)
+const fullBleed = computed(() => route.name === "home" || route.name === "project");
 const contentPush = computed(() =>
   menuOpen.value && !navOverPhotos.value && menuHeight.value && route.name !== "home"
     ? menuHeight.value + MENU_GAP
@@ -44,7 +45,6 @@ const pushClass = computed(() => {
 </script>
 
 <template>
-  <AppIntro v-if="showIntro" @done="showIntro = false" />
   <a
     href="#contenido"
     class="fixed top-2 left-2 z-[60] -translate-y-24 bg-primario px-4 py-2 text-fondo focus:translate-y-0"
@@ -55,7 +55,10 @@ const pushClass = computed(() => {
   <!-- Columna de al menos una pantalla de alto: el contenido crece y el pie queda siempre al fondo -->
   <div
     :class="['flex min-h-svh flex-col transition-transform', pushClass]"
-    :style="contentPush ? { transform: `translateY(${contentPush}px)` } : null"
+    :style="{
+      paddingTop: fullBleed ? null : 'var(--cabecera, 0px)',
+      transform: contentPush ? `translateY(${contentPush}px)` : null,
+    }"
   >
     <RouterView v-slot="{ Component, route }">
       <Transition name="page" mode="out-in">

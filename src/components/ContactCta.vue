@@ -117,7 +117,6 @@ function reset() {
 
 // Frase del tamaño del logo (36 px); en pantallas angostas se achica para caber en una línea
 const promptSize = `min(2.25rem, calc((100vw - 3.5rem) / ${PROMPT.length * 0.6 + 0.34}))`
-const promptVisible = computed(() => prompt.value.trimEnd())
 
 // El correo (y la carita) usan el ancho disponible sin pasar de 6rem
 const EMAIL_CHARS = site.email.length + 3
@@ -161,35 +160,28 @@ onBeforeUnmount(() => {
   <section id="contacto" ref="root" aria-label="Contacto" class="flex min-h-[calc(100svh-var(--footer-h,4rem))] flex-col justify-center px-2 py-16">
     <div class="page flex w-full flex-col">
       <!--
-        Frase en un bloque verde, como el logo. El ancho completo queda reservado (invisible) y
-        el bloque solo llega hasta el último carácter visible: crece hacia la derecha al armarse.
+        Frase en texto, sin bloque (como el resto del sitio), que se arma con letras al azar.
         Cada texto animado tiene su versión fija para lectores de pantalla.
       -->
-      <p class="font-extrabold leading-none whitespace-pre text-fondo" :style="{ fontSize: promptSize }">
+      <p class="font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: promptSize }">
         <span class="sr-only">{{ PROMPT }}</span>
-        <span class="relative block w-fit" aria-hidden="true">
-          <span class="invisible block px-[0.17em] pt-[0.22em] pb-[0.11em]">{{ PROMPT }}</span>
-          <span
-            v-if="promptVisible"
-            class="absolute top-0 left-0 bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em]"
-            >{{ promptVisible }}</span
-          >
-        </span>
+        <span aria-hidden="true">{{ prompt }}</span>
       </p>
 
       <p class="mt-6 font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: emailSize }">
         <button
           type="button"
 :class="[
-            'decoration-[0.06em] underline-offset-[0.12em]',
-            emailReady ? 'cursor-pointer hover:underline' : 'pointer-events-none',
+            emailReady ? 'cursor-pointer' : 'pointer-events-none',
           ]"
           :aria-label="`Copiar correo ${site.email}`"
           @click="copy"
         >
-          <!-- El correo va marcado en rosado (acento), como con destacador, a medida que se escribe -->
+          <!-- El correo con el subrayado rosado de los enlaces del sitio, a medida que se escribe -->
           <span aria-hidden="true"
-            ><span v-if="emailTyped" class="bg-acento px-[0.1em]">{{ emailTyped }}</span
+            ><span v-if="emailTyped" class="underline decoration-acento decoration-[0.08em] underline-offset-[0.12em]">{{
+              emailTyped
+            }}</span
             ><TypingCaret :state="emailCaret" />{{ email.slice(emailTyped.length) }}</span
           >
         </button>
@@ -197,14 +189,16 @@ onBeforeUnmount(() => {
           La carita va separada del correo por un espacio. Al hacerle clic también copia el correo
           (repite el botón del correo, por eso se oculta a lectores de pantalla y al teclado).
         -->
-        <span
+        <button
+          type="button"
+          tabindex="-1"
           aria-hidden="true"
           :class="[
-            'ml-[0.6em] inline-block cursor-pointer bg-acento px-[0.1em] whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
+            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
             copied && 'rotate-90',
           ]"
           @click="copy"
-          >{{ smileyText }}<TypingCaret :state="smileyCaret" /></span
+          >{{ smileyText }}<TypingCaret :state="smileyCaret" /></button
         >
       </p>
       <p class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</p>

@@ -1,7 +1,7 @@
 <script setup>
 /*
  * Ficha de un proyecto, como la grilla de las tarjetas: filas tipo menú separadas por líneas,
- * etiqueta a la izquierda y dato a la derecha. La categoría lleva a Proyectos filtrado.
+ * etiqueta a la izquierda y dato a la derecha. La categoría lleva a Registros filtrado.
  */
 defineProps({
   project: { type: Object, required: true },
@@ -11,7 +11,7 @@ defineProps({
 </script>
 
 <template>
-  <dl class="divide-y divide-primario border border-primario bg-fondo text-cuerpo-sm text-primario">
+  <dl class="divide-y divide-primario text-cuerpo-sm text-primario">
     <div class="flex items-baseline justify-between gap-4 px-3 py-2.5">
       <dt class="font-light">categoría</dt>
       <dd class="text-right text-texto">
