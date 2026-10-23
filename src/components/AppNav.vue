@@ -78,6 +78,8 @@ function measureMonument() {
   const text = logoTextRef.value;
   if (!link || !right || !row || !text?.offsetWidth) return;
   const small = row.bottom + MONUMENT_GAP;
+  // Alto final de la franja crema, con el logo chico (el stack de Inicio en móvil lo usa)
+  document.documentElement.style.setProperty("--cabecera-chica", `${small}px`);
   if (route.name !== "home") {
     monument.value = { scale: 1, lift: 0, distance: 1, small, big: small };
     logoShrink.value = 0;
@@ -89,8 +91,9 @@ function measureMonument() {
   const scale = Math.max(1, (right.right - link.left) / (charWidth * (site.wordmark.length + 1)));
   const lift = row.bottom - link.top;
   const bottom = row.bottom + text.offsetHeight * scale;
-  // El nombre termina de achicarse cuando la página subió lo que mide de más
-  monument.value = { scale, lift, distance: Math.max(1, bottom - link.bottom), small, big: bottom + MONUMENT_GAP };
+  // El nombre termina de achicarse cuando la página subió lo mismo que baja la franja crema
+  // (big - small): así la franja, y el stack de Inicio en móvil pegado a ella, van 1:1 con el scroll
+  monument.value = { scale, lift, distance: Math.max(1, bottom - row.bottom), small, big: bottom + MONUMENT_GAP };
   logoShrink.value = monument.value.distance;
   document.documentElement.style.setProperty("--cabecera", `${bottom + MONUMENT_GAP}px`);
 }
