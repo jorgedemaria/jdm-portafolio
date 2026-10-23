@@ -5,7 +5,7 @@ import PhotoLightbox from '../components/PhotoLightbox.vue'
 import NotFoundView from './NotFoundView.vue'
 import { findProject } from '../data/content'
 import { useScrollReveal } from '../composables/useScrollReveal'
-import { useScrollProgress } from '../composables/useScrollProgress'
+import { useScrollProgress, smallViewportHeight } from '../composables/useScrollProgress'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -43,7 +43,7 @@ const heroProgress = useScrollProgress(heroRoot)
 const viewport = ref({ width: 0, height: 0 })
 const reducedMotion = ref(false)
 const measureViewport = () =>
-  (viewport.value = { width: window.innerWidth, height: window.innerHeight })
+  (viewport.value = { width: window.innerWidth, height: smallViewportHeight() })
 onMounted(() => {
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   measureViewport()

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import ResponsiveImage from './ResponsiveImage.vue'
-import { useScrollProgress } from '../composables/useScrollProgress'
+import { useScrollProgress, smallViewportHeight } from '../composables/useScrollProgress'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { useScrambleText } from '../composables/useScrambleText'
 import { logoShrink } from '../composables/useMenu'
@@ -44,7 +44,7 @@ const viewport = ref({ width: 0, height: 0 })
 let narrowQuery
 const measureViewport = () => {
   narrow.value = narrowQuery.matches
-  viewport.value = { width: window.innerWidth, height: window.innerHeight }
+  viewport.value = { width: window.innerWidth, height: smallViewportHeight() }
 }
 onMounted(() => {
   narrowQuery = window.matchMedia('(width < 64rem)')

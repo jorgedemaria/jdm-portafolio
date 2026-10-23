@@ -98,6 +98,9 @@ function measureMonument() {
 watch(() => route.name, () => nextTick(measureMonument));
 // 0 = nombre gigante, 1 = logo chico (según cuánto se bajó)
 const shrink = computed(() => Math.min(scrollY.value / monument.value.distance, 1));
+// Nombre gigante arriba de Inicio, sin scroll: subrayado fijo y no es enlace (ya se está en Inicio).
+// Desde el primer scroll el subrayado se desvanece y vuelve solo al pasar el cursor
+const logoAtTop = computed(() => route.name === "home" && shrink.value === 0);
 const logoStyle = computed(() => {
   const { scale, lift } = monument.value;
   const p = shrink.value;
@@ -440,10 +443,11 @@ watch(
         <RouterLink
           ref="logoLinkRef"
           :to="{ name: 'home' }"
-          :tabindex="logoHidden ? -1 : undefined"
+          :tabindex="logoHidden || logoAtTop ? -1 : undefined"
           translate="no"
           :class="[
             'group/logo shrink-0 text-h3 leading-[0.85] font-extrabold tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
+            logoAtTop && 'pointer-events-none',
           ]"
         >
           <span class="sr-only">{{ site.name }} — inicio</span>
@@ -457,12 +461,25 @@ watch(
             aria-hidden="true"
             :class="[
               // pb: espacio para las colas (j, g) dentro del recorte de la persiana
-              // Subrayado rosado al pasar, como los enlaces del menú (grosor según el tamaño del logo)
-              'inline-block origin-top-left pb-[0.2em] whitespace-pre decoration-acento decoration-[0.06em] underline-offset-[0.12em] group-hover/logo:underline transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+              'inline-block origin-top-left pb-[0.2em] whitespace-pre transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
               logoHidden ? '[clip-path:inset(0_0_100%_0)]' : '[clip-path:inset(0)]',
             ]"
             :style="logoStyle"
-            >{{ logoText.trimEnd() }}<TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
+            >
+              <!--
+                Subrayado rosado en dos partes: el nombre y la carita (o el *), cortado en el último
+                espacio. Fijo arriba de Inicio (logoAtTop); si no, solo al pasar el cursor
+              -->
+              <template v-for="(part, i) in logoText.trimEnd().split(/( +)(?=\S+$)/)" :key="i"
+                ><span
+                  v-if="part.trim()"
+                  :class="[
+                    'underline decoration-[0.06em] underline-offset-[0.12em] transition-[text-decoration-color] duration-500',
+                    logoAtTop ? 'decoration-acento' : 'decoration-transparent group-hover/logo:decoration-acento',
+                  ]"
+                  >{{ part }}</span
+                ><template v-else>{{ part }}</template></template
+              ><TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
           >
         </RouterLink>
         <!--
@@ -519,20 +536,21 @@ watch(
           >
             <span class="sr-only">{{ open ? "Cerrar menú" : "Abrir menú" }}</span>
             <!-- Mientras se baraja, el "+" se muestra como texto con símbolos al azar -->
-            <span v-if="toggleScrambling" class="relative text-boton leading-none" aria-hidden="true">{{
+            <span v-if="toggleScrambling" class="relative text-lg leading-none font-extrabold sm:text-2xl" aria-hidden="true">{{
               toggleText
             }}</span>
             <!-- "+" que gira a "×" al abrir -->
             <span
               v-else
               :class="[
-                'relative block size-4 transition-transform duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+                'relative block size-4 sm:size-6 transition-transform duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
                 open && 'rotate-135',
               ]"
               aria-hidden="true"
             >
-              <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current" />
-              <span class="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-current" />
+              <!-- Trazo grueso, con el peso del logo en extrabold -->
+              <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-current sm:h-1" />
+              <span class="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-current sm:w-1" />
             </span>
           </button>
 

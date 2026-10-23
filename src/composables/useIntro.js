@@ -12,6 +12,6 @@ import { ref } from 'vue'
 export const introLeaving = ref(false)
 
 // Pausa entre que la carita del logo pasa al "*" y aparecen los elementos del navbar
-export const NAV_DELAY = 1300
-export const NAV_DURATION = 900
+export const NAV_DELAY = 800
+export const NAV_DURATION = 800
 export const INDICATOR_DELAY = 1100

@@ -33,10 +33,14 @@ const block = 'whitespace-pre text-primario underline decoration-acento decorati
 
 <template>
   <section class="px-2 pt-6 pb-16">
-    <div class="page">
+    <!--
+      Retícula de tercios, como Registros y el detalle: el título en el 1º tercio y el mensaje desde
+      el 2º (donde empiezan las fotos allá); en móvil, bajo el título
+    -->
+    <div class="page md:grid md:grid-cols-3 md:items-baseline">
       <h1 class="font-display text-h1">Sobre mí</h1>
 
-      <p class="mt-6 max-w-[60ch]">
+      <p class="mt-4 max-w-[40ch] text-boton text-primario md:col-span-2 md:col-start-2 md:mt-0">
         aún no sé quién soy, mientras revisa mis
         <RouterLink :to="{ name: 'projects' }" :class="block" :aria-label="PROJECTS"
           ><span aria-hidden="true">{{ projectsText }}</span></RouterLink

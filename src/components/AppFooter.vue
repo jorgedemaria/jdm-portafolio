@@ -79,11 +79,11 @@ onBeforeUnmount(() => footerObserver?.disconnect())
       <!--
         Dos grupos en la retícula de tercios (desde 768 px): correo, Instagram y teléfono juntos en el
         1º; ubicación y año en el 3º. Desde 1024 px, ubicación y año empiezan donde empiezan los
-        enlaces del navbar (--menu-inicio, lo mide AppNav). En móvil, en una línea separados por puntos (el punto entre
-        grupos solo se ve ahí)
+        enlaces del navbar (--menu-inicio, lo mide AppNav). En móvil, como el menú: los contactos en
+        lista a la izquierda y ubicación y año a la derecha, a la altura de la última fila
       -->
-      <ul class="flex flex-wrap gap-x-3 gap-y-1 border-t border-primario pt-3 text-cuerpo-sm md:grid md:grid-cols-3 lg:grid-cols-[var(--menu-inicio,66.666%)_1fr] lg:gap-x-0">
-        <li class="whitespace-nowrap">
+      <ul class="flex items-end justify-between gap-x-3 border-t border-primario pt-3 text-cuerpo-sm md:grid md:grid-cols-3 lg:grid-cols-[var(--menu-inicio,66.666%)_1fr] lg:gap-x-0">
+        <li class="flex flex-col items-start gap-y-2 whitespace-nowrap md:block">
           <!-- Correo: al hacer clic se copia y se lee "copiado!" -->
           <button
             type="button"
@@ -94,18 +94,17 @@ onBeforeUnmount(() => footerObserver?.disconnect())
             <span aria-hidden="true">{{ copied ? 'copiado!' : shown('correo') }}</span>
           </button>
           <span class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</span>
-          <span v-if="site.instagram || site.telefono" class="mx-3" aria-hidden="true">·</span>
+          <span v-if="site.instagram || site.telefono" class="mx-3 hidden md:inline" aria-hidden="true">·</span>
           <a v-if="site.instagram" :href="instagramUrl" target="_blank" rel="noopener" :class="link">
             <span class="sr-only">Instagram {{ values.instagram }}</span><span aria-hidden="true">{{ shown('instagram') }}</span>
           </a>
-          <span v-if="site.instagram && site.telefono" class="mx-3" aria-hidden="true">·</span>
+          <span v-if="site.instagram && site.telefono" class="mx-3 hidden md:inline" aria-hidden="true">·</span>
           <a v-if="site.telefono" :href="telefonoHref" :class="link">
             <span class="sr-only">Teléfono {{ values.telefono }}</span><span aria-hidden="true">{{ shown('telefono') }}</span>
           </a>
         </li>
 
         <li class="whitespace-nowrap tabular-nums md:col-start-3 lg:col-start-2">
-          <span class="mr-3 md:hidden" aria-hidden="true">·</span>
           <template v-if="site.ubicacion">
             <span class="sr-only">{{ values.ubicacion }}</span><span aria-hidden="true">{{ shown('ubicacion') }}</span>
             <span class="mx-3" aria-hidden="true">·</span>
