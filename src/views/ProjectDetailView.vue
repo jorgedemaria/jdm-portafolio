@@ -5,7 +5,7 @@ import PhotoLightbox from '../components/PhotoLightbox.vue'
 import NotFoundView from './NotFoundView.vue'
 import { findProject } from '../data/content'
 import { useScrollReveal } from '../composables/useScrollReveal'
-import { useScrollProgress, smallViewportHeight } from '../composables/useScrollProgress'
+import { useScrollProgress, stableViewportHeight } from '../composables/useScrollProgress'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -43,7 +43,7 @@ const heroProgress = useScrollProgress(heroRoot)
 const viewport = ref({ width: 0, height: 0 })
 const reducedMotion = ref(false)
 const measureViewport = () =>
-  (viewport.value = { width: window.innerWidth, height: smallViewportHeight() })
+  (viewport.value = { width: window.innerWidth, height: stableViewportHeight() })
 onMounted(() => {
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   measureViewport()
@@ -66,11 +66,16 @@ const heroFrame = computed(() => {
   const t = reducedMotion.value ? 1 : heroProgress.value
   return { height: `${full + (fullPhotoHeight.value - full) * t}px` }
 })
+// Título sobre el borde visible: el marco puede seguir bajo la barra del navegador (alto estable)
+const titleStyle = computed(() => {
+  const frame = heroFrame.value?.height ?? `${viewport.value.height}px`
+  return viewport.value.height ? { bottom: `max(0px, calc(${frame} - 100dvh))` } : null
+})
 // Alto de la sección: pantalla + recorrido del achique. La parte fija mide una pantalla, pero
 // la foto termina antes (en su alto real): un margen negativo sube la galería esa
 // diferencia, para que empiece justo donde termina la foto
 const heroStyle = computed(() => {
-  if (!heroShrinks.value) return { height: '100svh' }
+  if (!heroShrinks.value) return { height: '100lvh' }
   const vh = viewport.value.height
   const end = fullPhotoHeight.value
   return {
@@ -98,9 +103,9 @@ const reveal = useScrollReveal()
     -->
     <div ref="heroRoot" class="relative w-full" :style="heroStyle" data-nav-overlay>
       <!-- Lo transparente de la parte fija deja pasar los clics a la galería que sube debajo -->
-      <!-- Si se achica, del alto estable en px (ver smallViewportHeight), no h-svh -->
+      <!-- Si se achica, del alto estable en px (ver stableViewportHeight) -->
       <div
-        class="pointer-events-none sticky top-0 h-svh w-full overflow-hidden"
+        class="pointer-events-none sticky top-0 h-lvh w-full overflow-hidden"
         :style="heroShrinks ? { height: `${viewport.height}px` } : null"
       >
         <!-- Marco de la foto: pantalla completa, o achicándose anclado arriba (ver heroFrame) -->
@@ -111,7 +116,8 @@ const reveal = useScrollReveal()
             El nombre del registro abajo sobre la foto, como título de película. Sube junto con el
             borde de la foto al achicarse
           -->
-          <div class="absolute inset-x-0 bottom-0 px-2 pb-6">
+          <!-- Sobre el borde visible de la pantalla si el marco pasa por debajo de la barra del navegador -->
+          <div class="absolute inset-x-0 bottom-0 px-2 pb-6" :style="titleStyle">
             <div
               class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] font-semibold tracking-[-0.03em] text-fondo"
             >

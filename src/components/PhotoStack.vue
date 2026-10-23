@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import ResponsiveImage from './ResponsiveImage.vue'
-import { useScrollProgress, smallViewportHeight } from '../composables/useScrollProgress'
+import { useScrollProgress, stableViewportHeight } from '../composables/useScrollProgress'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { useScrambleText } from '../composables/useScrambleText'
 import { logoShrink } from '../composables/useMenu'
@@ -44,7 +44,7 @@ const viewport = ref({ width: 0, height: 0 })
 let narrowQuery
 const measureViewport = () => {
   narrow.value = narrowQuery.matches
-  viewport.value = { width: window.innerWidth, height: smallViewportHeight() }
+  viewport.value = { width: window.innerWidth, height: stableViewportHeight() }
 }
 onMounted(() => {
   narrowQuery = window.matchMedia('(width < 64rem)')
@@ -124,7 +124,7 @@ const stackProgress = computed(() => {
 
 const rootStyle = computed(() => {
   if (!shrinkMode.value)
-    return { height: `calc(${100 + (props.photos.length - 1) * SEGMENT * 100}svh + ${wait.value}px)` }
+    return { height: `${viewport.value.height * (1 + (props.photos.length - 1) * SEGMENT) + wait.value}px` }
   return {
     height: `${viewport.value.height + shrinkTotal.value + wait.value}px`,
     marginBottom: `${-shrinkDistance.value.at(-1)}px`,
@@ -232,7 +232,7 @@ function photoStyle(index) {
     }
   }
   return {
-    transform: `translate3d(0, ${(1 - a) * 100}svh, 0)`,
+    transform: `translate3d(0, ${(1 - a) * viewport.value.height}px, 0)`,
   }
 }
 
@@ -240,11 +240,8 @@ function photoStyle(index) {
 
 <template>
   <div ref="root" class="relative" :style="rootStyle">
-    <!-- En teléfono y tablet, del alto estable en px (ver smallViewportHeight), no h-svh -->
-    <div
-      class="sticky top-0 h-svh overflow-hidden"
-      :style="shrinkMode ? { height: `${viewport.height}px` } : null"
-    >
+    <!-- Del alto estable en px (ver stableViewportHeight) -->
+    <div class="sticky top-0 h-lvh overflow-hidden" :style="viewport.height ? { height: `${viewport.height}px` } : null">
       <div
         v-for="(photo, i) in photos"
         :key="photo.src"
@@ -274,7 +271,12 @@ function photoStyle(index) {
         "Desliza" y el contador en texto crema sobre la foto, como el menú: "Desliza" alineado con
         el logo y el contador con el borde derecho de la retícula
       -->
-      <div class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-fondo" aria-hidden="true">
+      <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo -->
+      <div
+        class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-fondo"
+        :style="{ bottom: `max(0px, calc(${viewport.height}px - 100dvh))` }"
+        aria-hidden="true"
+      >
         <div class="mx-auto flex max-w-360 items-end justify-between px-2">
           <p class="whitespace-pre xl:ml-8">{{ hint }}</p>
           <p
