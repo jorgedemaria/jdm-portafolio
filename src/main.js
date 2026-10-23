@@ -4,9 +4,15 @@ import router from './router'
 import './styles/main.css'
 import { startSmoothScroll } from './composables/useSmoothScroll'
 import { aplicarPaleta, paletaGuardada } from './composables/usePaleta'
+import { aplicarTitulos, tituloGuardado, aplicarLogoSerif, logoSerifGuardado } from './composables/useTitulos'
 
-// En desarrollo se recuerda la paleta elegida en /guia, para recorrer el sitio con ella
-if (import.meta.env.DEV) aplicarPaleta(paletaGuardada())
+// En desarrollo se recuerdan la paleta y la tipografía de títulos elegidas en /guia, para
+// recorrer el sitio con ellas
+if (import.meta.env.DEV) {
+  aplicarPaleta(paletaGuardada())
+  aplicarTitulos(tituloGuardado())
+  aplicarLogoSerif(logoSerifGuardado())
+}
 
 // Antes de montar, así la intro puede detenerlo desde el principio
 startSmoothScroll()

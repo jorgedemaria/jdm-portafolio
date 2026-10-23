@@ -1,6 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { paletas, aplicarPaleta, paletaGuardada } from '../composables/usePaleta'
+import {
+  titulos,
+  aplicarTitulos,
+  tituloGuardado,
+  cargarFuentes,
+  aplicarLogoSerif,
+  logoSerifGuardado,
+} from '../composables/useTitulos'
 import ProjectCard from '../components/ProjectCard.vue'
 import ProjectFacts from '../components/ProjectFacts.vue'
 import SystemMock from '../components/SystemMock.vue'
@@ -245,6 +253,13 @@ function choose(nombre) {
 }
 onMounted(readColors)
 
+// Tipografía de títulos en prueba: cambia todos los títulos del sitio (ver useTitulos). Las
+// tarjetas muestran cada una con su propia fuente, así se comparan aunque no esté elegida
+const tituloActivo = ref(tituloGuardado())
+const logoSerif = ref(logoSerifGuardado())
+onMounted(cargarFuentes)
+const muestraTitulos = { nombre: 'Casa Punucapa', ficha: 'casas · 2023 · Valdivia, Chile', otro: 'Librería 780' }
+
 const type = [
   { token: 'h1', class: 'font-display text-h1', sample: 'Nave de producción, planta norte' },
   { token: 'h2', class: 'font-display text-h2', sample: 'Nave de producción, planta norte' },
@@ -287,6 +302,62 @@ const type = [
         <li v-for="c in colors" :key="c.name">
           <div :class="['aspect-square', c.class]" />
           <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-16" aria-labelledby="g-titulos">
+      <h2 id="g-titulos" class="font-display text-h3">Tipografía de títulos</h2>
+      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
+        El logo, el navbar y los textos siguen en JetBrains Mono; cada tarjeta prueba una serif para los títulos.
+        Al elegir una cambian todos los títulos del sitio (solo aquí, en desarrollo).
+      </p>
+      <button
+        type="button"
+        :aria-pressed="logoSerif"
+        :class="[
+          'mt-4 cursor-pointer border border-primario px-3 py-1.5 text-cuerpo-sm',
+          logoSerif ? 'bg-primario text-fondo' : 'text-primario hover:bg-primario hover:text-fondo',
+        ]"
+        @click="logoSerif = aplicarLogoSerif(!logoSerif)"
+      >
+        logo en Instrument Serif: {{ logoSerif ? 'sí' : 'no' }}
+      </button>
+      <ul class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <li v-for="t in titulos" :key="t.nombre">
+          <button
+            type="button"
+            :aria-pressed="tituloActivo === t.nombre"
+            :class="[
+              'flex h-full w-full cursor-pointer flex-col border p-4 text-left',
+              tituloActivo === t.nombre ? 'border-primario ring-2 ring-primario' : 'border-texto/15 hover:border-primario',
+            ]"
+            @click="tituloActivo = aplicarTitulos(t.nombre)"
+          >
+            <!-- Navbar en mono, como el sitio -->
+            <span class="flex items-baseline justify-between gap-2">
+              <span class="font-logo text-h4 leading-none [font-weight:var(--logo-peso,800)] tracking-[-0.04em] text-primario"
+                >jorge de maría *</span
+              >
+              <span class="text-boton text-primario">registros · sobre mí</span>
+            </span>
+            <!-- Título con la fuente de cada opción -->
+            <span
+              class="mt-8 block text-[2.5rem] leading-[1.05] text-texto"
+              :style="{ fontFamily: t.familia ?? t.muestra, fontWeight: t.peso }"
+              >{{ muestraTitulos.nombre }}</span
+            >
+            <span class="mt-2 text-boton text-primario">{{ muestraTitulos.ficha }}</span>
+            <span
+              class="mt-6 block text-2xl leading-tight text-texto"
+              :style="{ fontFamily: t.familia ?? t.muestra, fontWeight: t.peso }"
+              >{{ muestraTitulos.otro }}</span
+            >
+            <span class="mt-1 text-boton text-primario">comercial · 2025 · Valdivia, Chile</span>
+            <span class="mt-auto block border-t border-texto/15 pt-3 text-cuerpo-sm" style="margin-top: 2rem">
+              <span class="font-extrabold">{{ t.nombre }}</span> — {{ t.nota }}
+            </span>
+          </button>
         </li>
       </ul>
     </section>

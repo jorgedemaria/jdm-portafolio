@@ -119,7 +119,7 @@ const reveal = useScrollReveal()
           <!-- Sobre el borde visible de la pantalla si el marco pasa por debajo de la barra del navegador -->
           <div class="absolute inset-x-0 bottom-0 px-2 pb-6" :style="titleStyle">
             <div
-              class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] font-semibold tracking-[-0.03em] text-fondo"
+              class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] tracking-[-0.03em] text-fondo"
             >
               <!-- -ml: corrección óptica, el margen propio de la letra grande la corría a la derecha de la ficha -->
               <h1 class="-ml-[0.035em] text-balance">{{ project.titulo }}</h1>

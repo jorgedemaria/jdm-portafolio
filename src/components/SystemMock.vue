@@ -48,7 +48,7 @@ const lineas = computed(() => (dark.value ? 'border-fondo/40' : 'border-primario
       <span class="w-fit bg-acento px-3 pt-1.5 pb-1 text-h4 leading-none font-extrabold text-primario">{{
         site.wordmark
       }}</span>
-      <span class="font-display text-h4 font-semibold">← {{ project.titulo }}</span>
+      <span class="font-display text-h4">← {{ project.titulo }}</span>
       <span :class="['flex justify-between text-boton', dark ? 'text-acento' : 'text-primario']">
         <span v-for="label in links" :key="label">{{ label }}</span>
         <span>escríbeme</span>
@@ -80,7 +80,7 @@ const lineas = computed(() => (dark.value ? 'border-fondo/40' : 'border-primario
           escríbeme
         </span>
       </div>
-      <p class="col-start-2 mt-2 ml-[33.333%] font-display text-h4 font-semibold">← {{ project.titulo }}</p>
+      <p class="col-start-2 mt-2 ml-[33.333%] font-display text-h4">← {{ project.titulo }}</p>
     </div>
 
     <!-- El nombre como monumento: el nombre a todo el ancho, el menú en una esquina -->
@@ -109,7 +109,7 @@ const lineas = computed(() => (dark.value ? 'border-fondo/40' : 'border-primario
           </span>
         </div>
         <p
-          class="absolute inset-x-0 bottom-0 p-4 font-display text-[clamp(2rem,6vw,5rem)] leading-[0.9] font-semibold tracking-[-0.03em] text-fondo"
+          class="absolute inset-x-0 bottom-0 p-4 font-display text-[clamp(2rem,6vw,5rem)] leading-[0.9] tracking-[-0.03em] text-fondo"
         >
           {{ project.titulo }}
         </p>

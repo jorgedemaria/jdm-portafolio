@@ -1,4 +1,4 @@
-@import '@fontsource/sora/latin-600.css';
+@import '@fontsource/instrument-serif/latin-400.css';
 @import '@fontsource/jetbrains-mono/latin-300.css';
 @import '@fontsource/jetbrains-mono/latin-400.css';
 @import '@fontsource/jetbrains-mono/latin-800.css';
@@ -19,31 +19,34 @@
 
   /*
    * Familias. Regla de uso:
-   * - Sora 600 (font-display): nombres. Títulos de página y de sección, y nombres de proyectos.
+   * - Instrument Serif 400 (font-display, su único peso): nombres. Títulos de página y de
+   *   sección, y nombres de proyectos.
    * - JetBrains Mono 800 (font-extrabold): la voz del sitio. Logo, intro, mensajes y llamadas a
    *   la acción en bloques (contacto, 404).
    * - JetBrains Mono 400: todo lo demás (texto, menú, fichas, pie).
    * - JetBrains Mono 300 (font-light): etiquetas de las fichas (detalle y tarjetas de proyecto).
    */
   --font-*: initial;
-  --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Logo: el mono, salvo en las pruebas de /guia (ver useTitulos) */
+  --font-logo: var(--font-mono);
 
   /* Escala tipográfica (interlineado 100% como en Figma).
      Figma "texto" → cuerpo, "texto pequeño" → cuerpo-sm, "etiquetas" → etiqueta */
   --text-*: initial;
   --text-h1: 2.25rem;
   --text-h1--line-height: 1;
-  --text-h1--font-weight: 600;
+  --text-h1--font-weight: 400;
   --text-h2: 2rem;
   --text-h2--line-height: 1;
-  --text-h2--font-weight: 600;
+  --text-h2--font-weight: 400;
   --text-h3: 1.5rem;
   --text-h3--line-height: 1;
-  --text-h3--font-weight: 600;
+  --text-h3--font-weight: 400;
   --text-h4: 1.25rem;
   --text-h4--line-height: 1;
-  --text-h4--font-weight: 600;
+  --text-h4--font-weight: 400;
   --text-cuerpo: 1rem;
   --text-cuerpo--line-height: 1;
   /* Letra chica de interfaz (menú, selector, fichas, pie, "Desliza"…): todas del mismo tamaño */

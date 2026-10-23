@@ -66,44 +66,129 @@ function updatePinned() {
  * el resto), para que las páginas y la retícula del stack empiecen debajo (ver App.vue).
  */
 const MONUMENT_GAP = 16;
+// Con el menú en lista (desde 1024 px): aire entre el logo y la lista, y bajo la lista
+const LIST_GAP = 12;
+const LIST_COLUMN_GAP = 32;
+const MENU_LIST_GAP = 32;
 const navRowRef = ref(null);
 const rightRef = ref(null);
-// small / big: dónde termina la cabecera con el logo chico y con el nombre gigante
-const monument = ref({ scale: 1, lift: 0, distance: 1, small: 0, big: 0 });
+/*
+ * small / big: dónde termina la cabecera con el logo chico y con el nombre gigante.
+ * Con el menú en lista (ver listStyle): spanTop y textH son la posición y el alto del texto del
+ * logo sin transformar, listTop dónde está la lista sin moverla y listEnd dónde termina (inicio a
+ * la altura de las minúsculas del logo chico).
+ */
+const monument = ref({ scale: 1, lift: 0, distance: 1, small: 0, big: 0, spanTop: 0, textH: 0, listTop: 0, listEnd: 0, listH: 0 });
+// Altura de las minúsculas (de la x) en la fuente de un elemento, en px
+function xHeight(el) {
+  const style = getComputedStyle(el);
+  const ctx = (measureCanvas ??= document.createElement("canvas")).getContext("2d");
+  ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  return ctx.measureText("x").actualBoundingBoxAscent;
+}
+// Línea base de un elemento (y en pantalla): el borde de abajo de una caja vacía alineada a ella
+function baselineOf(el) {
+  const mark = document.createElement("span");
+  mark.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+  el.appendChild(mark);
+  const y = mark.getBoundingClientRect().bottom;
+  mark.remove();
+  return y;
+}
 const scrollY = ref(0);
+let measureCanvas = null;
 function measureMonument() {
   const link = logoLinkRef.value?.$el.getBoundingClientRect();
   const right = rightRef.value?.getBoundingClientRect();
   const row = navRowRef.value?.getBoundingClientRect();
   const text = logoTextRef.value;
   if (!link || !right || !row || !text?.offsetWidth) return;
-  const small = row.bottom + MONUMENT_GAP;
+  const textH = text.offsetHeight;
+  const spanTop = text.offsetParent.getBoundingClientRect().top + text.offsetTop;
+  const listH = beside.value ? right.height : 0;
+  // Con la lista: al final, el borde de arriba de las minúsculas de inicio a la altura del de las
+  // minúsculas del logo chico (el palo de la j, sin su punto). Se mide cada uno como línea base
+  // menos la altura de la x de su fuente; el de inicio, respecto del borde de arriba de la lista
+  const firstLink = beside.value ? menuRef.value?.querySelector("li a span") : null;
+  const listEnd = firstLink
+    ? baselineOf(logoLinkRef.value.$el) -
+      xHeight(text) -
+      (baselineOf(firstLink) - xHeight(firstLink) - menuRef.value.getBoundingClientRect().top)
+    : 0;
+  const small = beside.value
+    ? Math.max(row.bottom, listEnd + listH) + MENU_LIST_GAP
+    : row.bottom + MONUMENT_GAP;
+  const base = { spanTop, textH, listTop: right.top, listEnd, listH };
   // Alto final de la franja crema, con el logo chico (el stack de Inicio en móvil lo usa)
   document.documentElement.style.setProperty("--cabecera-chica", `${small}px`);
   if (route.name !== "home") {
-    monument.value = { scale: 1, lift: 0, distance: 1, small, big: small };
+    monument.value = { scale: 1, lift: 0, distance: 1, small, big: small, ...base };
     logoShrink.value = 0;
     document.documentElement.style.setProperty("--cabecera", `${small}px`);
     return;
   }
-  // Cabe con la carita (":)", un carácter más que "*"), que se ve al salir de la intro
-  const charWidth = text.offsetWidth / logoText.value.length;
-  const scale = Math.max(1, (right.right - link.left) / (charWidth * (site.wordmark.length + 1)));
-  const lift = row.bottom - link.top;
-  const bottom = row.bottom + text.offsetHeight * scale;
+  // Cabe con la carita (":)", un carácter más que "*"), que se ve al salir de la intro. Se mide el
+  // texto final con su fuente (no el que está en pantalla, que en la intro aún está en blanco: en
+  // una fuente proporcional los espacios son más angostos que las letras)
+  const style = getComputedStyle(text);
+  const ctx = (measureCanvas ??= document.createElement("canvas")).getContext("2d");
+  ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  ctx.letterSpacing = style.letterSpacing;
+  // Hasta el borde derecho; con la lista, hasta antes de su columna (así nunca pasa sobre ella)
+  const limit = beside.value ? right.left - LIST_COLUMN_GAP : right.right;
+  const scale = Math.max(1, (limit - link.left) / ctx.measureText(PREFIX + FACE).width);
+  // El nombre gigante empieza justo bajo la fila del navbar
+  const lift = row.bottom - spanTop;
+  const giantBottom = row.bottom + textH * scale;
+  const big = beside.value ? giantBottom + LIST_GAP + listH + MENU_LIST_GAP : giantBottom + MONUMENT_GAP;
   // El nombre termina de achicarse cuando la página subió lo mismo que baja la franja crema
-  // (big - small): así la franja, y el stack de Inicio en móvil pegado a ella, van 1:1 con el scroll
-  monument.value = { scale, lift, distance: Math.max(1, bottom - row.bottom), small, big: bottom + MONUMENT_GAP };
+  // (big - small): así la franja, la lista y el stack de Inicio en móvil van 1:1 con el scroll
+  monument.value = { scale, lift, distance: Math.max(1, big - small), small, big, ...base };
   logoShrink.value = monument.value.distance;
-  document.documentElement.style.setProperty("--cabecera", `${bottom + MONUMENT_GAP}px`);
+  document.documentElement.style.setProperty("--cabecera", `${big}px`);
 }
 // Al cambiar de página se vuelve a medir (el nombre gigante es solo de Inicio)
 watch(() => route.name, () => nextTick(measureMonument));
 // 0 = nombre gigante, 1 = logo chico (según cuánto se bajó)
-const shrink = computed(() => Math.min(scrollY.value / monument.value.distance, 1));
+/*
+ * Al llegar a Inicio con un salto a una sección (ej. contacto desde otra página), la página está un
+ * instante arriba antes del salto: sin esto se vería el nombre gigante. Mientras tanto el logo
+ * queda chico; se libera cuando el scroll pasó el tramo del nombre (o a los 2,5 s, si no saltó).
+ */
+const jumping = ref(false);
+let jumpTimer = 0;
+watch(
+  () => route.name,
+  (name, prev) => {
+    if (name !== "home" || !route.hash || prev === "home") return;
+    jumping.value = true;
+    clearTimeout(jumpTimer);
+    jumpTimer = setTimeout(() => (jumping.value = false), 2500);
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => clearTimeout(jumpTimer));
+const shrink = computed(() => (jumping.value ? 1 : Math.min(scrollY.value / monument.value.distance, 1)));
+watch(scrollY, (y) => {
+  if (jumping.value && y >= monument.value.distance) jumping.value = false;
+});
 // Nombre gigante arriba de Inicio, sin scroll: subrayado fijo y no es enlace (ya se está en Inicio).
 // Desde el primer scroll el subrayado se desvanece y vuelve solo al pasar el cursor
 const logoAtTop = computed(() => route.name === "home" && shrink.value === 0);
+// Lista del menú (desde 1024 px): con el nombre gigante empieza bajo él (su borde de abajo +
+// LIST_GAP) y sube a la par mientras se achica, hasta quedar con inicio a la altura del logo
+// Borde de arriba de la lista en este momento del scroll (null sin la lista en la fila)
+const listLiveTop = computed(() => {
+  const { scale, lift, spanTop, textH, listEnd } = monument.value;
+  if (!beside.value || !textH) return null;
+  // Fuera de Inicio no hay nombre gigante: la lista está siempre en su lugar final
+  const p = route.name === "home" ? shrink.value : 1;
+  const start = spanTop + lift + textH * scale + LIST_GAP;
+  return listEnd + (start - listEnd) * (1 - p);
+});
+const listStyle = computed(() =>
+  listLiveTop.value === null ? null : { transform: `translateY(${listLiveTop.value - monument.value.listTop}px)` },
+);
 const logoStyle = computed(() => {
   const { scale, lift } = monument.value;
   const p = shrink.value;
@@ -235,8 +320,7 @@ const toggleScrambling = toggleSymbol.playing;
 
 // Al abrir el menú, en cada enlace se desordena una sílaba al azar (a veces también una letra suelta)
 const MENU_ITEM_STAGGER = 70;
-const menuEntries = [...site.nav, site.cta];
-const menuItems = menuEntries.map((item) => ({
+const menuItems = site.nav.map((item) => ({
   ranges: syllableRanges(item.silabas ?? item.label),
   replay: useScrambleReplay(item.label, {
     stagger: 45,
@@ -256,7 +340,6 @@ function playMenuEntrance() {
 watch(open, (isOpen) => {
   if (!isOpen) {
     menuTimers.forEach(clearTimeout);
-    ctaHover.value = false;
     return;
   }
   playMenuEntrance();
@@ -269,41 +352,6 @@ watch(introLeaving, (leaving) => leaving && open.value && playMenuEntrance());
 function scrambleMenuItem(i) {
   const item = menuItems[i];
   if (!item.replay.playing.value) item.replay.play(pickSyllable(item.ranges));
-}
-
-// Al pasar el cursor (o enfocar con teclado) "Escríbeme" se transforma en el correo
-const ctaHover = ref(false);
-// Clic: copia el correo y todo el texto se transforma en "copiado!" por unos segundos
-const COPIED_DURATION = 1800;
-const copied = ref(false);
-const ctaHoverText = useScrambleText(
-  computed(() => (copied.value ? "copiado!" : ctaHover.value ? site.email : site.cta.label)),
-  { stagger: 30, scramble: 320, tick: 45, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
-);
-// Mientras el correo o "copiado!" están (o se están desarmando) manda este texto
-const ctaText = computed(() =>
-  ctaHover.value || copied.value || ctaHoverText.value !== site.cta.label
-    ? ctaHoverText.value
-    : menuText.value[menuText.value.length - 1],
-);
-
-let copiedTimer = 0;
-
-async function copyEmail() {
-  try {
-    await navigator.clipboard.writeText(site.email);
-  } catch {
-    // Respaldo para navegadores sin acceso al portapapeles
-    const field = document.createElement("textarea");
-    field.value = site.email;
-    document.body.append(field);
-    field.select();
-    document.execCommand("copy");
-    field.remove();
-  }
-  copied.value = true;
-  clearTimeout(copiedTimer);
-  copiedTimer = setTimeout(() => (copied.value = false), COPIED_DURATION);
 }
 
 // Sin fondo mientras se recorre una sección marcada con data-nav-overlay (p. ej. el stack de fotos)
@@ -368,6 +416,8 @@ onMounted(() => {
     measureGrid();
     measureMonument();
   });
+  // Y cada vez que termina de cargar otra fuente (ej. las de prueba de /guia)
+  document.fonts.addEventListener("loadingdone", measureMonument);
   window.addEventListener("resize", measureGrid);
   window.addEventListener("resize", measureMonument);
   window.addEventListener("resize", measureMenu);
@@ -382,6 +432,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", measureGrid);
   window.removeEventListener("resize", measureMonument);
+  document.fonts.removeEventListener("loadingdone", measureMonument);
   window.removeEventListener("resize", measureMenu);
   document.removeEventListener("keydown", onKeydown);
   window.removeEventListener("scroll", onScroll);
@@ -398,9 +449,11 @@ watch([sectionTitle, beside], () =>
 
 // Lo más bajo del navbar (para que las secciones fijas no queden debajo)
 watch(
-  [open, menuBottom, logoBox, titleBottom, beside],
+  [open, menuBottom, logoBox, titleBottom, beside, listLiveTop],
   () => {
-    const bottom = open.value ? menuBottom.value : (logoBox.value?.bottom ?? 0);
+    // Con el menú en lista, donde termina la lista ahora (se mueve con el scroll en Inicio)
+    const listBottom = listLiveTop.value === null ? null : listLiveTop.value + monument.value.listH;
+    const bottom = listBottom ?? (open.value ? menuBottom.value : (logoBox.value?.bottom ?? 0));
     // Con el menú en la fila del logo, el título va debajo de él y es lo más bajo
     navContentBottom.value = beside.value && sectionTitle.value.trim() ? Math.max(bottom, titleBottom.value) : bottom;
   },
@@ -443,7 +496,7 @@ watch(
       <nav
         ref="navRowRef"
         aria-label="Principal"
-        class="flex h-16 items-center justify-between p-2 lg:h-20"
+        class="flex h-16 items-center justify-between p-2 lg:h-20 lg:items-start"
       >
         <div class="flex min-w-0 items-center">
         <RouterLink
@@ -452,7 +505,8 @@ watch(
           :tabindex="logoHidden || logoAtTop ? -1 : undefined"
           translate="no"
           :class="[
-            'group/logo shrink-0 text-h3 leading-[0.85] font-extrabold tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
+            // Peso por variable: en las pruebas de /guia el logo puede ir en una serif de un solo peso
+            'group/logo shrink-0 font-logo text-h3 leading-[0.85] [font-weight:var(--logo-peso,800)] tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
             logoAtTop && 'pointer-events-none',
           ]"
         >
@@ -496,7 +550,7 @@ watch(
           v-if="sectionTitle"
           ref="sectionTitleRef"
           :class="[
-            'pointer-events-none hidden min-w-0 items-center gap-[0.25em] font-display text-logo font-semibold whitespace-pre text-texto md:flex',
+            'pointer-events-none hidden min-w-0 items-center gap-[0.25em] font-display text-logo whitespace-pre text-texto md:flex',
             // Con el menú en la fila: debajo de él, alineado con su borde derecho (p-2 del nav y
             // xl:mr-8 del menú); si no, a la derecha del logo
             beside ? 'absolute top-full right-2 mt-2 xl:right-10' : 'ml-6',
@@ -522,7 +576,8 @@ watch(
           :inert="!introLeaving"
           :class="[
             'relative shrink-0 xl:mr-8',
-            beside && 'flex items-center',
+            // En la fila: el último tercio de la retícula (sin los márgenes xl:ml-8 y xl:mr-8)
+            beside && 'flex w-1/3 items-center xl:w-[calc((100%-4rem)/3)]',
           ]"
         >
           <!-- Mismo alto que el bloque del logo: 36 px en móvil, 48 px desde 640 px -->
@@ -569,24 +624,20 @@ watch(
             ref="menuRef"
             :class="[
               beside ? 'static' : 'absolute top-full right-0',
-              // En la fila del logo cada enlace tiene su propio ancho: al pasar por escríbeme
-              // solo crece él (en la grilla de 5 columnas iguales crecerían todos)
-              // En la fila: 5 celdas iguales, cada una al menos del ancho del correo (ch = una letra
-              // del mono en text-boton), así al mostrarlo en escríbeme no se sale ni mueve a las demás
-              // Desde 1024 px: enlaces de texto en la esquina, sin cajas (sobre la franja crema)
-              beside
-                ? 'flex items-center gap-6 text-boton text-primario'
-                : 'flex flex-col text-primario md:flex-row md:items-center md:justify-between',
+              // Desde 1024 px: lista de texto hacia abajo al comienzo del último tercio, sin cajas
+              // (sobre la franja crema), siempre debajo del logo (ver listStyle; la cabecera la
+              // incluye, ver measureMonument); desde
+              // 768 px, repartidos
+              // de borde a borde bajo el logo
+              beside ? 'flex w-full flex-col text-boton text-primario' : 'flex flex-col text-primario',
               'transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
               open && introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
-            :style="menuStyle"
+            :style="[menuStyle, listStyle]"
             :inert="!open"
           >
-            <!-- Desde 768 px: los 4 enlaces en las columnas 1 a 4, separados por líneas -->
             <ul
-              :class="
-beside ? 'flex items-center gap-6' : 'flex flex-col md:flex-row md:gap-6'"
+              :class="beside ? 'flex flex-col' : 'flex flex-col md:w-full md:flex-row md:items-center md:justify-between'"
             >
               <li v-for="(item, i) in site.nav" :key="item.label">
                 <RouterLink
@@ -596,7 +647,9 @@ beside ? 'flex items-center gap-6' : 'flex flex-col md:flex-row md:gap-6'"
                   @mouseenter="scrambleMenuItem(i)"
                   @focus="scrambleMenuItem(i)"
                   :class="[
-                    'flex items-center py-2.5 text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
+                    // En la lista de escritorio, menos aire: los 4 entran en el alto de la fila del logo
+                    'flex w-fit items-center text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
+                    beside ? 'py-[5px]' : 'py-2.5',
                     isActive(item) && 'underline',
                   ]"
                 >
@@ -605,25 +658,6 @@ beside ? 'flex items-center gap-6' : 'flex flex-col md:flex-row md:gap-6'"
                 </RouterLink>
               </li>
             </ul>
-            <!-- "escríbeme": columna 5 -->
-            <button
-              type="button"
-              :aria-label="`Copiar correo ${site.email}`"
-              :class="[
-                // py: el subrayado queda dentro del recorte de la persiana del menú
-                'w-fit cursor-pointer py-2.5 text-left text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
-                copied && 'bg-acento px-1 text-primario',
-              ]"
-              title="clickea :)"
-              @click="copyEmail"
-              @mouseenter="ctaHover = true"
-              @mouseleave="ctaHover = false"
-              @focus="ctaHover = true"
-              @blur="ctaHover = false"
-            >
-              <span class="whitespace-pre" aria-hidden="true">{{ ctaText }}</span>
-            </button>
-            <p class="sr-only" aria-live="polite">{{ copied ? "Correo copiado" : "" }}</p>
           </div>
         </div>
       </nav>

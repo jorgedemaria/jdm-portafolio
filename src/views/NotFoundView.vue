@@ -3,13 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 
 /*
- * Página 404, con el lenguaje del resto del sitio: el mensaje que se arma con letras al azar y
- * los enlaces a la izquierda, y un rompecabezas chico en el otro extremo (abajo en móvil).
- */
-
-/*
- * Mensaje y enlaces como en la sección de contacto: la frase en verde, que se arma con letras
- * al azar, y debajo los enlaces en bloques verdes (como "¿necesitas fotos? escríbeme:").
+ * Página 404, en la retícula de tercios como Registros y Sobre mí: en el 1º tercio el título (que
+ * se arma con letras al azar); en el 2º, los enlaces como las categorías; el rompecabezas donde
+ * empiezan los enlaces del navbar (--menu-inicio, como "Valdivia · 2026" del pie; en tablet, el
+ * 3º tercio). En móvil, todo apilado.
  */
 const TITLE = 'Esta página no existe :('
 const titleShown = ref(false)
@@ -19,14 +16,10 @@ const title = useScrambleText(
 )
 onMounted(() => (titleShown.value = true))
 
-// Mismas fórmulas que contacto: cada carácter de JetBrains Mono mide 0,6em y todo cabe en una línea
-const titleSize = `min(1.5rem, calc((100vw - 3.5rem) / ${TITLE.length * 0.6}))`
 const LINKS = [
   { label: 'ir al inicio', to: { name: 'home' } },
   { label: 'ver registros', to: { name: 'projects' } },
 ]
-// +0,34em: el margen interno del bloque verde, igual que en contacto
-const linkSize = `min(2.25rem, calc((100vw - 3.5rem) / ${Math.max(...LINKS.map((l) => l.label.length)) * 0.6 + 0.34}))`
 
 /*
  * Rompecabezas deslizante de 3 × 3 con la imagen de public/images/juego.png, en 8 piezas y un
@@ -133,28 +126,26 @@ const headingText = useScrambleText(heading, {
 
 <template>
   <section class="px-2 pt-6 pb-24">
-    <div class="page">
-      <div
-        class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
-      >
-        <div>
-          <h1 class="font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: titleSize }">
-            <span class="sr-only">{{ TITLE }}</span>
-            <span aria-hidden="true">{{ title }}</span>
-          </h1>
-          <ul class="mt-6 flex flex-col gap-[0.25em] font-extrabold leading-none text-primario" :style="{ fontSize: linkSize }">
+    <div
+      class="page md:grid md:grid-cols-3 md:items-start lg:grid-cols-[33.333%_calc(var(--menu-inicio,66.666%)-33.333%)_1fr]"
+    >
+        <h1 class="font-display text-h1 text-balance whitespace-pre-wrap md:pr-6 lg:pr-10">
+          <span class="sr-only">{{ TITLE }}</span>
+          <span aria-hidden="true">{{ title }}</span>
+        </h1>
+        <!-- Enlaces como las categorías de Registros: texto chico, subrayado rosado al pasar -->
+        <ul class="mt-4 text-boton text-primario md:-mt-1.5">
             <li v-for="link in LINKS" :key="link.label">
               <RouterLink
                 :to="link.to"
-                class="whitespace-pre underline decoration-acento decoration-[0.08em] underline-offset-[0.12em]"
+                class="block w-fit py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline md:py-1.5"
                 >{{ link.label }}</RouterLink
               >
             </li>
           </ul>
-        </div>
 
         <!-- Rompecabezas chico -->
-        <div class="w-full max-w-72 md:w-72">
+        <div class="mt-10 w-full max-w-72 md:col-start-3 md:mt-0">
           <p class="text-cuerpo-sm whitespace-pre text-primario">
             <span class="sr-only">{{ heading }}</span><span aria-hidden="true">{{ headingText }}</span>
           </p>
@@ -205,7 +196,6 @@ const headingText = useScrambleText(heading, {
           </div>
           <p class="sr-only" aria-live="polite">{{ status }}</p>
         </div>
-      </div>
     </div>
   </section>
 </template>

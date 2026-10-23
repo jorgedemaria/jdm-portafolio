@@ -106,7 +106,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', alignText))
       <CardPhoto :project="project" :paused="hovered" :ratio="ratio" :sizes="sizes" :max-height="MAX_PHOTO_HEIGHT" />
     </RouterLink>
     <div :style="textStyle">
-    <h2 ref="titleEl" class="mt-3 font-display text-cuerpo leading-snug font-semibold text-balance text-texto">
+    <h2 ref="titleEl" class="mt-3 font-display text-cuerpo leading-snug text-balance text-texto">
       <RouterLink
         :to="link"
         :aria-label="project.titulo"

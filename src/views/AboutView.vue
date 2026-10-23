@@ -41,7 +41,7 @@ const block = 'whitespace-pre text-primario underline decoration-acento decorati
       <h1 class="font-display text-h1">Sobre mí</h1>
 
       <p class="mt-4 max-w-[40ch] text-boton text-primario md:col-span-2 md:col-start-2 md:mt-0">
-        aún no sé quién soy, mientras revisa mis
+        aún no sé qué compartir de mi. mientras revisa mis
         <RouterLink :to="{ name: 'projects' }" :class="block" :aria-label="PROJECTS"
           ><span aria-hidden="true">{{ projectsText }}</span></RouterLink
         >
