@@ -215,9 +215,9 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
 </script>
 
 <template>
-  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario lg:h-[260lvh]">
+  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario lg:h-[260svh]">
     <!-- Fija en escritorio; el contenido empieza siempre debajo del navbar (no se centra, así no queda tapado en pantallas bajas) -->
-    <div class="px-2 pt-28 pb-28 lg:sticky lg:top-0 lg:flex lg:h-lvh lg:flex-col lg:pt-32 lg:pb-16">
+    <div class="px-2 pt-28 pb-28 lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:pt-32 lg:pb-16">
       <div
         :class="[
           'page w-full transition-transform lg:flex lg:min-h-0 lg:flex-1 lg:flex-col',
