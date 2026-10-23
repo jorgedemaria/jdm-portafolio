@@ -98,11 +98,7 @@ const reveal = useScrollReveal()
     -->
     <div ref="heroRoot" class="relative w-full" :style="heroStyle" data-nav-overlay>
       <!-- Lo transparente de la parte fija deja pasar los clics a la galería que sube debajo -->
-      <!-- Si se achica, del alto estable en px (ver smallViewportHeight), no h-svh -->
-      <div
-        class="pointer-events-none sticky top-0 h-svh w-full overflow-hidden"
-        :style="heroShrinks ? { height: `${viewport.height}px` } : null"
-      >
+      <div class="pointer-events-none sticky top-0 h-svh w-full overflow-hidden">
         <!-- Marco de la foto: pantalla completa, o achicándose anclado arriba (ver heroFrame) -->
         <div class="absolute inset-x-0 top-0 h-full" :style="heroFrame">
           <ResponsiveImage v-bind="firstPhoto" fill loading="eager" sizes="100vw" />

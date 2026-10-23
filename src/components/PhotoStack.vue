@@ -240,11 +240,7 @@ function photoStyle(index) {
 
 <template>
   <div ref="root" class="relative" :style="rootStyle">
-    <!-- En teléfono y tablet, del alto estable en px (ver smallViewportHeight), no h-svh -->
-    <div
-      class="sticky top-0 h-svh overflow-hidden"
-      :style="shrinkMode ? { height: `${viewport.height}px` } : null"
-    >
+    <div class="sticky top-0 h-svh overflow-hidden">
       <div
         v-for="(photo, i) in photos"
         :key="photo.src"
