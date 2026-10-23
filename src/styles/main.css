@@ -81,6 +81,8 @@
 
 @layer base {
   html {
+    /* Fondo de la página también en el lienzo: el rebote del scroll y Safari no muestran blanco */
+    @apply bg-fondo;
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     /* El navbar es fijo: lo enfocado con el teclado o los saltos a una sección no quedan debajo */

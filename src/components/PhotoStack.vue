@@ -108,21 +108,24 @@ function arrival(index) {
  * Los primeros scrolls solo achican el nombre gigante del navbar (logoShrink px): el stack espera
  * quieto, con la primera foto, y recién después empieza a subir la segunda. Para eso el recorrido
  * se alarga en ese tramo y el progreso del stack descuenta lo que ya se usó en el logo.
+ * En teléfono y tablet no se espera: la foto se achica a la par del nombre (la franja crema sube
+ * por arriba y el borde de la foto por abajo), así se desliza como un scroll normal y no parece
+ * agrandarse mientras la franja la descubre.
  */
+const wait = computed(() => (shrinkMode.value ? 0 : logoShrink.value))
 const travel = computed(() =>
   shrinkMode.value ? shrinkTotal.value : viewport.value.height * (props.photos.length - 1) * SEGMENT,
 )
 const stackProgress = computed(() => {
-  const wait = logoShrink.value
   if (!travel.value) return progress.value
-  return clamp((progress.value * (travel.value + wait) - wait) / travel.value)
+  return clamp((progress.value * (travel.value + wait.value) - wait.value) / travel.value)
 })
 
 const rootStyle = computed(() => {
   if (!shrinkMode.value)
-    return { height: `calc(${100 + (props.photos.length - 1) * SEGMENT * 100}svh + ${logoShrink.value}px)` }
+    return { height: `calc(${100 + (props.photos.length - 1) * SEGMENT * 100}svh + ${wait.value}px)` }
   return {
-    height: `${viewport.value.height + shrinkTotal.value + logoShrink.value}px`,
+    height: `${viewport.value.height + shrinkTotal.value + wait.value}px`,
     marginBottom: `${-shrinkDistance.value.at(-1)}px`,
   }
 })

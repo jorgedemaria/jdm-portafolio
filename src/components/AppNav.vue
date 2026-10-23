@@ -406,8 +406,11 @@ watch(
 </script>
 
 <template>
-  <!-- Navbar siempre transparente, en todas las páginas -->
-  <header class="fixed inset-x-0 top-0 z-50 p-2">
+  <!--
+    Fondo crema en la caja del header (solo la fila del logo, que siempre está sobre la franja
+    crema): Safari en iPhone tiñe la barra de estado con el fondo del elemento fijo de arriba
+  -->
+  <header class="fixed inset-x-0 top-0 z-50 bg-fondo p-2">
     <!--
       Franja crema plana detrás del navbar, del alto de la cabecera en este momento (--cabecera-viva):
       en Inicio, alta con el nombre gigante; al bajar, su borde de abajo sube junto con el nombre
