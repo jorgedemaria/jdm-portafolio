@@ -586,17 +586,19 @@ watch(
             >
               <!--
                 Subrayado rosado en dos partes: el nombre y la carita (o el *), cortado en el último
-                espacio. Fijo arriba de Inicio (logoAtTop); si no, solo al pasar el cursor
+                espacio. Fijo arriba de Inicio (logoAtTop); si no, solo al pasar el cursor. Parte en la
+                2ª letra: la cola de la j dejaba un trocito suelto de subrayado a su izquierda
               -->
               <template v-for="(part, i) in logoText.trimEnd().split(/( +)(?=\S+$)/)" :key="i"
+                ><template v-if="i === 0">{{ part[0] }}</template
                 ><span
                   v-if="part.trim()"
                   :class="[
                     'underline decoration-[0.06em] underline-offset-[0.12em] transition-[text-decoration-color] duration-500',
                     logoAtTop ? 'decoration-acento' : 'decoration-transparent group-hover/logo:decoration-acento',
                   ]"
-                  >{{ part }}</span
-                ><template v-else>{{ part }}</template></template
+                  >{{ i === 0 ? part.slice(1) : part }}</span
+                ><template v-else-if="i > 0">{{ part }}</template></template
               ><TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
           >
         </RouterLink>
