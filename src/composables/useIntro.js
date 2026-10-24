@@ -14,4 +14,4 @@ export const introLeaving = ref(false)
 // Pausa entre que la carita del logo pasa al "*" y aparecen los elementos del navbar
 export const NAV_DELAY = 800
 export const NAV_DURATION = 800
-export const INDICATOR_DELAY = 1100
+export const INDICATOR_DELAY = 1500

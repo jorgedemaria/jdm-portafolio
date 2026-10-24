@@ -48,6 +48,15 @@ export function jumpToSection(el) {
   el.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0)' }], REVEAL)
 }
 
+// Lleva el scroll hasta una altura (px) en `duration` segundos, con la curva del sitio, sin que
+// el usuario lo interrumpa (el paso de fotos del stack)
+const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
+export function scrollToY(y, duration, onComplete) {
+  if (lenis) return lenis.scrollTo(y, { duration, easing: easeInOutCubic, lock: true, force: true, onComplete })
+  window.scrollTo({ top: y, behavior: 'smooth' })
+  setTimeout(onComplete, duration * 1000)
+}
+
 // Salta arriba sin animación (al cambiar de página)
 export function scrollToTopNow() {
   if (lenis) lenis.scrollTo(0, { immediate: true, force: true })

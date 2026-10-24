@@ -270,6 +270,7 @@ const type = [
   { token: 'etiqueta', class: 'text-etiqueta', sample: 'Planta norte, 2025' },
   { token: 'logo', class: 'text-logo text-primario', sample: 'jorge de maría' },
 ]
+
 </script>
 
 <template>
@@ -277,6 +278,7 @@ const type = [
     <div class="page">
     <h1 class="font-display text-h1">Guía de estilos</h1>
     <p class="mt-4 text-cuerpo-sm">Solo visible en desarrollo.</p>
+
 
     <section class="mt-16" aria-labelledby="g-colores">
       <h2 id="g-colores" class="font-display text-h3">Colores</h2>

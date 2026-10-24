@@ -6,6 +6,7 @@ import { useReducedMotion } from '../composables/useReducedMotion'
 import { useScrambleText } from '../composables/useScrambleText'
 import { logoShrink, returningHome } from '../composables/useMenu'
 import { introLeaving, NAV_DURATION, INDICATOR_DELAY } from '../composables/useIntro'
+import { scrollToY } from '../composables/useSmoothScroll'
 
 /*
  * Stack de fotos ligado al scroll: la sección se queda fija y cada foto
@@ -132,6 +133,104 @@ const rootStyle = computed(() => {
 })
 
 const started = computed(() => stackProgress.value > 0.003)
+
+/*
+ * Paso de fotos: dentro del stack cada gesto (rueda, trackpad o dedo) lleva exactamente a la foto
+ * siguiente o a la anterior ya apoyada, con una animación fija (tipo páginas de producto). También
+ * el tramo del nombre gigante: un gesto lo achica entero. Pasada la última foto el scroll es libre.
+ * Mientras dura el gesto (y la inercia del trackpad) no se cuenta otro
+ */
+const PAGE_DURATION = 0.9 // s
+const GESTURE_GAP = 250 // ms sin rueda para dar por terminado un gesto
+// Paradas (px desde que empieza el stack): arriba de todo, cada foto apoyada
+function stops() {
+  const list = wait.value > 0 ? [-wait.value, 0] : [0]
+  if (!shrinkMode.value) {
+    const segment = viewport.value.height * SEGMENT
+    for (let i = 1; i < props.photos.length; i++) list.push((i - 1 + MOVE) * segment)
+    return list
+  }
+  // Teléfono y tablet: cada foto recién llegada, antes de su achique (ver timeline)
+  let at = 0
+  for (let i = 1; i < props.photos.length; i++) {
+    at += shrinkDistance.value[i - 1] + arriveDistance.value[i]
+    list.push(at)
+  }
+  return list
+}
+// Altura de página de la parada siguiente en esa dirección, o null si ahí el scroll es libre
+function nextStop(dir) {
+  const start = root.value.getBoundingClientRect().top + window.scrollY + wait.value
+  const top = window.scrollY - start
+  if (top < -wait.value - 1 || top > travel.value) return null
+  const list = stops()
+  const stop = dir > 0 ? list.find((y) => y > top + 1) : list.findLast((y) => y < top - 1)
+  return stop === undefined ? null : start + stop
+}
+
+let paging = false // animando o con el gesto aún en curso
+let gestureTimer = 0
+let animating = false
+function release() {
+  clearTimeout(gestureTimer)
+  gestureTimer = setTimeout(() => !animating && (paging = false), GESTURE_GAP)
+}
+function page(dir) {
+  const y = nextStop(dir)
+  if (y === null) return false
+  paging = animating = true
+  scrollToY(y, PAGE_DURATION, () => {
+    animating = false
+    release()
+  })
+  return true
+}
+// En captura, antes que el scroll suave (Lenis), que así no recibe la rueda que se usa aquí
+function onWheel(event) {
+  if (reducedMotion.value || !introLeaving.value || !root.value || !event.deltaY) return
+  if (paging) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    release()
+    return
+  }
+  if (page(Math.sign(event.deltaY))) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    release()
+  }
+}
+// Dedo: se decide con el primer movimiento; si toca pasar foto, la página no se mueve con el dedo
+let touchY = 0
+let touchControl = null // null sin decidir, true pasa foto, false scroll libre
+function onTouchStart(event) {
+  touchY = event.touches[0].clientY
+  touchControl = null
+}
+function onTouchMove(event) {
+  if (reducedMotion.value || !introLeaving.value || !root.value) return
+  const dy = touchY - event.touches[0].clientY
+  if (touchControl === null && Math.abs(dy) > 6) touchControl = paging || nextStop(Math.sign(dy)) !== null
+  if (touchControl) event.preventDefault()
+}
+function onTouchEnd(event) {
+  const dy = touchY - event.changedTouches[0].clientY
+  if (touchControl && !paging && Math.abs(dy) > 30) page(Math.sign(dy))
+  touchControl = null
+}
+onMounted(() => {
+  window.addEventListener('wheel', onWheel, { passive: false, capture: true })
+  window.addEventListener('touchstart', onTouchStart, { passive: true })
+  window.addEventListener('touchmove', onTouchMove, { passive: false })
+  window.addEventListener('touchend', onTouchEnd, { passive: true })
+})
+onBeforeUnmount(() => {
+  clearTimeout(gestureTimer)
+  window.removeEventListener('wheel', onWheel, { capture: true })
+  window.removeEventListener('touchstart', onTouchStart)
+  window.removeEventListener('touchmove', onTouchMove)
+  window.removeEventListener('touchend', onTouchEnd)
+})
 
 /*
  * Entrada (ver useIntro): cuando sube la persiana de la intro, primero se arma el navbar y al
@@ -286,20 +385,24 @@ function photoStyle(index) {
 
 
       <!--
-        "Desliza" y el contador en texto crema sobre la foto, como el menú: "Desliza" alineado con
-        el logo y el contador con el borde derecho de la retícula
+        "Desliza" y el contador en primario sobre una franja crema de lado a lado: "Desliza"
+        alineado con el logo y el contador con el borde derecho de la retícula. La franja entra
+        con ellos, como persiana desde abajo
       -->
-      <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo.
-        Degradado oscuro suave detrás: el texto crema se lee también sobre fotos claras -->
+      <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo -->
       <div
-        class="absolute inset-x-0 bottom-0 bg-linear-to-t from-[rgb(0_0_0/0.4)] to-transparent px-2 pt-16 pb-6 text-boton text-fondo"
+        :class="[
+          'absolute inset-x-0 bottom-0 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+          indicatorRevealed ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
+        ]"
         :style="{ bottom: `max(0px, calc(${viewport.height}px - 100dvh))` }"
         aria-hidden="true"
       >
         <div class="mx-auto flex max-w-360 items-end justify-between px-2">
-          <p class="whitespace-pre xl:ml-8">{{ hint }}</p>
+          <!-- min-h: la fila mide lo mismo aunque los textos aún estén vacíos -->
+          <p class="min-h-lh whitespace-pre xl:ml-8">{{ hint }}</p>
           <p
-            class="whitespace-pre tabular-nums xl:mr-8"
+            class="min-h-lh whitespace-pre tabular-nums xl:mr-8"
             @pointerenter="counterHover = true"
             @pointerleave="counterHover = false"
           >{{ counter }}</p>
