@@ -87,11 +87,11 @@ onBeforeUnmount(() => footerObserver?.disconnect())
     <div class="page">
       <!--
         Un grupo por columna: correo y teléfono, ciudad y país, y la hora de Valdivia con el año.
-        Desde 768 px todo en una línea, cada grupo en su tercio de la retícula; en móvil, en dos filas
-        con la ciudad y la hora a la derecha
+        Desde 1024 px todo en una línea, cada grupo en su tercio de la retícula; en móvil y tablet, en
+        dos filas con la ciudad y la hora a la derecha
       -->
-      <ul class="grid grid-cols-[1fr_auto_auto] gap-x-6 border-t border-primario pt-3 text-cuerpo-sm whitespace-nowrap md:grid-cols-3 md:gap-x-0">
-        <li class="flex flex-col items-start gap-y-3.5 md:flex-row md:items-baseline md:gap-x-3">
+      <ul class="grid grid-cols-[1fr_auto_auto] gap-x-6 border-t border-primario pt-3 text-cuerpo-sm whitespace-nowrap lg:grid-cols-3 lg:gap-x-0">
+        <li class="flex flex-col items-start gap-y-3.5 lg:flex-row lg:items-baseline lg:gap-x-3">
           <!-- Correo: al hacer clic se copia y se lee "copiado!" -->
           <button
             type="button"
@@ -102,26 +102,26 @@ onBeforeUnmount(() => footerObserver?.disconnect())
             <span aria-hidden="true">{{ copied ? 'copiado!' : shown('correo') }}</span>
           </button>
           <span class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</span>
-          <template v-if="site.instagram"><span class="hidden md:inline" aria-hidden="true">·</span></template>
+          <template v-if="site.instagram"><span class="hidden lg:inline" aria-hidden="true">·</span></template>
           <a v-if="site.instagram" :href="instagramUrl" target="_blank" rel="noopener" :class="link">
             <span class="sr-only">Instagram {{ values.instagram }}</span><span aria-hidden="true">{{ shown('instagram') }}</span>
           </a>
-          <template v-if="site.telefono"><span class="hidden md:inline" aria-hidden="true">·</span></template>
+          <template v-if="site.telefono"><span class="hidden lg:inline" aria-hidden="true">·</span></template>
           <a v-if="site.telefono" :href="telefonoHref" :class="link">
             <span class="sr-only">Teléfono {{ values.telefono }}</span><span aria-hidden="true">{{ shown('telefono') }}</span>
           </a>
         </li>
-        <li class="flex flex-col gap-y-3.5 md:flex-row md:gap-x-[1ch]">
+        <li class="flex flex-col gap-y-3.5 lg:flex-row lg:gap-x-[1ch]">
           <template v-for="key in ['ubicacion', 'pais']" :key="key">
             <span v-if="values[key]"
               ><span class="sr-only">{{ values[key] }}</span><span aria-hidden="true">{{ shown(key) }}</span
-              ><span v-if="key === 'ubicacion' && values.pais" class="hidden md:inline" aria-hidden="true">,</span></span
+              ><span v-if="key === 'ubicacion' && values.pais" class="hidden lg:inline" aria-hidden="true">,</span></span
             >
           </template>
         </li>
-        <li class="flex flex-col gap-y-3.5 tabular-nums md:flex-row md:gap-x-3">
+        <li class="flex flex-col gap-y-3.5 tabular-nums lg:flex-row lg:gap-x-3">
           <time :datetime="time">{{ time }}</time>
-          <span class="hidden md:inline" aria-hidden="true">·</span>
+          <span class="hidden lg:inline" aria-hidden="true">·</span>
           <span><span class="sr-only">© {{ values.año }}</span><span aria-hidden="true">{{ shown('año') }}</span></span>
         </li>
       </ul>

@@ -226,8 +226,8 @@ onBeforeUnmount(() => {
         Frase en texto, sin bloque (como el resto del sitio), que se arma con letras al azar.
         Cada texto animado tiene su versión fija para lectores de pantalla.
       -->
-      <!-- Como los títulos de las páginas, sin pasar del 1º tercio (si no cabe, baja de línea) -->
-      <p class="font-display text-h1 whitespace-pre-wrap text-texto md:w-1/3 md:pr-6 lg:pr-10">
+      <!-- Del tamaño de los títulos de las páginas, siempre en una sola línea -->
+      <p class="font-display text-h1 whitespace-pre text-texto">
         <span class="sr-only">{{ PROMPT }}</span>
         <span aria-hidden="true">{{ promptShown }}<TypingCaret :state="promptCaret" /></span>
       </p>
