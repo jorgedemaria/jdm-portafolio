@@ -483,6 +483,8 @@ function isActive(item) {
 
 // Si ya se está en esa sección, el enlace no cambia la dirección: se cierra el menú y se salta igual
 function goToSection(item, event) {
+  // En móvil y tablet el menú se recoge al tocar un enlace, a la par de la salida de la página
+  close();
   if (item.to.name === "home" && !item.to.hash) return returnHome(event);
   if (item.to.hash && route.name === item.to.name && route.hash !== item.to.hash) return leaveTop(item, event);
   const hash = item.to.hash;
