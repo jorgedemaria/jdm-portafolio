@@ -55,6 +55,8 @@ const DEFAULTS = { stagger: 35, scramble: 280, tick: 50, keepUnchanged: true, ch
  * caracteres al azar antes de fijarse en el nuevo.
  * keepUnchanged: los caracteres que no cambian se quedan quietos en vez de desordenarse.
  * playing (ref, opcional): queda en true mientras se anima (ej. para mostrar el cursor).
+ * instantBlank: al pasar a puros espacios se vacía de inmediato, sin barajar (para reiniciar algo
+ * que no está a la vista: si vuelve antes, no parte desde un barajado a medias).
  */
 export function useScrambleText(source, options = {}) {
   const opts = { ...DEFAULTS, ...options }
@@ -65,7 +67,8 @@ export function useScrambleText(source, options = {}) {
 
   watch(source, (target) => {
     cancel()
-    if (reducedMotion) {
+    if (reducedMotion || (opts.instantBlank && !target.trim())) {
+      if (playing) playing.value = false
       display.value = target
       return
     }

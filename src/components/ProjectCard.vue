@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import CardPhoto from './CardPhoto.vue'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
 import { menuTextX } from '../composables/useMenu'
+import { whenPhotoReady, preloadPhoto } from '../composables/useScrollReveal'
 
 /*
  * Tarjeta de un registro, como la ficha del detalle: la foto (en su proporción real), el nombre
@@ -14,8 +15,9 @@ const props = defineProps({
 
 const ratio = computed(() => `${props.project.portada.width} / ${props.project.portada.height}`)
 // Todas a lo ancho de la columna; la foto nunca más alta que la pantalla: bajo el fondo del navbar
-// (--cabecera) entran la foto, el nombre y las dos filas de datos (9 rem: el texto y el aire)
-const MAX_PHOTO_HEIGHT = 'calc(100svh - var(--cabecera, 0px) - 9rem)'
+// (--cabecera) entran la foto, el nombre y las dos filas de datos (9 rem: el texto y el aire) y además
+// asoma el registro siguiente (5 rem: el espacio entre registros y 1 rem de su foto), para invitar a bajar
+const MAX_PHOTO_HEIGHT = 'calc(100svh - var(--cabecera, 0px) - 14rem)'
 const sizes = '(min-width: 1440px) 900px, (min-width: 768px) 66vw, 100vw'
 
 // Con el cursor encima, la foto de esta tarjeta no cambia (ver CardPhoto)
@@ -34,7 +36,7 @@ const facts = computed(() =>
  */
 const titleEl = ref(null)
 const shown = ref(false)
-// La foto se descubre como persiana de izquierda a derecha la primera vez que la tarjeta se ve
+// La foto se descubre como persiana que baja la primera vez que la tarjeta se ve
 const photoShown = ref(false)
 let photoObserver
 const title = useScrambleText(
@@ -50,10 +52,12 @@ onMounted(() => {
   }
   photoObserver = new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) return
-    photoShown.value = true
     photoObserver.disconnect()
-  }, { threshold: 0.15 })
+    whenPhotoReady(cardEl.value, () => (photoShown.value = true))
+    // Apenas asoma (threshold 0): el registro siguiente se ve abriéndose bajo el actual
+  }, { threshold: 0 })
   photoObserver.observe(cardEl.value)
+  preloadPhoto(cardEl.value)
   observer = new IntersectionObserver(([entry]) => {
     if (entry.intersectionRatio < 0.8) return
     shown.value = true
@@ -98,7 +102,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', alignText))
       :to="link"
       :class="[
         'block transition-[clip-path] duration-1000 ease-[cubic-bezier(0.6,0,0.3,1)]',
-        photoShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_100%_0_0)]',
+        photoShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
       ]"
       tabindex="-1"
       aria-hidden="true"

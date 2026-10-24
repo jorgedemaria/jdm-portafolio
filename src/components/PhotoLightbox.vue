@@ -4,6 +4,7 @@ import Lenis from 'lenis'
 import ResponsiveImage from './ResponsiveImage.vue'
 import { pauseSmoothScroll, resumeSmoothScroll } from '../composables/useSmoothScroll'
 import { useReducedMotion } from '../composables/useReducedMotion'
+import { useFocusTrap } from '../composables/useFocusTrap'
 
 /*
  * Galería a pantalla completa con la mecánica del stack de Inicio (ver PhotoStack): con el scroll,
@@ -55,10 +56,14 @@ function goTo(i) {
   else wrapper.value.scrollTo({ top: y, behavior: reducedMotion.value ? 'instant' : 'smooth' })
 }
 
+// Foto apoyada en este momento (0 = la primera): las flechas no van más allá de los extremos
+const at = computed(() => Math.round(position.value))
+// El foco del teclado se queda en los controles del lightbox (cerrar y las flechas)
+const trapOn = ref(false)
+useFocusTrap(wrapper, trapOn)
+
 function onKeydown(event) {
   if (event.key === 'Escape') emit('close')
-  // El único control es "cerrar": el foco se queda en él
-  else if (event.key === 'Tab') event.preventDefault()
   else if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(event.key)) {
     event.preventDefault()
     goTo(Math.round(position.value) + 1)
@@ -81,6 +86,7 @@ onMounted(async () => {
     lenis = new Lenis({ wrapper: wrapper.value, content: content.value, lerp: 0.085, wheelMultiplier: 0.95, autoRaf: true })
   }
   closeButton.value?.focus({ preventScroll: true })
+  trapOn.value = true
 })
 onBeforeUnmount(() => {
   lenis?.destroy()
@@ -118,7 +124,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- "cerrar" arriba y el contador abajo, en texto como el navbar -->
+        <!-- "cerrar" arriba; abajo las flechas y el contador, en texto como el navbar -->
         <div class="absolute inset-x-0 top-0 px-2 pt-6 text-boton text-primario">
           <div class="mx-auto flex max-w-360 justify-end px-2">
             <button
@@ -131,9 +137,23 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
-        <div class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-primario" aria-live="polite">
-          <div class="mx-auto flex max-w-360 justify-end px-2">
-            <p class="tabular-nums xl:mr-8">{{ current }} / {{ photos.length }}</p>
+        <div class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-primario">
+          <div class="mx-auto flex max-w-360 items-center justify-end gap-6 px-2 xl:pr-10">
+            <!-- Verticales, como el stack: la anterior baja, la siguiente sube -->
+            <span class="flex gap-4">
+              <button
+                v-for="[dir, label, char] in [[-1, 'Foto anterior', '↑'], [1, 'Foto siguiente', '↓']]"
+                :key="dir"
+                type="button"
+                :aria-label="label"
+                :disabled="dir < 0 ? at <= 0 : at >= photos.length - 1"
+                class="-my-2.5 cursor-pointer px-1 py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline disabled:cursor-default disabled:opacity-30 disabled:hover:no-underline"
+                @click="goTo(at + dir)"
+              >
+                {{ char }}
+              </button>
+            </span>
+            <p class="tabular-nums" aria-live="polite">{{ current }} / {{ photos.length }}</p>
           </div>
         </div>
       </div>

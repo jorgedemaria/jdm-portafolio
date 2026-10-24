@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import CardPhoto from './CardPhoto.vue'
+import { preloadPhoto } from '../composables/useScrollReveal'
 import { useScrollProgress } from '../composables/useScrollProgress'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { menuOpen, navContentBottom } from '../composables/useMenu'
@@ -78,13 +79,13 @@ function reveal(index) {
   return easeOut(clamp((progress.value - index * span) / span))
 }
 
-// Se descubre con un barrido de izquierda a derecha y un leve desplazamiento
+// Se descubre como persiana que baja, con un leve desplazamiento hacia abajo
 function revealStyle(index) {
   const r = reveal(index)
   if (r === 1) return null
   return {
-    clipPath: `inset(0 ${(1 - r) * 100}% 0 0)`,
-    transform: `translateX(${(1 - r) * -32}px)`,
+    clipPath: `inset(0 0 ${(1 - r) * 100}% 0)`,
+    transform: `translateY(${(1 - r) * -32}px)`,
   }
 }
 
@@ -93,7 +94,6 @@ function revealStyle(index) {
  * si hace falta bajan lo justo para quedar MENU_GAP px debajo, con la misma curva que la persiana.
  */
 const MENU_GAP = 24
-const titleRef = ref(null)
 const menuPush = ref(0)
 const listRef = ref(null)
 function updatePush() {
@@ -114,31 +114,12 @@ const schedulePush = () => {
   if (!pushFrame) pushFrame = requestAnimationFrame(() => ((pushFrame = 0), updatePush()))
 }
 onMounted(() => window.addEventListener('scroll', schedulePush, { passive: true }))
+// Las fotos parten tapadas por la persiana: se cargan antes de llegar (ver preloadPhoto)
+onMounted(() => preloadPhoto(listRef.value))
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', schedulePush)
   cancelAnimationFrame(pushFrame)
 })
-
-/*
- * Título: se arma desde vacío con letras al azar, de izquierda a derecha (como el nombre
- * de la intro), cada vez que la sección entra en pantalla.
- */
-const TITLE = 'Últimos registros'
-const titleShown = ref(false)
-const titleText = useScrambleText(
-  computed(() => (titleShown.value ? TITLE : ' '.repeat(TITLE.length))),
-  { stagger: 45, scramble: 450, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
-)
-let titleObserver
-onMounted(() => {
-  titleObserver = new IntersectionObserver(([entry]) => {
-    // Entra cuando se ve casi completo; se reinicia al salir del todo, para repetirse
-    if (entry.intersectionRatio >= 0.8) titleShown.value = true
-    else if (!entry.isIntersecting) titleShown.value = false
-  }, { threshold: [0, 0.8] })
-  if (titleRef.value) titleObserver.observe(titleRef.value)
-})
-onBeforeUnmount(() => titleObserver?.disconnect())
 
 /*
  * Títulos de los proyectos: se arman desde vacío con letras al azar (como el nombre de la
@@ -228,15 +209,8 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
         ]"
         :style="menuPush ? { transform: `translateY(${menuPush}px)` } : null"
       >
-        <!-- El texto animado se oculta a lectores de pantalla; leen el título completo -->
-        <h2
-          id="ultimos-registros"
-          ref="titleRef"
-          :aria-label="TITLE"
-          class="font-display text-h2 whitespace-pre text-texto md:sr-only"
-        >
-          <span aria-hidden="true">{{ titleText }}</span>
-        </h2>
+        <!-- Título solo para lectores de pantalla -->
+        <h2 id="ultimos-registros" class="sr-only">Últimos registros</h2>
 
         <!--
           Los 3 registros en una fila sobre la retícula de tercios (las mismas líneas del stack

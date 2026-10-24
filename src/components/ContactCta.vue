@@ -8,15 +8,15 @@ import {
   SYMBOL_CHARSET,
 } from '../composables/useScrambleText'
 import { useCopyEmail } from '../composables/useCopyEmail'
-import { useCaret, CARET_LINGER } from '../composables/useCaret'
+import { useCaret } from '../composables/useCaret'
 import { contactInView } from '../composables/useMenu'
 import TypingCaret from './TypingCaret.vue'
 
 /*
  * Cierre de Inicio, sin título: "¿necesitas fotos? escríbeme:" y el correo en grande.
  * Al llegar con el scroll, la frase se arma con letras al azar; después el correo, de
- * izquierda a derecha, y al final la carita: primero ":" y luego ")". Al salir de pantalla
- * se reinicia para repetirse. Al hacer clic, el correo se copia y se lee "copiado!".
+ * izquierda a derecha, y al final la carita: primero ":" y luego ")". Al irse de pantalla (al
+ * volver hacia arriba) todo se borra desde el final, como con la tecla borrar, y se repite al volver. Al hacer clic, el correo se copia y se lee "copiado!".
  * Recién armada, la carita guiña un ojo: al segundo pasa a ";)" y vuelve a ":)". Después,
  * cada 7 a 10 segundos, se baraja con símbolos al azar (!*?#…) y vuelve a ":)". Al hacerle
  * clic copia el correo y gira 90° a la derecha mientras se lee "copiado!".
@@ -40,7 +40,8 @@ const smiley = ref('')
 const { copied, copy } = useCopyEmail()
 
 const blank = (text) => ' '.repeat(text.length)
-const scramble = { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER }
+// instantBlank: al reiniciarse (fuera de pantalla o tras borrarse) queda vacío de inmediato
+const scramble = { stagger: 40, scramble: 420, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER, instantBlank: true }
 
 const emailPlaying = ref(false)
 const prompt = useScrambleText(computed(() => (stage.value >= 1 ? PROMPT : blank(PROMPT))), scramble)
@@ -48,7 +49,17 @@ const email = useScrambleText(
   computed(() => (copied.value ? 'copiado!' : stage.value >= 2 ? site.email : blank(site.email))),
   { ...scramble, playing: emailPlaying },
 )
-const emailTyped = computed(() => email.value.trimEnd())
+/*
+ * Borrado al salir: cuántas letras quedan de la frase + el correo + la carita (-1 si no se borra).
+ * Mientras tanto se muestran recortados, en ese orden, desde el final.
+ */
+const ERASE_EVERY = 30 // ms por letra
+const erasing = ref(-1)
+let eraseTimer = 0
+const keep = (text, from) => text.slice(0, Math.max(0, Math.min(erasing.value - from, text.length)))
+const promptShown = computed(() => (erasing.value < 0 ? prompt.value : keep(PROMPT, 0)))
+const emailShown = computed(() => (erasing.value < 0 ? email.value : keep(site.email, PROMPT.length)))
+const emailTyped = computed(() => emailShown.value.trimEnd())
 // El correo responde al cursor (subrayado y clic) recién cuando terminó de escribirse
 const emailReady = ref(false)
 watch(emailPlaying, (playing) => {
@@ -57,13 +68,25 @@ watch(emailPlaying, (playing) => {
 
 // Cursor de texto: el del correo sigue su animación (ver useCaret); el de la carita, los tiempos
 const { state: emailCaret, hide: hideEmailCaret } = useCaret(emailPlaying)
+// Al terminar, el cursor se queda parpadeando tras la carita
 const smileyCaret = ref('off')
 
 // La carita armada se baraja con símbolos al azar cada 7 a 10 s mientras la sección está
 // en pantalla
 const smileyReplay = useScrambleReplay(':)', { ...scramble, charset: SYMBOL_CHARSET })
-const smileyText = computed(() => (smileyReplay.playing.value ? smileyReplay.display.value : smiley.value))
+const smileyText = computed(() => {
+  if (erasing.value >= 0) return keep(':)', PROMPT.length + site.email.length)
+  return smileyReplay.playing.value ? smileyReplay.display.value : smiley.value
+})
 let winkTimer = 0
+// Mientras se borra, el cursor va al final de lo que queda; borrado todo, parpadea al comienzo
+const P = PROMPT.length
+const E = site.email.length
+const promptCaret = computed(() => (erasing.value < 0 || erasing.value > P ? 'off' : erasing.value ? 'typing' : 'idle'))
+const emailCaretShown = computed(() =>
+  erasing.value < 0 ? emailCaret.value : erasing.value > P && erasing.value <= P + E ? 'typing' : 'off',
+)
+const smileyCaretShown = computed(() => (erasing.value < 0 ? smileyCaret.value : erasing.value > P + E ? 'typing' : 'off'))
 function scheduleWink() {
   clearTimeout(winkTimer)
   winkTimer = setTimeout(() => {
@@ -81,6 +104,7 @@ const EMAIL_DURATION = (site.email.length - 1) * scramble.stagger + scramble.scr
 
 let timers = []
 function play() {
+  erasing.value = -1
   timers.forEach(clearTimeout)
   stage.value = 1
   smiley.value = ''
@@ -100,12 +124,28 @@ function play() {
       smileyCaret.value = 'idle'
       scheduleWink()
     }, smileyDone),
-    setTimeout(() => (smileyCaret.value = 'off'), smileyDone + CARET_LINGER),
     setTimeout(() => (smiley.value = ';)'), smileyDone + BLINK_AFTER),
     setTimeout(() => (smiley.value = ':)'), smileyDone + BLINK_AFTER + BLINK_HOLD),
   ]
 }
+function erase() {
+  timers.forEach(clearTimeout)
+  stopFaces()
+  hideEmailCaret()
+  smileyCaret.value = 'off'
+  emailReady.value = false
+  erasing.value = PROMPT.length + site.email.length + 2
+  clearInterval(eraseTimer)
+  eraseTimer = setInterval(() => {
+    if (--erasing.value > 0) return
+    // Queda vacío (erasing en 0) hasta que se vuelva a escribir: así no se ve el barajado a blanco
+    reset()
+    erasing.value = 0
+  }, ERASE_EVERY)
+}
 function reset() {
+  clearInterval(eraseTimer)
+  erasing.value = -1
   timers.forEach(clearTimeout)
   stopFaces()
   hideEmailCaret()
@@ -114,9 +154,6 @@ function reset() {
   stage.value = 0
   smiley.value = ''
 }
-
-// Frase del tamaño del logo (36 px); en pantallas angostas se achica para caber en una línea
-const promptSize = `min(2.25rem, calc((100vw - 3.5rem) / ${PROMPT.length * 0.6 + 0.34}))`
 
 // El correo (y la carita) usan el ancho disponible sin pasar de 6rem
 const EMAIL_CHARS = site.email.length + 3
@@ -135,6 +172,23 @@ onBeforeUnmount(() => {
   contactInView.value = false
 })
 
+/*
+ * Al volver hacia arriba (más de ERASE_AFTER px desde lo más abajo que se llegó) el texto se borra,
+ * aún a la vista; si se vuelve a bajar hasta ahí, se escribe de nuevo
+ */
+const ERASE_AFTER = 40
+let peak = 0
+function onScroll() {
+  const y = window.scrollY
+  if (stage.value > 0 && erasing.value < 0) {
+    peak = Math.max(peak, y)
+    if (peak - y > ERASE_AFTER) erase()
+  } else if (erasing.value >= 0 && y >= peak) {
+    reset()
+    play()
+  }
+}
+
 let observer
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -144,14 +198,23 @@ onMounted(() => {
     return
   }
   observer = new IntersectionObserver(([entry]) => {
-    if (entry.intersectionRatio >= 0.4 && stage.value === 0) play()
-    else if (!entry.isIntersecting) reset()
+    if (entry.intersectionRatio >= 0.4) {
+      // Volvió a mitad del borrado: empieza de nuevo
+      if (erasing.value > 0) reset()
+      if (stage.value === 0) {
+        play()
+        peak = window.scrollY
+      }
+    } else if (!entry.isIntersecting) reset()
   }, { threshold: [0, 0.4] })
+  window.addEventListener('scroll', onScroll, { passive: true })
   observer.observe(root.value)
 })
 onBeforeUnmount(() => {
   observer?.disconnect()
+  window.removeEventListener('scroll', onScroll)
   timers.forEach(clearTimeout)
+  clearInterval(eraseTimer)
   stopFaces()
 })
 </script>
@@ -163,9 +226,10 @@ onBeforeUnmount(() => {
         Frase en texto, sin bloque (como el resto del sitio), que se arma con letras al azar.
         Cada texto animado tiene su versión fija para lectores de pantalla.
       -->
-      <p class="font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: promptSize }">
+      <!-- Como los títulos de las páginas, sin pasar del 1º tercio (si no cabe, baja de línea) -->
+      <p class="font-display text-h1 whitespace-pre-wrap text-texto md:w-1/3 md:pr-6 lg:pr-10">
         <span class="sr-only">{{ PROMPT }}</span>
-        <span aria-hidden="true">{{ prompt }}</span>
+        <span aria-hidden="true">{{ promptShown }}<TypingCaret :state="promptCaret" /></span>
       </p>
 
       <p class="mt-6 font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: emailSize }">
@@ -182,7 +246,7 @@ onBeforeUnmount(() => {
             ><span v-if="emailTyped" class="underline decoration-acento decoration-[0.08em] underline-offset-[0.12em]">{{
               emailTyped
             }}</span
-            ><TypingCaret :state="emailCaret" />{{ email.slice(emailTyped.length) }}</span
+            ><TypingCaret :state="emailCaretShown" />{{ emailShown.slice(emailTyped.length) }}</span
           >
         </button>
         <!--
@@ -198,7 +262,7 @@ onBeforeUnmount(() => {
             copied && 'rotate-90',
           ]"
           @click="copy"
-          >{{ smileyText }}<TypingCaret :state="smileyCaret" /></button
+          >{{ smileyText }}<TypingCaret :state="smileyCaretShown" /></button
         >
       </p>
       <p class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</p>

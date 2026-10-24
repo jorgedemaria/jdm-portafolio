@@ -4,7 +4,6 @@ import { useRoute, useRouter } from "vue-router";
 import { useFocusTrap } from "../composables/useFocusTrap";
 import {
   menuOpen,
-  menuHorizontal,
   menuBottom,
   menuHeight,
   navOverPhotos,
@@ -12,6 +11,7 @@ import {
   navContentBottom,
   contactInView,
   logoShrink,
+  returningHome,
   menuTextX,
 } from "../composables/useMenu";
 import { introLeaving, NAV_DELAY } from "../composables/useIntro";
@@ -27,6 +27,8 @@ import {
 import { site } from "../data/site";
 import { useCaret } from "../composables/useCaret";
 import TypingCaret from "./TypingCaret.vue";
+import { useReducedMotion } from "../composables/useReducedMotion";
+import { playPageExit } from "../composables/usePageExit";
 
 const route = useRoute();
 const router = useRouter();
@@ -168,7 +170,63 @@ watch(
   { immediate: true },
 );
 onBeforeUnmount(() => clearTimeout(jumpTimer));
-const shrink = computed(() => (jumping.value ? 1 : Math.min(scrollY.value / monument.value.distance, 1)));
+const scrollShrink = computed(() => (jumping.value ? 1 : Math.min(scrollY.value / monument.value.distance, 1)));
+/*
+ * Entre Inicio y otra página la franja y el nombre se mueven solos, como el scroll: al salir de
+ * Inicio la franja sube y el nombre se achica antes del cambio de página; al volver, la página
+ * llega con el logo chico y la franja baja y el nombre crece. Mientras tanto shrink lo manda forced.
+ */
+const NAV_MOVE = 800;
+const PAGE_FADE = 240; // fundido de salida de la página anterior (main.css)
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+const reducedMotion = useReducedMotion();
+const forced = ref(null);
+let forcedFrame = 0;
+let forcedTimer = 0;
+// grow: de chico (1) a lo que marca el scroll; si no, de lo que marca el scroll a chico
+function moveNav(grow) {
+  cancelAnimationFrame(forcedFrame);
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min((now - start) / NAV_MOVE, 1);
+      const e = easeInOut(t);
+      const n = scrollShrink.value;
+      forced.value = grow ? 1 + (n - 1) * e : n + (1 - n) * e;
+      if (t < 1) forcedFrame = requestAnimationFrame(step);
+      else {
+        if (grow) forced.value = null;
+        resolve();
+      }
+    };
+    forcedFrame = requestAnimationFrame(step);
+  });
+}
+// Al ir a otra página, primero sale lo que se ve de esta (ver usePageExit), a la vez que la franja
+const removeLeaveGuard = router.beforeEach((to, from) => {
+  if (!from.name || to.path === from.path || reducedMotion.value) return;
+  const leavingHome = from.name === "home" && to.name !== "home" && scrollShrink.value < 1;
+  return Promise.all([leavingHome && moveNav(false), playPageExit()]).then(() => {});
+});
+watch(
+  () => route.name,
+  (name, prev) => {
+    cancelAnimationFrame(forcedFrame);
+    clearTimeout(forcedTimer);
+    forced.value = null;
+    returningHome.value = false;
+    if (name !== "home" || !prev || prev === "home" || route.hash || reducedMotion.value) return;
+    returningHome.value = true;
+    forced.value = 1;
+    forcedTimer = setTimeout(() => moveNav(true), PAGE_FADE);
+  },
+);
+onBeforeUnmount(() => {
+  removeLeaveGuard();
+  cancelAnimationFrame(forcedFrame);
+  clearTimeout(forcedTimer);
+});
+const shrink = computed(() => forced.value ?? scrollShrink.value);
 watch(scrollY, (y) => {
   if (jumping.value && y >= monument.value.distance) jumping.value = false;
 });
@@ -259,10 +317,8 @@ watch(scrollY, () => open.value && !pinned.value && measureMenu());
 // Al empezar el scroll del stack de fotos y al volver arriba, el logo y el botón pasan por símbolos al azar
 const SYMBOL_SCRAMBLE = { stagger: 35, scramble: 380, tick: 50, charset: SYMBOL_CHARSET };
 const logo = useScrambleReplay(site.wordmark, SYMBOL_SCRAMBLE);
-const toggleSymbol = useScrambleReplay("+", { ...SYMBOL_SCRAMBLE, scramble: 600 });
 function playSymbols() {
   logo.play();
-  if (!open.value) toggleSymbol.play();
 }
 /*
  * Entrada, al entrar por Inicio: lo primero que se ve es el logo (gigante) escribiéndose con
@@ -308,15 +364,17 @@ onMounted(() => {
 });
 
 const face = ref(introLeaving.value ? ENDING : FACE);
-watch(introLeaving, (leaving) => leaving && toggleSymbol.play());
 onBeforeUnmount(() => clearTimeout(typeTimer));
 const faceText = useScrambleText(face, { ...SYMBOL_SCRAMBLE, keepUnchanged: false });
 const logoText = computed(() => {
   if (logo.playing.value) return logo.display.value;
   return typedDone.value ? PREFIX + faceText.value : typedText.value;
 });
-const toggleText = toggleSymbol.display;
-const toggleScrambling = toggleSymbol.playing;
+// Botón del menú en texto: se arma al entrar (con el resto del navbar) y se baraja al abrir y cerrar
+const toggleText = useScrambleText(
+  computed(() => (!introLeaving.value ? "    " : open.value ? "cerrar" : "menú")),
+  { stagger: 35, scramble: 380, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
+);
 
 // Al abrir el menú, en cada enlace se desordena una sílaba al azar (a veces también una letra suelta)
 const MENU_ITEM_STAGGER = 70;
@@ -466,7 +524,7 @@ watch(
     Fondo crema en la caja del header (solo la fila del logo, que siempre está sobre la franja
     crema): Safari en iPhone tiñe la barra de estado con el fondo del elemento fijo de arriba
   -->
-  <header class="fixed inset-x-0 top-0 z-50 bg-fondo p-2">
+  <header class="fixed inset-x-0 top-0 z-50 bg-fondo lg:pt-4 p-2">
     <!--
       Franja crema plana detrás del navbar, del alto de la cabecera en este momento (--cabecera-viva):
       en Inicio, alta con el nombre gigante; al bajar, su borde de abajo sube junto con el nombre
@@ -586,7 +644,7 @@ watch(
             type="button"
             :class="[
               // lg:invisible y no hidden: el botón sigue midiendo, el menú se ubica respecto de él
-              'relative grid size-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] sm:size-12 lg:invisible',
+              'group/toggle relative grid h-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] sm:h-12 lg:invisible',
               beside && 'hidden',
               // Entrada de Inicio: baja como persiana cuando el logo terminó de escribirse
               introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
@@ -596,23 +654,12 @@ watch(
             @click="open = !open"
           >
             <span class="sr-only">{{ open ? "Cerrar menú" : "Abrir menú" }}</span>
-            <!-- Mientras se baraja, el "+" se muestra como texto con símbolos al azar -->
-            <span v-if="toggleScrambling" class="relative text-lg leading-none font-extrabold sm:text-2xl" aria-hidden="true">{{
-              toggleText
-            }}</span>
-            <!-- "+" que gira a "×" al abrir -->
+            <!-- En texto, como los enlaces: "menú" se baraja a "cerrar" al abrir. Ancho fijo (mono) para que no salte -->
             <span
-              v-else
-              :class="[
-                'relative block size-4 sm:size-6 transition-transform duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
-                open && 'rotate-135',
-              ]"
+              class="inline-block w-[6ch] text-right text-boton whitespace-pre decoration-acento decoration-2 underline-offset-4 group-hover/toggle:underline"
               aria-hidden="true"
+              >{{ toggleText }}</span
             >
-              <!-- Trazo grueso, con el peso del logo en extrabold -->
-              <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-current sm:h-1" />
-              <span class="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-current sm:w-1" />
-            </span>
           </button>
 
           <!--
@@ -627,8 +674,7 @@ watch(
               // Desde 1024 px: lista de texto hacia abajo al comienzo del último tercio, sin cajas
               // (sobre la franja crema), siempre debajo del logo (ver listStyle; la cabecera la
               // incluye, ver measureMonument); desde
-              // 768 px, repartidos
-              // de borde a borde bajo el logo
+              // antes, en fila, repartidos de borde a borde bajo el logo
               beside ? 'flex w-full flex-col text-boton text-primario' : 'flex flex-col text-primario',
               'transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
               open && introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
@@ -637,7 +683,7 @@ watch(
             :inert="!open"
           >
             <ul
-              :class="beside ? 'flex flex-col' : 'flex flex-col md:w-full md:flex-row md:items-center md:justify-between'"
+              :class="beside ? 'flex flex-col' : 'flex w-full flex-row items-center justify-between'"
             >
               <li v-for="(item, i) in site.nav" :key="item.label">
                 <RouterLink

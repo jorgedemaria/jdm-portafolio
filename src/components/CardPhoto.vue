@@ -6,7 +6,7 @@ import { useCardRotation, cardPhotos } from '../composables/useCardRotation'
 /*
  * Foto de una tarjeta de proyecto que cambia sola cada cierto tiempo (ver useCardRotation).
  * La foto nueva se carga encima, sin verse, y cuando está lista entra como persiana sobre la
- * anterior, desde un lado al azar.
+ * anterior, siempre bajando.
  */
 const props = defineProps({
   project: { type: Object, required: true },
@@ -20,15 +20,10 @@ const props = defineProps({
 })
 
 const photos = cardPhotos(props.project)
-const { index, side } = useCardRotation(props.project, toRef(props, 'paused'))
+const { index } = useCardRotation(props.project, toRef(props, 'paused'))
 
-// Recorte inicial (persiana cerrada) según el lado desde el que entra
-const HIDDEN_FROM = {
-  top: 'inset(0 0 100% 0)',
-  bottom: 'inset(100% 0 0 0)',
-  left: 'inset(0 100% 0 0)',
-  right: 'inset(0 0 0 100%)',
-}
+// Recorte inicial (persiana cerrada arriba): al abrirse, baja
+const HIDDEN = 'inset(0 0 100% 0)'
 
 const shown = ref(index.value) // foto de abajo, ya visible
 const incoming = ref(null) // foto que está entrando
@@ -77,7 +72,7 @@ const incomingPhoto = computed(() => (incoming.value === null ? null : photos[in
         'absolute inset-0',
         revealing && 'transition-[clip-path] duration-700 ease-[cubic-bezier(0.6,0,0.3,1)]',
       ]"
-      :style="{ clipPath: revealing ? 'inset(0)' : HIDDEN_FROM[side] }"
+      :style="{ clipPath: revealing ? 'inset(0)' : HIDDEN }"
       @transitionend="onRevealed"
     >
       <ResponsiveImage

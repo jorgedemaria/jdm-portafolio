@@ -3,10 +3,12 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import AppNav from "./components/AppNav.vue";
 import AppFooter from "./components/AppFooter.vue";
+import GridOverlay from "./components/GridOverlay.vue";
+// Retícula a la vista con la tecla G, solo en desarrollo
+const dev = import.meta.env.DEV;
 import {
   menuOpen,
   menuHeight,
-  menuHorizontal,
   navOverPhotos,
   navSectionTitle,
 } from "./composables/useMenu";
@@ -34,7 +36,7 @@ const contentPush = computed(() =>
     ? menuHeight.value + MENU_GAP
     : 0,
 );
-const titleBelowLogo = computed(() => !!navSectionTitle.value && menuHorizontal.value);
+const titleBelowLogo = computed(() => !!navSectionTitle.value);
 const pushClass = computed(() => {
   if (titleBelowLogo.value)
     return menuOpen.value
@@ -69,4 +71,5 @@ const pushClass = computed(() => {
     </RouterView>
     <AppFooter />
   </div>
+  <GridOverlay v-if="dev" />
 </template>

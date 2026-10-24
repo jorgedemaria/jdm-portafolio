@@ -89,7 +89,7 @@ const gallery = computed(() => project.value?.fotos.slice(1) ?? [])
 // Foto abierta a pantalla completa (índice en la galería) o null
 const lightbox = ref(null)
 
-// Las fotos de la galería se descubren de izquierda a derecha al aparecer, como en Registros
+// Las fotos de la galería se descubren como persiana que baja al aparecer, como en Registros
 const reveal = useScrollReveal()
 </script>
 
@@ -151,13 +151,18 @@ const reveal = useScrollReveal()
         <ul class="mt-6 grid gap-y-16 md:col-span-2 md:mt-0">
           <li v-for="(photo, i) in gallery" :key="photo.src">
             <!--
-              Ancho máximo para que la foto entera quepa bajo el fondo del navbar (--cabecera), con
-              1,5 rem arriba y abajo: así las verticales se ven completas sin recorrerlas
+              En tablet todas ocupan los dos tercios; desde 1024 px las horizontales siguen en dos tercios
+              y las verticales y cuadradas pasan a un solo tercio (el 2º, menos el aire de la columna). Verticales y cuadradas nunca más altas que lo que cabe bajo el fondo del
+              navbar (--cabecera, con 1,5 rem arriba y abajo): se ven completas sin recorrerlas
             -->
             <div
               :ref="reveal"
-              class="overflow-hidden"
-              :style="{ maxWidth: `calc((100svh - var(--cabecera, 0px) - 3rem) * ${photo.width / photo.height})` }"
+              :class="['overflow-hidden', photo.width <= photo.height && 'lg:w-[calc(50%-2.5rem)]']"
+              :style="
+                photo.width <= photo.height
+                  ? { maxWidth: `calc((100svh - var(--cabecera, 0px) - 3rem) * ${photo.width / photo.height})` }
+                  : null
+              "
             >
               <button
                 type="button"

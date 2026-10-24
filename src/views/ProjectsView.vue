@@ -16,18 +16,19 @@ const visible = computed(() =>
 )
 
 const filters = [{ slug: null, nombre: 'Todos' }, ...categories]
-
-
 </script>
 
 <template>
-  <section class="px-2 pt-6 pb-16">
+  <section class="px-2 pb-16 md:pt-6">
     <!--
-      Desde 768 px, en la retícula de tercios: el título y las categorías en el 1º tercio, fijos
-      bajo el navbar al bajar; los registros en los otros dos
+      El título y las categorías quedan fijos bajo el navbar al bajar: en móvil arriba, sobre fondo
+      crema (los registros pasan por debajo); desde 768 px en el 1º tercio de la retícula, con los
+      registros en los otros dos
     -->
     <div class="page md:grid md:grid-cols-3 md:items-start">
-      <div class="md:sticky md:top-[calc(var(--cabecera,0px)+1.5rem)] md:pr-6 lg:pr-10">
+      <div
+        class="sticky top-(--cabecera,0px) z-10 bg-fondo pt-6 pb-2 md:top-[calc(var(--cabecera,0px)+1.5rem)] md:z-auto md:bg-transparent md:pt-0 md:pr-6 md:pb-0 lg:pr-10"
+      >
         <h1 class="font-display text-h1">Registros</h1>
         <!-- Categorías como los enlaces del navbar: texto, la elegida subrayada en rosado (y al pasar) -->
         <nav aria-label="Filtrar por categoría" class="mt-4 md:mt-6">

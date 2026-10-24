@@ -4,7 +4,7 @@ import ResponsiveImage from './ResponsiveImage.vue'
 import { useScrollProgress, stableViewportHeight } from '../composables/useScrollProgress'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { useScrambleText } from '../composables/useScrambleText'
-import { logoShrink } from '../composables/useMenu'
+import { logoShrink, returningHome } from '../composables/useMenu'
 import { introLeaving, NAV_DURATION, INDICATOR_DELAY } from '../composables/useIntro'
 
 /*
@@ -150,9 +150,13 @@ onBeforeUnmount(() => clearTimeout(introTimer))
 
 // La primera foto aparece como persiana desde el navbar hacia abajo, después de que entraron los
 // elementos del navbar (NAV_DURATION después de que el logo terminó de escribirse, ver useIntro).
+// Al volver a Inicio desde otra página baja igual, a la par de la franja del navbar (ver AppNav).
 // Sin esa entrada está visible desde el principio
-const firstShown = ref(introLeaving.value)
+const firstShown = ref(introLeaving.value && !returningHome.value)
 let firstTimer = 0
+// Dos cuadros: el primero pinta la foto recogida, así la transición tiene desde dónde partir
+if (returningHome.value)
+  onMounted(() => requestAnimationFrame(() => requestAnimationFrame(() => (firstShown.value = true))))
 if (!introLeaving.value) {
   const stopFirstWatch = watch(introLeaving, (leaving) => {
     if (!leaving) return
