@@ -233,6 +233,8 @@ watch(scrollY, (y) => {
 // Nombre gigante arriba de Inicio, sin scroll: subrayado fijo y no es enlace (ya se está en Inicio).
 // Desde el primer scroll el subrayado se desvanece y vuelve solo al pasar el cursor
 const logoAtTop = computed(() => route.name === "home" && shrink.value === 0);
+// El subrayado vuelve un poco antes de llegar arriba del todo (el scroll suave tarda en asentarse)
+const underlineOn = computed(() => route.name === "home" && shrink.value < 0.1);
 // Lista del menú (desde 1024 px): con el nombre gigante empieza bajo él (su borde de abajo +
 // LIST_GAP) y sube a la par mientras se achica, hasta quedar con inicio a la altura del logo
 // Borde de arriba de la lista en este momento del scroll (null sin la lista en la fila)
@@ -369,6 +371,12 @@ const faceText = useScrambleText(face, { ...SYMBOL_SCRAMBLE, keepUnchanged: fals
 const logoText = computed(() => {
   if (logo.playing.value) return logo.display.value;
   return typedDone.value ? PREFIX + faceText.value : typedText.value;
+});
+// El logo en tres trozos para el subrayado: 1ª letra, nombre y el * o la carita (con su espacio)
+const logoParts = computed(() => {
+  const text = logoText.value.trimEnd();
+  const [, first = "", name = "", tail = ""] = text.match(/^(.?)(.*?)( +[^\p{L}]+)?$/su);
+  return { first, name, tail };
 });
 // Botón del menú en texto: se arma al entrar (con el resto del navbar) y se baraja al abrir y cerrar
 const toggleText = useScrambleText(
@@ -585,21 +593,21 @@ watch(
             :style="logoStyle"
             >
               <!--
-                Subrayado rosado en dos partes: el nombre y la carita (o el *), cortado en el último
-                espacio. Fijo arriba de Inicio (logoAtTop); si no, solo al pasar el cursor. Parte en la
-                2ª letra: la cola de la j dejaba un trocito suelto de subrayado a su izquierda
-              -->
-              <template v-for="(part, i) in logoText.trimEnd().split(/( +)(?=\S+$)/)" :key="i"
-                ><template v-if="i === 0">{{ part[0] }}</template
+                Subrayado rosado solo bajo el nombre: sin la 1ª letra (la cola de la j dejaba un trocito
+                suelto a su izquierda) ni el * o la carita del final. Es una copia transparente encima
+                que se abre como persiana desde la izquierda. Fija arriba de Inicio; si no, al pasar el cursor
+              -->{{ logoParts.first
+              }}<span class="inline-grid *:[grid-area:1/1]"
+                ><span>{{ logoParts.name }}</span
                 ><span
-                  v-if="part.trim()"
                   :class="[
-                    'underline decoration-[0.06em] underline-offset-[0.12em] transition-[text-decoration-color] duration-500',
-                    logoAtTop ? 'decoration-acento' : 'decoration-transparent group-hover/logo:decoration-acento',
+                    'text-transparent underline decoration-acento decoration-[0.06em] underline-offset-[0.12em] transition-[clip-path] duration-300 ease-[cubic-bezier(0.6,0,0.3,1)]',
+                    // El recorte baja 0.3em para no cortar la línea, que queda bajo la caja del texto
+                    underlineOn ? '[clip-path:inset(0_0_-0.3em_0)]' : '[clip-path:inset(0_100%_-0.3em_0)] group-hover/logo:[clip-path:inset(0_0_-0.3em_0)]',
                   ]"
-                  >{{ i === 0 ? part.slice(1) : part }}</span
-                ><template v-else-if="i > 0">{{ part }}</template></template
-              ><TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
+                  >{{ logoParts.name }}</span
+                ></span
+              >{{ logoParts.tail }}<TypingCaret :state="logoCaret" />{{ logoText.slice(logoText.trimEnd().length) }}</span
           >
         </RouterLink>
         <!--
