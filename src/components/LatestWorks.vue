@@ -246,7 +246,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
                   <RouterLink
                     :to="projectLink(project)"
                     :aria-label="project.titulo"
-                    class="whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
+                    class="py-0.5 whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
                   >
                     <span aria-hidden="true">{{ cardTitles[i] }}</span>
                   </RouterLink>
@@ -254,7 +254,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
                 <p class="mt-1 text-cuerpo-sm text-primario">
                   <RouterLink
                     :to="categoryLink(project)"
-                    class="lowercase decoration-acento decoration-2 underline-offset-4 hover:underline"
+                    class="pb-2.5 lowercase decoration-acento decoration-2 underline-offset-4 hover:underline"
                     >{{ project.categoria.nombre }}</RouterLink
                   >
                   · {{ project.año }} · {{ project.lugar }}
@@ -268,7 +268,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
         <div class="mt-12 flex justify-end lg:mt-8">
           <RouterLink
             :to="{ name: 'projects' }"
-            class="group/all flex items-center gap-1.5 text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 hover:underline"
+            class="group/all -my-[7px] flex items-center gap-1.5 py-[7px] text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 hover:underline"
             :style="revealStyle(projects.length - 1)"
             aria-label="ver todos los registros"
             @pointerenter="seeAllHover = true"

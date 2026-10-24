@@ -188,7 +188,7 @@ const headingText = useScrambleText(heading, {
             </p>
             <button
               type="button"
-              class="cursor-pointer text-primario decoration-1 underline-offset-4 hover:underline"
+              class="-my-[7px] cursor-pointer py-[7px] text-primario decoration-1 underline-offset-4 hover:underline"
               @click="newPuzzle"
             >
               {{ solved ? 'otra vez' : 'mezclar' }}

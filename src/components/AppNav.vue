@@ -15,7 +15,7 @@ import {
   menuTextX,
 } from "../composables/useMenu";
 import { introLeaving, NAV_DELAY } from "../composables/useIntro";
-import { jumpToSection } from "../composables/useSmoothScroll";
+import { jumpToSection, scrollToTopNow } from "../composables/useSmoothScroll";
 import {
   useScrambleReplay,
   useScrambleText,
@@ -28,7 +28,7 @@ import { site } from "../data/site";
 import { useCaret } from "../composables/useCaret";
 import TypingCaret from "./TypingCaret.vue";
 import { useReducedMotion } from "../composables/useReducedMotion";
-import { playPageExit } from "../composables/usePageExit";
+import { playPageExit, PAGE_EXIT } from "../composables/usePageExit";
 
 const route = useRoute();
 const router = useRouter();
@@ -138,7 +138,14 @@ function measureMonument() {
   ctx.letterSpacing = style.letterSpacing;
   // Hasta el borde derecho; con la lista, hasta antes de su columna (así nunca pasa sobre ella)
   const limit = beside.value ? right.left - LIST_COLUMN_GAP : right.right;
-  const scale = Math.max(1, (limit - link.left) / ctx.measureText(PREFIX + FACE).width);
+  let scale = Math.max(1, (limit - link.left) / ctx.measureText(PREFIX + FACE).width);
+  // Desde 768 px el logo chico mide el 1º tercio sin su aire (--logo-chico) y el gigante, con el
+  // "*", los dos primeros tercios sin el aire del 2º: 2 veces el chico más un aire (pr-6, o pr-10
+  // desde 1024 px). La carita de la intro, un carácter más larga, se asoma un poco al 3º
+  if (window.innerWidth >= 768) {
+    const one = ctx.measureText(site.wordmark).width;
+    scale = (2 * one + (window.innerWidth >= 1024 ? 40 : 24)) / one;
+  }
   // El nombre gigante empieza justo bajo la fila del navbar
   const lift = row.bottom - spanTop;
   const giantBottom = row.bottom + textH * scale;
@@ -206,7 +213,8 @@ function moveNav(grow) {
 const removeLeaveGuard = router.beforeEach((to, from) => {
   if (!from.name || to.path === from.path || reducedMotion.value) return;
   const leavingHome = from.name === "home" && to.name !== "home" && scrollShrink.value < 1;
-  return Promise.all([leavingHome && moveNav(false), playPageExit()]).then(() => {});
+  const toContact = to.hash === "#contacto";
+  return Promise.all([leavingHome && moveNav(false), playPageExit(), toContact && eraseLogo()]).then(() => {});
 });
 watch(
   () => route.name,
@@ -264,7 +272,8 @@ watchEffect(() => {
 });
 
 // Con la sección de contacto en pantalla el logo se esconde, salvo con el menú abierto
-const logoHidden = computed(() => contactInView.value && !open.value);
+// (en el teléfono, con el menú abierto; desde 1024 px el menú siempre está abierto y se esconde igual)
+const logoHidden = computed(() => contactInView.value && (pinned.value || !open.value));
 
 /*
  * Retícula: va del borde izquierdo del texto del logo al borde derecho del botón del menú,
@@ -368,7 +377,43 @@ onMounted(() => {
 const face = ref(introLeaving.value ? ENDING : FACE);
 onBeforeUnmount(() => clearTimeout(typeTimer));
 const faceText = useScrambleText(face, { ...SYMBOL_SCRAMBLE, keepUnchanged: false });
+// En contacto el logo se borra con letras al azar y al salir se vuelve a escribir, como el título
+// de la sección
+const hidePlaying = ref(false);
+const hideText = useScrambleText(computed(() => (logoHidden.value ? "" : site.wordmark)), {
+  stagger: 35,
+  scramble: 380,
+  tick: 50,
+  keepUnchanged: false,
+  charset: SCRAMBLE_CHARSET_LOWER,
+  playing: hidePlaying,
+});
+/*
+ * Al hacer clic en contacto el logo no se baraja: se borra desde el final junto con la página (ver
+ * usePageExit) y queda vacío hasta que se esconde; al salir de contacto vuelve a escribirse
+ */
+const erased = ref(null); // letras que quedan mientras se borra, o null
+let erasedTimer = 0;
+function eraseLogo() {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const step = (now) => {
+      const left = 1 - Math.min((now - start) / PAGE_EXIT, 1);
+      erased.value = Math.ceil(site.wordmark.length * left);
+      if (left > 0) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+    // Por si contacto no llega a esconderlo (ej. se canceló el salto)
+    clearTimeout(erasedTimer);
+    erasedTimer = setTimeout(() => !logoHidden.value && (erased.value = null), PAGE_EXIT + 1500);
+  });
+}
+watch(logoHidden, (hidden) => !hidden && (erased.value = null));
+onBeforeUnmount(() => clearTimeout(erasedTimer));
 const logoText = computed(() => {
+  if (erased.value !== null) return site.wordmark.slice(0, erased.value);
+  if (logoHidden.value || hidePlaying.value) return hideText.value;
   if (logo.playing.value) return logo.display.value;
   return typedDone.value ? PREFIX + faceText.value : typedText.value;
 });
@@ -438,12 +483,49 @@ function isActive(item) {
 
 // Si ya se está en esa sección, el enlace no cambia la dirección: se cierra el menú y se salta igual
 function goToSection(item, event) {
+  if (item.to.name === "home" && !item.to.hash) return returnHome(event);
+  if (item.to.hash && route.name === item.to.name && route.hash !== item.to.hash) return leaveTop(item, event);
   const hash = item.to.hash;
   if (!hash || route.name !== item.to.name || route.hash !== hash) return;
   event.preventDefault();
   close();
   const el = document.getElementById(hash.slice(1));
   if (el) jumpToSection(el);
+}
+
+/*
+ * Volver arriba de Inicio desde más abajo (ej. contacto) con el logo o "inicio": la misma vuelta que
+ * desde otra página. Sale lo que se ve, se salta arriba con la franja chica, la franja baja con el
+ * nombre creciendo y la primera foto del stack baja como persiana (ver PhotoStack)
+ */
+// Va en captura (@click.capture): así corre antes que la navegación propia del RouterLink, que si no
+// salta arriba con el nombre gigante antes de la animación
+async function returnHome(event) {
+  if (route.name !== "home" || scrollShrink.value < 1 || reducedMotion.value) return;
+  event.preventDefault();
+  close();
+  const restore = await playPageExit();
+  forced.value = 1;
+  if (route.hash) await router.push({ name: "home" });
+  scrollToTopNow();
+  restore();
+  returningHome.value = true;
+  await moveNav(true);
+  returningHome.value = false;
+}
+
+// Desde arriba de Inicio a una de sus secciones (ej. contacto): antes del salto, la misma salida
+// que hacia otra página. La franja sube con el nombre achicándose y sale lo que se ve
+async function leaveTop(item, event) {
+  if (scrollShrink.value >= 1 || reducedMotion.value) return;
+  event.preventDefault();
+  close();
+  const [, restore] = await Promise.all([moveNav(false), playPageExit(), item.to.hash === "#contacto" && eraseLogo()]);
+  await router.push(item.to);
+  // El salto llega después de la navegación (scrollBehavior): la franja se suelta recién ya abajo
+  for (let i = 0; i < 60 && scrollShrink.value < 1; i++) await new Promise(requestAnimationFrame);
+  restore();
+  forced.value = null;
 }
 
 function close({ restoreFocus = false } = {}) {
@@ -568,11 +650,14 @@ watch(
         <RouterLink
           ref="logoLinkRef"
           :to="{ name: 'home' }"
+          @click.capture="returnHome"
           :tabindex="logoHidden || logoAtTop ? -1 : undefined"
           translate="no"
           :class="[
             // Peso por variable: en las pruebas de /guia el logo puede ir en una serif de un solo peso
             'group/logo shrink-0 font-logo text-h3 leading-[0.85] [font-weight:var(--logo-peso,800)] tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
+            // Desde 768 px el logo chico mide lo que el 1º tercio de la retícula (--logo-chico, main.css)
+            'md:text-(length:--logo-chico)',
             logoAtTop && 'pointer-events-none',
           ]"
         >
@@ -580,15 +665,13 @@ watch(
           <!--
             Logo monumento (ver logoStyle): el nombre, sin bloque, empieza en la primera línea de
             la retícula; siempre verde, sobre la franja crema del navbar. Al llegar a
-            contacto se recoge hacia arriba como persiana (vuelve con el menú abierto)
+            contacto se borra con letras al azar (ver hideText; vuelve con el menú abierto)
           -->
           <span
             ref="logoTextRef"
             aria-hidden="true"
             :class="[
-              // pb: espacio para las colas (j, g) dentro del recorte de la persiana
-              'inline-block origin-top-left pb-[0.2em] whitespace-pre transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
-              logoHidden ? '[clip-path:inset(0_0_100%_0)]' : '[clip-path:inset(0)]',
+              'inline-block origin-top-left pb-[0.2em] whitespace-pre',
             ]"
             :style="logoStyle"
             >
@@ -699,7 +782,7 @@ watch(
                 <RouterLink
                   :to="item.to"
                   :aria-label="item.label"
-                  @click="goToSection(item, $event)"
+                  @click.capture="goToSection(item, $event)"
                   @mouseenter="scrambleMenuItem(i)"
                   @focus="scrambleMenuItem(i)"
                   :class="[

@@ -165,6 +165,20 @@ if (!introLeaving.value) {
   })
 }
 onBeforeUnmount(() => clearTimeout(firstTimer))
+// Al volver arriba de Inicio desde más abajo (ver returnHome en AppNav): se recoge sin transición
+// (está fuera de pantalla) y baja de nuevo ya arriba
+const firstInstant = ref(false)
+watch(returningHome, (back) => {
+  if (!back) return
+  firstInstant.value = true
+  firstShown.value = false
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      firstInstant.value = false
+      firstShown.value = true
+    }),
+  )
+})
 
 // Avisa cuando empieza el scroll del stack y cuando se vuelve arriba del todo;
 // el navbar lo usa para barajar el logo y el botón, igual que "Desliza" y el contador
@@ -256,7 +270,7 @@ function photoStyle(index) {
           shrinkMode ? 'absolute inset-0' : 'absolute inset-x-0 top-(--cabecera-viva,0px) bottom-0',
           'will-change-transform',
           i === 0 && [
-            'transition-[clip-path] duration-1000 ease-[cubic-bezier(0.6,0,0.3,1)]',
+            !firstInstant && 'transition-[clip-path] duration-1000 ease-[cubic-bezier(0.6,0,0.3,1)]',
             firstShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
           ],
         ]"
@@ -275,9 +289,10 @@ function photoStyle(index) {
         "Desliza" y el contador en texto crema sobre la foto, como el menú: "Desliza" alineado con
         el logo y el contador con el borde derecho de la retícula
       -->
-      <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo -->
+      <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo.
+        Degradado oscuro suave detrás: el texto crema se lee también sobre fotos claras -->
       <div
-        class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-fondo"
+        class="absolute inset-x-0 bottom-0 bg-linear-to-t from-[rgb(0_0_0/0.4)] to-transparent px-2 pt-16 pb-6 text-boton text-fondo"
         :style="{ bottom: `max(0px, calc(${viewport.height}px - 100dvh))` }"
         aria-hidden="true"
       >

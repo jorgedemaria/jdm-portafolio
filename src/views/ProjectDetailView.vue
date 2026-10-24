@@ -117,7 +117,8 @@ const reveal = useScrollReveal()
             borde de la foto al achicarse
           -->
           <!-- Sobre el borde visible de la pantalla si el marco pasa por debajo de la barra del navegador -->
-          <div class="absolute inset-x-0 bottom-0 px-2 pb-6" :style="titleStyle">
+          <!-- Degradado oscuro suave detrás: el título crema se lee también sobre fotos claras -->
+          <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-[rgb(0_0_0/0.45)] from-35% to-transparent px-2 pt-24 pb-6" :style="titleStyle">
             <div
               class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] tracking-[-0.03em] text-fondo"
             >

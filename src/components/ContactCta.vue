@@ -155,9 +155,9 @@ function reset() {
   smiley.value = ''
 }
 
-// Ancho en em del correo solo y con la carita (cada letra mono mide 0.6em), para el tamaño que
+// Ancho en em del correo con la carita (cada letra mono mide 0.6em), para el tamaño que
 // llena su caja sin pasar de 6rem (ver la clase del correo)
-const emailSize = { '--correo': site.email.length * 0.6, '--todo': (site.email.length + 3) * 0.6 }
+const emailSize = { '--todo': (site.email.length + 3) * 0.6 }
 
 // Avisa al navbar cuando se ve la sección (el logo se recoge); también con movimiento reducido
 let viewObserver
@@ -233,18 +233,17 @@ onBeforeUnmount(() => {
       </p>
 
       <!--
-        En móvil el correo y la carita llenan el ancho en una línea. Desde 768 px el correo llena los
-        2 primeros tercios (menos su aire) y la carita va en el 3º
+        En móvil el correo y la carita llenan el ancho en una línea. Desde 768 px llenan los 2 primeros
+        tercios (menos el aire del 2º), lo mismo que el nombre gigante de Inicio
       -->
       <div class="@container mt-6">
       <p
-        class="leading-none font-bold whitespace-pre text-primario [font-size:min(6rem,calc(100cqi/var(--todo)))] md:grid md:grid-cols-3 md:items-baseline md:[font-size:min(6rem,calc((100cqi*2/3-1.5rem)/var(--correo)))] lg:[font-size:min(6rem,calc((100cqi*2/3-2.5rem)/var(--correo)))]"
+        class="leading-none font-bold whitespace-pre text-primario [font-size:min(6rem,calc(100cqi/var(--todo)))] md:[font-size:min(6rem,calc((100cqi*2/3-1.5rem)/var(--todo)))] lg:[font-size:min(6rem,calc((100cqi*2/3-2.5rem)/var(--todo)))]"
         :style="emailSize"
       >
         <button
           type="button"
           :class="[
-            'md:col-span-2 md:justify-self-start',
             emailReady ? 'cursor-pointer' : 'pointer-events-none',
           ]"
           :aria-label="`Copiar correo ${site.email}`"
@@ -267,7 +266,7 @@ onBeforeUnmount(() => {
           tabindex="-1"
           aria-hidden="true"
           :class="[
-            'ml-[0.6em] inline-block cursor-pointer md:ml-0 md:justify-self-start whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
+            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
             copied && 'rotate-90',
           ]"
           @click="copy"

@@ -10,7 +10,7 @@ const inView = (rect) => rect.bottom > 0 && rect.top < window.innerHeight && rec
 
 export function playPageExit() {
   const main = document.getElementById('contenido')
-  if (!main) return Promise.resolve()
+  if (!main) return Promise.resolve(() => {})
 
   // La foto con su caja (el <picture> lleva el color de fondo mientras carga)
   const photos = [...main.querySelectorAll('picture, video')].filter((el) => inView(el.getBoundingClientRect()))
@@ -43,5 +43,11 @@ export function playPageExit() {
     requestAnimationFrame(step)
   })
 
-  return Promise.all([typing, ...shutters.map((a) => a.finished.catch(() => {}))])
+  // Termina con una función que deshace la salida, para cuando la página sigue en pantalla
+  // (volver arriba de Inicio); al cambiar de página no hace falta
+  const restore = () => {
+    shutters.forEach((a) => a.cancel())
+    for (const t of texts) t.node.nodeValue = t.full
+  }
+  return Promise.all([typing, ...shutters.map((a) => a.finished.catch(() => {}))]).then(() => restore)
 }

@@ -114,7 +114,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', alignText))
       <RouterLink
         :to="link"
         :aria-label="project.titulo"
-        class="whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
+        class="py-0.5 whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
       >
         <span aria-hidden="true">{{ title }}</span>
       </RouterLink>

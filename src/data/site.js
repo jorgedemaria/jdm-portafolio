@@ -5,9 +5,10 @@ export const site = {
   wordmark: 'jorge de maría *',
   email: 'jorgedemaria@pm.me',
   // Completa estos datos para que aparezcan en el pie de página (vacíos = ocultos)
-  instagram: 'jorgedemaria63', // sin @
+  instagram: '', // sin @
   telefono: '+56 9 9081 5973', // se muestra tal cual
-  ubicacion: 'Valdivia', // ej: 'Santiago, Chile'
+  ubicacion: 'Valdivia', // ciudad; el país va debajo
+  pais: 'Chile',
   // Menú en minúsculas. silabas: el mismo texto con "·" entre sílabas, para la animación
   nav: [
     { label: 'inicio', silabas: 'i·ni·cio', to: { name: 'home' } },

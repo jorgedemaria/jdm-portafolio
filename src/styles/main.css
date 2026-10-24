@@ -83,6 +83,20 @@
   }
 }
 
+/*
+ * Logo chico desde 768 px: mide lo que el 1º tercio de la retícula sin su aire (contenido / 3, menos
+ * pr-6, o pr-10 desde 1024 px). El logo con su * en mono y -0.04em de interletra mide 8.96em
+ */
+:root {
+  --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 1.5rem) / 8.96);
+  @media (width >= 64rem) {
+    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 2.5rem) / 8.96);
+  }
+  @media (width >= 80rem) {
+    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 5rem) / 3 - 2.5rem) / 8.96);
+  }
+}
+
 @layer base {
   html {
     /* Fondo de la página también en el lienzo: el rebote del scroll y Safari no muestran blanco */

@@ -106,8 +106,9 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  const base = 'Jorge de María — Fotografía de arquitectura'
-  document.title = to.meta.title ? `${to.meta.title} — Jorge de María` : base
+  // El nombre en minúsculas, como el logo
+  const base = 'jorge de maría — Fotografía de arquitectura'
+  document.title = to.meta.title ? `${to.meta.title} — jorge de maría` : base
 })
 
 export default router
