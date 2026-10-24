@@ -155,9 +155,9 @@ function reset() {
   smiley.value = ''
 }
 
-// El correo (y la carita) usan el ancho disponible sin pasar de 6rem
-const EMAIL_CHARS = site.email.length + 3
-const emailSize = `min(6rem, calc((100vw - 3.5rem) / ${EMAIL_CHARS * 0.6}))`
+// Ancho en em del correo solo y con la carita (cada letra mono mide 0.6em), para el tamaño que
+// llena su caja sin pasar de 6rem (ver la clase del correo)
+const emailSize = { '--correo': site.email.length * 0.6, '--todo': (site.email.length + 3) * 0.6 }
 
 // Avisa al navbar cuando se ve la sección (el logo se recoge); también con movimiento reducido
 let viewObserver
@@ -232,10 +232,19 @@ onBeforeUnmount(() => {
         <span aria-hidden="true">{{ promptShown }}<TypingCaret :state="promptCaret" /></span>
       </p>
 
-      <p class="mt-6 font-extrabold leading-none whitespace-pre text-primario" :style="{ fontSize: emailSize }">
+      <!--
+        En móvil el correo y la carita llenan el ancho en una línea. Desde 768 px el correo llena los
+        2 primeros tercios (menos su aire) y la carita va en el 3º
+      -->
+      <div class="@container mt-6">
+      <p
+        class="leading-none font-bold whitespace-pre text-primario [font-size:min(6rem,calc(100cqi/var(--todo)))] md:grid md:grid-cols-3 md:items-baseline md:[font-size:min(6rem,calc((100cqi*2/3-1.5rem)/var(--correo)))] lg:[font-size:min(6rem,calc((100cqi*2/3-2.5rem)/var(--correo)))]"
+        :style="emailSize"
+      >
         <button
           type="button"
-:class="[
+          :class="[
+            'md:col-span-2 md:justify-self-start',
             emailReady ? 'cursor-pointer' : 'pointer-events-none',
           ]"
           :aria-label="`Copiar correo ${site.email}`"
@@ -258,13 +267,14 @@ onBeforeUnmount(() => {
           tabindex="-1"
           aria-hidden="true"
           :class="[
-            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
+            'ml-[0.6em] inline-block cursor-pointer md:ml-0 md:justify-self-start whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
             copied && 'rotate-90',
           ]"
           @click="copy"
           >{{ smileyText }}<TypingCaret :state="smileyCaretShown" /></button
         >
       </p>
+      </div>
       <p class="sr-only" aria-live="polite">{{ copied ? 'Correo copiado' : '' }}</p>
     </div>
   </section>
