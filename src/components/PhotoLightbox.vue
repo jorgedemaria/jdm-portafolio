@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { easePersiana } from '../composables/usePersiana'
 import Lenis from 'lenis'
 import ResponsiveImage from './ResponsiveImage.vue'
 import { pauseSmoothScroll, resumeSmoothScroll } from '../composables/useSmoothScroll'
@@ -18,10 +19,11 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const reducedMotion = useReducedMotion()
-// Mismo recorrido y curva que el stack de Inicio
+// Mismo recorrido que el stack de Inicio
 const SEGMENT = 1.6
-const MOVE = 0.8
-const easeOutSine = (x) => Math.sin((x * Math.PI) / 2)
+// La foto sigue al scroll sin pausa ni curva propia; la curva la pone el paso con las flechas
+// (ease in-out): así sube y baja a la misma velocidad
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2)
 const clamp = (x) => Math.min(Math.max(x, 0), 1)
 
 const wrapper = ref(null)
@@ -32,14 +34,16 @@ const position = computed(() => progress.value * (props.photos.length - 1))
 
 function arrival(i) {
   if (i === 0) return 1
-  return easeOutSine(clamp((position.value - (i - 1)) / MOVE))
+  return clamp(position.value - (i - 1))
 }
 // Fotos ya apoyadas (más de la mitad del recorrido), como el contador del stack
 const current = computed(() => props.photos.filter((_, i) => arrival(i) >= 0.5).length)
 function photoStyle(i) {
   const a = arrival(i)
   if (reducedMotion.value) return { opacity: a }
-  return { transform: `translate3d(0, ${(1 - a) * 100}svh, 0)` }
+  // Como el stack: la siguiente empuja a la anterior hacia arriba, a la par (vertical push)
+  const pushed = i < props.photos.length - 1 ? arrival(i + 1) : 0
+  return { transform: `translate3d(0, ${(1 - a - pushed) * 100}svh, 0)` }
 }
 
 function onScroll() {
@@ -52,12 +56,62 @@ const offsetOf = (i) => i * SEGMENT * wrapper.value.clientHeight
 let lenis = null
 function goTo(i) {
   const y = offsetOf(Math.min(Math.max(i, 0), props.photos.length - 1))
-  if (lenis) lenis.scrollTo(y, { duration: 1.2 })
+  if (lenis) lenis.scrollTo(y, { duration: 1, easing: easeInOut })
   else wrapper.value.scrollTo({ top: y, behavior: reducedMotion.value ? 'instant' : 'smooth' })
 }
 
 // Foto apoyada en este momento (0 = la primera): las flechas no van más allá de los extremos
 const at = computed(() => Math.round(position.value))
+
+/*
+ * Como el stack: cada gesto (rueda, trackpad o dedo) pasa exactamente una foto, con la animación de
+ * las flechas. Mientras dura no se cuenta otro; después, la inercia del trackpad (eventos que van
+ * frenando) tampoco, pero sí un gesto nuevo o la rueda que se sigue girando
+ */
+let busyUntil = 0
+let gestureEnd = 0
+let lastDelta = 0
+function step(dir) {
+  if (performance.now() < busyUntil) return
+  goTo(at.value + dir)
+  busyUntil = performance.now() + 1000
+}
+// En captura, antes que el scroll suave del lightbox (Lenis). ctrlKey: zoom del navegador
+function onWheel(event) {
+  if (!event.deltaY || event.ctrlKey || reducedMotion.value) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  const delta = Math.abs(event.deltaY)
+  const fresh = delta >= 15 && delta >= lastDelta
+  lastDelta = delta
+  const now = performance.now()
+  if (now > gestureEnd || fresh) step(Math.sign(event.deltaY))
+  gestureEnd = now + 250
+}
+let touchY = 0
+function onTouchStart(event) {
+  touchY = event.touches[0].clientY
+}
+function onTouchMove(event) {
+  // Con dos dedos es zoom del navegador; con uno, la foto no sigue al dedo: pasa al soltar
+  if (event.touches.length === 1 && !reducedMotion.value) event.preventDefault()
+}
+function onTouchEnd(event) {
+  const dy = touchY - event.changedTouches[0].clientY
+  if (Math.abs(dy) > 30 && !reducedMotion.value) step(Math.sign(dy))
+}
+
+/*
+ * Al pasar de foto (flechas, teclado o scroll), la flecha de esa dirección "rueda" (text roll): el
+ * carácter sale como persiana y entra su copia por el otro lado. ↑ hacia arriba, ↓ hacia abajo
+ */
+const rollEls = {}
+watch(current, (now, before) => {
+  const el = rollEls[now > before ? 1 : -1]
+  if (!el || reducedMotion.value) return
+  const frames = now > before ? ['translateY(-50%)', 'translateY(0)'] : ['translateY(0)', 'translateY(-50%)']
+  el.animate(frames.map((transform) => ({ transform })), { duration: 500, easing: easePersiana() })
+})
 // El foco del teclado se queda en los controles del lightbox (cerrar y las flechas)
 const trapOn = ref(false)
 useFocusTrap(wrapper, trapOn)
@@ -85,6 +139,10 @@ onMounted(async () => {
   if (!reducedMotion.value) {
     lenis = new Lenis({ wrapper: wrapper.value, content: content.value, lerp: 0.085, wheelMultiplier: 0.95, autoRaf: true })
   }
+  wrapper.value.addEventListener('wheel', onWheel, { passive: false, capture: true })
+  wrapper.value.addEventListener('touchstart', onTouchStart, { passive: true })
+  wrapper.value.addEventListener('touchmove', onTouchMove, { passive: false })
+  wrapper.value.addEventListener('touchend', onTouchEnd, { passive: true })
   closeButton.value?.focus({ preventScroll: true })
   trapOn.value = true
 })
@@ -109,7 +167,7 @@ onBeforeUnmount(() => {
   >
     <div ref="content" :style="{ height: `${100 + (photos.length - 1) * SEGMENT * 100}svh` }">
       <div class="sticky top-0 h-svh overflow-hidden">
-        <!-- Cada foto sobre su propio fondo crema: al apoyarse tapa entera a la anterior -->
+        <!-- Cada foto sobre su propio fondo crema; al llegar empuja a la anterior hacia arriba (ver photoStyle) -->
         <div
           v-for="(photo, i) in photos"
           :key="photo.src"
@@ -150,7 +208,12 @@ onBeforeUnmount(() => {
                 class="-my-2.5 cursor-pointer px-1 py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline disabled:cursor-default disabled:opacity-30 disabled:hover:no-underline"
                 @click="goTo(at + dir)"
               >
-                {{ char }}
+                <!-- Máscara de una línea con el carácter dos veces, para el text roll (ver rollEls) -->
+                <span class="block h-lh overflow-hidden"
+                  ><span :ref="(el) => (rollEls[dir] = el)" class="block"
+                    >{{ char }}<br />{{ char }}</span
+                  ></span
+                >
               </button>
             </span>
             <p class="tabular-nums" aria-live="polite">{{ current }} / {{ photos.length }}</p>

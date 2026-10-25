@@ -63,11 +63,13 @@ function page(dir) {
 }
 
 const off = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || !introLeaving.value
+// Lo que tiene su propio scroll encima de la página (ej. el lightbox, con data-lenis-prevent) no se toca
+const inOwnScroll = (event) => !!event.target.closest?.('[data-lenis-prevent]')
 
 // En captura, antes que el scroll suave (Lenis), que así no recibe la rueda que se usa aquí.
 // ctrlKey: zoom del navegador (Ctrl + rueda, pellizco en el trackpad)
 function onWheel(event) {
-  if (!event.deltaY || event.ctrlKey || off()) return
+  if (!event.deltaY || event.ctrlKey || off() || inOwnScroll(event)) return
   const delta = Math.abs(event.deltaY)
   const fresh = delta >= FRESH_DELTA && delta >= lastDelta
   lastDelta = delta
@@ -87,7 +89,7 @@ function onTouchStart(event) {
   touchControl = event.touches.length > 1 ? false : null
 }
 function onTouchMove(event) {
-  if (event.touches.length > 1) touchControl = false
+  if (event.touches.length > 1 || inOwnScroll(event)) touchControl = false
   if (off()) return
   const dy = touchY - event.touches[0].clientY
   if (touchControl === null && Math.abs(dy) > 6) touchControl = animating || nextStop(Math.sign(dy)) !== null
