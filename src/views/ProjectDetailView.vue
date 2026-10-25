@@ -109,7 +109,8 @@ const reveal = useScrollReveal()
         :style="heroShrinks ? { height: `${viewport.height}px` } : null"
       >
         <!-- Marco de la foto: pantalla completa, o achicándose anclado arriba (ver heroFrame) -->
-        <div class="absolute inset-x-0 top-0 h-full" :style="heroFrame">
+        <!-- data-exit-shutter: al salir de la página se recoge entero, con el degradado del título -->
+        <div class="absolute inset-x-0 top-0 h-full" :style="heroFrame" data-exit-shutter>
           <ResponsiveImage v-bind="firstPhoto" fill loading="eager" sizes="100vw" />
 
           <!--

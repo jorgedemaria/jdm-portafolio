@@ -34,11 +34,8 @@ const clamp = (x) => Math.min(Math.max(x, 0), 1)
 const position = computed(() => stackProgress.value * (props.photos.length - 1))
 
 /*
- * Teléfono y tablet: como la primera foto del detalle de un proyecto, cada foto llega a
- * pantalla completa y, al seguir el scroll, su marco se achica (anclado arriba, el borde de
- * abajo sube) hasta la proporción real de la foto, que termina completa a todo el ancho.
- * Recién entonces sube la siguiente. El achique va 1:1 con el scroll; al achicarse la última,
- * la página sigue pegada a su borde de abajo, sin hueco.
+ * Teléfono y tablet: como en el lightbox, cada foto sube entera, en su proporción real, centrada
+ * sobre su propio fondo crema (al apoyarse tapa a la anterior). Desde 1024 px, a pantalla completa
  */
 const narrow = ref(false)
 const viewport = ref({ width: 0, height: 0 })
@@ -57,80 +54,28 @@ onBeforeUnmount(() => {
   narrowQuery?.removeEventListener('change', measureViewport)
   window.removeEventListener('resize', measureViewport)
 })
-const shrinkMode = computed(() => narrow.value && !reducedMotion.value && viewport.value.height > 0)
-
-// Scroll (px) que achica cada foto: lo que le sobra a la pantalla respecto de su alto real.
-// Si ya casi la llena, no se achica (igual que en el detalle)
-const shrinkDistance = computed(() => {
-  const { width, height } = viewport.value
-  return props.photos.map((p) => {
-    const full = (width * p.height) / p.width
-    return full < height * 0.97 ? height - full : 0
-  })
-})
-// Scroll (px) de la llegada de cada foto: lo que sube, desde el borde de abajo de la anterior
-// ya achicada hasta arriba. Va 1:1 con el scroll, como el achique, así el stack sigue al dedo
-const arriveDistance = computed(() =>
-  shrinkDistance.value.map((_, i) => (i === 0 ? 0 : viewport.value.height - shrinkDistance.value[i - 1])),
-)
-const shrinkTotal = computed(() =>
-  [...shrinkDistance.value, ...arriveDistance.value].reduce((sum, d) => sum + d, 0),
-)
-
-// Por foto: llegada (0 abajo → 1 apoyada) y achique (0 pantalla completa → 1 alto real),
-// en orden: achique de la 1, llegada de la 2, achique de la 2…
-const timeline = computed(() => {
-  const scrolled = stackProgress.value * shrinkTotal.value
-  let at = 0
-  return props.photos.map((_, i) => {
-    let arrive = 1
-    if (i > 0) {
-      arrive = clamp((scrolled - at) / arriveDistance.value[i])
-      at += arriveDistance.value[i]
-    }
-    const d = shrinkDistance.value[i]
-    const shrink = d ? clamp((scrolled - at) / d) : 0
-    at += d
-    return { arrive, shrink, height: viewport.value.height - d * shrink }
-  })
-})
 
 // 0 = fuera (abajo), 1 = apoyada en el stack
 function arrival(index) {
   if (index === 0) return 1
-  if (shrinkMode.value) return timeline.value[index].arrive
   return easeOutSine(clamp((position.value - (index - 1)) / MOVE))
 }
 
-// Alto del recorrido: el de siempre o, en teléfono y tablet, pantalla + llegadas + achiques.
-// La parte fija mide una pantalla pero la última foto termina en su alto real: un margen
-// negativo sube la página esa diferencia, para que siga justo donde termina la foto
 /*
  * Los primeros scrolls solo achican el nombre gigante del navbar (logoShrink px): el stack espera
  * quieto, con la primera foto, y recién después empieza a subir la segunda. Para eso el recorrido
  * se alarga en ese tramo y el progreso del stack descuenta lo que ya se usó en el logo.
- * En teléfono y tablet, mientras espera, la foto sube pegada a la franja crema (ver LIFT): se
- * desliza como un scroll normal, sin descubrirse por arriba ni dejar asomar la siguiente.
  */
 const wait = computed(() => logoShrink.value)
-// Lo que le falta a la franja crema para llegar a su alto final (--cabecera-chica, lo mide AppNav)
-const LIFT = 'var(--cabecera-viva, 0px) - var(--cabecera-chica, 0px)'
-const travel = computed(() =>
-  shrinkMode.value ? shrinkTotal.value : viewport.value.height * (props.photos.length - 1) * SEGMENT,
-)
+const travel = computed(() => viewport.value.height * (props.photos.length - 1) * SEGMENT)
 const stackProgress = computed(() => {
   if (!travel.value) return progress.value
   return clamp((progress.value * (travel.value + wait.value) - wait.value) / travel.value)
 })
 
-const rootStyle = computed(() => {
-  if (!shrinkMode.value)
-    return { height: `${viewport.value.height * (1 + (props.photos.length - 1) * SEGMENT) + wait.value}px` }
-  return {
-    height: `${viewport.value.height + shrinkTotal.value + wait.value}px`,
-    marginBottom: `${-shrinkDistance.value.at(-1)}px`,
-  }
-})
+const rootStyle = computed(() => ({
+  height: `${viewport.value.height * (1 + (props.photos.length - 1) * SEGMENT) + wait.value}px`,
+}))
 
 const started = computed(() => stackProgress.value > 0.003)
 
@@ -140,19 +85,8 @@ const started = computed(() => stackProgress.value > 0.003)
  */
 // Paradas (px desde que empieza el stack): arriba de todo, cada foto apoyada
 function stops() {
-  const list = [-wait.value]
-  if (!shrinkMode.value) {
-    const segment = viewport.value.height * SEGMENT
-    for (let i = 1; i < props.photos.length; i++) list.push((i - 1 + MOVE) * segment)
-    return list
-  }
-  // Teléfono y tablet: cada foto recién llegada, antes de su achique (ver timeline)
-  let at = 0
-  for (let i = 1; i < props.photos.length; i++) {
-    at += shrinkDistance.value[i - 1] + arriveDistance.value[i]
-    list.push(at)
-  }
-  return list
+  const segment = viewport.value.height * SEGMENT
+  return [-wait.value, ...props.photos.slice(1).map((_, i) => (i + MOVE) * segment)]
 }
 usePagingStops(() => {
   if (!root.value) return null
@@ -264,21 +198,9 @@ const counter = useScrambleText(
 function photoStyle(index) {
   const a = arrival(index)
   if (reducedMotion.value) return { opacity: a }
-  if (shrinkMode.value) {
-    // Una foto ya tapada por la siguiente se oculta: al achicarse la de encima no asoma debajo
-    const covered = index < props.photos.length - 1 && timeline.value[index + 1].arrive === 1
-    // Sube pegada al borde de abajo de la anterior (ya achicada), sin hueco entre ambas
-    const start = index > 0 ? timeline.value[index - 1].height : viewport.value.height
-    return {
-      bottom: 'auto',
-      height: `${timeline.value[index].height}px`,
-      transform: `translate3d(0, calc(${(1 - a) * start}px + ${LIFT}), 0)`,
-      visibility: covered ? 'hidden' : null,
-    }
-  }
-  return {
-    transform: `translate3d(0, ${(1 - a) * viewport.value.height}px, 0)`,
-  }
+  // La siguiente empuja a la anterior hacia arriba, a la par (como un carrusel)
+  const pushed = index < props.photos.length - 1 ? arrival(index + 1) : 0
+  return { transform: `translate3d(0, ${(1 - a - pushed) * viewport.value.height}px, 0)` }
 }
 
 </script>
@@ -291,10 +213,10 @@ function photoStyle(index) {
         v-for="(photo, i) in photos"
         :key="photo.src"
         :class="[
-          // Desde 1024 px las fotos ocupan el área bajo el fondo del navbar (--cabecera-viva): cada
-          // una sube y se apoya contra él, no contra el borde de la pantalla. En el stack de
-          // teléfono y tablet (fotos que se achican) ocupan la pantalla completa
-          shrinkMode ? 'absolute inset-0' : 'absolute inset-x-0 top-(--cabecera-viva,0px) bottom-0',
+          // Las fotos ocupan el área bajo el fondo del navbar (--cabecera-viva): cada una sube y se
+          // apoya contra él. En teléfono y tablet, sobre su propio fondo crema (ver abajo)
+          'absolute inset-x-0 top-(--cabecera-viva,0px) bottom-0',
+          narrow && 'bg-fondo',
           'will-change-transform',
           i === 0 && [
             !firstInstant && 'transition-[clip-path] duration-1000 ease-(--ease-persiana)',
@@ -303,12 +225,17 @@ function photoStyle(index) {
         ]"
         :style="photoStyle(i)"
       >
-        <ResponsiveImage
-          v-bind="photo"
-          fill
-          :loading="i === 0 ? 'eager' : 'lazy'"
-          sizes="100vw"
-        />
+        <!--
+          Teléfono y tablet, como el lightbox: en la caja disponible (sobre la franja de "Desliza"),
+          a todo el ancho y en su proporción; si es más alta que la caja (las verticales), se
+          recorta arriba y abajo según su punto de foco
+        -->
+        <div v-if="narrow" class="absolute inset-x-0 top-0 bottom-12 grid place-items-center [container-type:size]">
+          <div class="w-full" :style="{ height: `min(100cqh, 100cqw * ${photo.height / photo.width})` }">
+            <ResponsiveImage v-bind="photo" fill :loading="i === 0 ? 'eager' : 'lazy'" sizes="100vw" />
+          </div>
+        </div>
+        <ResponsiveImage v-else v-bind="photo" fill :loading="i === 0 ? 'eager' : 'lazy'" sizes="100vw" />
       </div>
 
 

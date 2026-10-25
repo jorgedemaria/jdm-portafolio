@@ -15,7 +15,10 @@ export function playPageExit() {
   if (!main) return Promise.resolve(() => {})
 
   // La foto con su caja (el <picture> lleva el color de fondo mientras carga)
-  const photos = [...main.querySelectorAll('picture, video')].filter((el) => inView(el.getBoundingClientRect()))
+  // data-exit-shutter: un bloque que se recoge entero (ej. la foto del detalle con su degradado)
+  const photos = [...main.querySelectorAll('picture, video, [data-exit-shutter]')].filter((el) =>
+    inView(el.getBoundingClientRect()),
+  )
   const shutters = photos.map((el) =>
     el.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 100% 0)' }], {
       duration: PAGE_EXIT,

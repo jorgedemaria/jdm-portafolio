@@ -135,6 +135,40 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pushFrame)
 })
 
+/*
+ * Teléfono y tablet: cada tarjeta cabe en una pantalla (ver la clase de cada una) y abajo a la
+ * derecha, en la misma franja crema y posición que el contador del stack, se lee cuál se está
+ * viendo. La franja entra como persiana desde abajo mientras la sección está en pantalla
+ */
+const cardInView = ref(false)
+const currentCard = ref(1)
+function measureCards() {
+  cardsFrame = 0
+  const box = root.value?.getBoundingClientRect()
+  if (!box || wide.value) return (cardInView.value = false)
+  const vh = window.innerHeight
+  cardInView.value = box.top < vh * 0.6 && box.bottom > vh * 0.4
+  currentCard.value = Math.max(1, itemEls.filter((el) => el && el.getBoundingClientRect().top < vh * 0.5).length)
+}
+let cardsFrame = 0
+const scheduleCards = () => {
+  if (!cardsFrame) cardsFrame = requestAnimationFrame(measureCards)
+}
+onMounted(() => {
+  window.addEventListener('scroll', scheduleCards, { passive: true })
+  window.addEventListener('resize', scheduleCards)
+  scheduleCards()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', scheduleCards)
+  window.removeEventListener('resize', scheduleCards)
+  cancelAnimationFrame(cardsFrame)
+})
+const cardCounter = useScrambleText(
+  computed(() => (cardInView.value ? `${currentCard.value} / ${props.projects.length}` : '')),
+  { stagger: 35, scramble: 380, tick: 50, charset: SCRAMBLE_CHARSET_LOWER },
+)
+
 // Nombres de los proyectos: se escriben desde vacío con letras al azar al entrar (ver entered)
 const cardTitleItems = props.projects.map((project, i) =>
   useScrambleText(
@@ -216,7 +250,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
               v-for="(project, i) in projects"
               :key="project.slug"
               :ref="(el) => (itemEls[i] = el)"
-              class="lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
+              class="w-[min(100%,calc((100svh_-_var(--cabecera-chica,0px)_-_11rem)*0.75))] lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
             >
               <!-- Como las tarjetas de Registros: foto, nombre y datos en una línea, sin cajas -->
               <article @pointerenter="hoveredCard = project.slug" @pointerleave="hoveredCard = null">
@@ -263,8 +297,11 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
           </ul>
         </div>
 
-        <!-- Abajo a la derecha: lleva a todos los registros. Entra junto con el último -->
-        <div class="mt-12 flex justify-end lg:mt-8">
+        <!--
+          Abajo a la derecha: lleva a todos los registros. Entra junto con el último. En teléfono
+          y tablet va en la franja del contador (abajo), siempre a la vista
+        -->
+        <div class="mt-8 hidden justify-end lg:flex">
           <RouterLink
             :to="{ name: 'projects' }"
             :class="[
@@ -283,6 +320,28 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
             </svg>
           </RouterLink>
         </div>
+      </div>
+    </div>
+    <!-- Teléfono y tablet: "ver todo" a la izquierda (donde el stack dice "Desliza") y el contador (ver cardInView) -->
+    <div
+      :class="[
+        'fixed inset-x-0 bottom-0 z-20 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-(--ease-persiana) lg:hidden',
+        cardInView ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)] pointer-events-none',
+      ]"
+      :inert="!cardInView"
+    >
+      <div class="mx-auto flex max-w-360 items-end justify-between px-2">
+        <RouterLink
+          :to="{ name: 'projects' }"
+          class="-my-[7px] flex items-center gap-1.5 py-[7px] whitespace-pre decoration-acento decoration-2 underline-offset-4 hover:underline"
+          aria-label="ver todos los registros"
+        >
+          <span aria-hidden="true">{{ seeAllText }}</span>
+          <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M3 9 9 3M4 3h5v5" />
+          </svg>
+        </RouterLink>
+        <p class="min-h-lh whitespace-pre tabular-nums" aria-hidden="true">{{ cardCounter }}</p>
       </div>
     </div>
   </section>
