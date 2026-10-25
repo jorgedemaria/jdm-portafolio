@@ -10,6 +10,7 @@ import {
 import { useCopyEmail } from '../composables/useCopyEmail'
 import { useCaret } from '../composables/useCaret'
 import { contactInView } from '../composables/useMenu'
+import { usePagingStops } from '../composables/usePaging'
 import TypingCaret from './TypingCaret.vue'
 
 /*
@@ -34,6 +35,14 @@ const WINK_MIN = 7000
 const WINK_MAX = 10000
 
 const root = ref(null)
+// Paso por gestos (ver usePaging): desde "últimos registros" un gesto trae contacto acomodado (arriba,
+// o lo más abajo que da la página) y desde aquí un gesto hacia arriba vuelve
+usePagingStops(() => {
+  if (!root.value) return null
+  const end = document.documentElement.scrollHeight - window.innerHeight
+  const y = Math.min(root.value.getBoundingClientRect().top + window.scrollY, end)
+  return { stops: [y], end }
+})
 
 const stage = ref(0) // 0 nada, 1 frase, 2 correo
 const smiley = ref('')

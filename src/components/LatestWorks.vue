@@ -86,17 +86,20 @@ onBeforeUnmount(() => {
 })
 
 /*
- * Paso por gestos (ver usePaging): desde la última foto del stack, un gesto trae la sección; desde
- * ahí el scroll sigue libre. En escritorio, la sección arriba; en tablet y teléfono, la primera
- * tarjeta arriba, bajo el navbar (MENU_GAP)
+ * Paso por gestos (ver usePaging), entre la última foto del stack y contacto. En escritorio, una
+ * parada: la sección arriba. En tablet y teléfono, una por tarjeta (van una bajo otra), cada una
+ * arriba, bajo el navbar (MENU_GAP)
  */
 usePagingStops(() => {
   if (!root.value || reducedMotion.value) return null
   const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cabecera-chica')) || 0
-  const target = animated.value ? root.value : itemEls[0]
-  if (!target) return null
-  const y = target.getBoundingClientRect().top + window.scrollY - (animated.value ? 0 : nav + MENU_GAP)
-  return { stops: [y], end: y }
+  const top = (el) => el.getBoundingClientRect().top + window.scrollY
+  const stops = animated.value
+    ? [top(root.value)]
+    : itemEls.filter(Boolean).map((el) => top(el) - nav - MENU_GAP)
+  // Zona de captura hasta el final de la sección: volviendo desde contacto, apenas asoma, un gesto
+  // hacia arriba la acomoda
+  return { stops, end: root.value.getBoundingClientRect().bottom + window.scrollY }
 })
 
 
