@@ -6,7 +6,7 @@ import { useReducedMotion } from '../composables/useReducedMotion'
 import { useScrambleText } from '../composables/useScrambleText'
 import { logoShrink, returningHome } from '../composables/useMenu'
 import { introLeaving, NAV_DURATION, INDICATOR_DELAY } from '../composables/useIntro'
-import { scrollToY } from '../composables/useSmoothScroll'
+import { usePagingStops } from '../composables/usePaging'
 
 /*
  * Stack de fotos ligado al scroll: la sección se queda fija y cada foto
@@ -135,16 +135,12 @@ const rootStyle = computed(() => {
 const started = computed(() => stackProgress.value > 0.003)
 
 /*
- * Paso de fotos: dentro del stack cada gesto (rueda, trackpad o dedo) lleva exactamente a la foto
- * siguiente o a la anterior ya apoyada, con una animación fija (tipo páginas de producto). También
- * el tramo del nombre gigante: un gesto lo achica entero. Pasada la última foto el scroll es libre.
- * Mientras dura el gesto (y la inercia del trackpad) no se cuenta otro
+ * Paso por gestos (ver usePaging): cada gesto lleva a la foto siguiente o a la anterior ya
+ * apoyada. El primer gesto achica el nombre gigante y a la vez trae la 2ª foto
  */
-const PAGE_DURATION = 0.9 // s
-const GESTURE_GAP = 250 // ms sin rueda para dar por terminado un gesto
 // Paradas (px desde que empieza el stack): arriba de todo, cada foto apoyada
 function stops() {
-  const list = wait.value > 0 ? [-wait.value, 0] : [0]
+  const list = [-wait.value]
   if (!shrinkMode.value) {
     const segment = viewport.value.height * SEGMENT
     for (let i = 1; i < props.photos.length; i++) list.push((i - 1 + MOVE) * segment)
@@ -158,78 +154,10 @@ function stops() {
   }
   return list
 }
-// Altura de página de la parada siguiente en esa dirección, o null si ahí el scroll es libre
-function nextStop(dir) {
+usePagingStops(() => {
+  if (!root.value) return null
   const start = root.value.getBoundingClientRect().top + window.scrollY + wait.value
-  const top = window.scrollY - start
-  if (top < -wait.value - 1 || top > travel.value) return null
-  const list = stops()
-  const stop = dir > 0 ? list.find((y) => y > top + 1) : list.findLast((y) => y < top - 1)
-  return stop === undefined ? null : start + stop
-}
-
-let paging = false // animando o con el gesto aún en curso
-let gestureTimer = 0
-let animating = false
-function release() {
-  clearTimeout(gestureTimer)
-  gestureTimer = setTimeout(() => !animating && (paging = false), GESTURE_GAP)
-}
-function page(dir) {
-  const y = nextStop(dir)
-  if (y === null) return false
-  paging = animating = true
-  scrollToY(y, PAGE_DURATION, () => {
-    animating = false
-    release()
-  })
-  return true
-}
-// En captura, antes que el scroll suave (Lenis), que así no recibe la rueda que se usa aquí
-function onWheel(event) {
-  if (reducedMotion.value || !introLeaving.value || !root.value || !event.deltaY) return
-  if (paging) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-    release()
-    return
-  }
-  if (page(Math.sign(event.deltaY))) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-    release()
-  }
-}
-// Dedo: se decide con el primer movimiento; si toca pasar foto, la página no se mueve con el dedo
-let touchY = 0
-let touchControl = null // null sin decidir, true pasa foto, false scroll libre
-function onTouchStart(event) {
-  touchY = event.touches[0].clientY
-  touchControl = null
-}
-function onTouchMove(event) {
-  if (reducedMotion.value || !introLeaving.value || !root.value) return
-  const dy = touchY - event.touches[0].clientY
-  if (touchControl === null && Math.abs(dy) > 6) touchControl = paging || nextStop(Math.sign(dy)) !== null
-  if (touchControl) event.preventDefault()
-}
-function onTouchEnd(event) {
-  const dy = touchY - event.changedTouches[0].clientY
-  if (touchControl && !paging && Math.abs(dy) > 30) page(Math.sign(dy))
-  touchControl = null
-}
-onMounted(() => {
-  window.addEventListener('wheel', onWheel, { passive: false, capture: true })
-  window.addEventListener('touchstart', onTouchStart, { passive: true })
-  window.addEventListener('touchmove', onTouchMove, { passive: false })
-  window.addEventListener('touchend', onTouchEnd, { passive: true })
-})
-onBeforeUnmount(() => {
-  clearTimeout(gestureTimer)
-  window.removeEventListener('wheel', onWheel, { capture: true })
-  window.removeEventListener('touchstart', onTouchStart)
-  window.removeEventListener('touchmove', onTouchMove)
-  window.removeEventListener('touchend', onTouchEnd)
+  return { stops: stops().map((y) => start + y), end: start + travel.value }
 })
 
 /*
@@ -369,7 +297,7 @@ function photoStyle(index) {
           shrinkMode ? 'absolute inset-0' : 'absolute inset-x-0 top-(--cabecera-viva,0px) bottom-0',
           'will-change-transform',
           i === 0 && [
-            !firstInstant && 'transition-[clip-path] duration-1000 ease-[cubic-bezier(0.6,0,0.3,1)]',
+            !firstInstant && 'transition-[clip-path] duration-1000 ease-(--ease-persiana)',
             firstShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
           ],
         ]"
@@ -392,7 +320,7 @@ function photoStyle(index) {
       <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo -->
       <div
         :class="[
-          'absolute inset-x-0 bottom-0 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+          'absolute inset-x-0 bottom-0 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-(--ease-persiana)',
           indicatorRevealed ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
         ]"
         :style="{ bottom: `max(0px, calc(${viewport.height}px - 100dvh))` }"

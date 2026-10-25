@@ -173,7 +173,7 @@ const headingText = useScrambleText(heading, {
                   :key="piece"
                   type="button"
                   :aria-label="`pieza ${piece + 1}`"
-                  class="absolute top-0 left-0 cursor-pointer bg-fondo bg-no-repeat shadow-[inset_0_0_0_0.5px_var(--color-primario)] transition-transform duration-200 ease-[cubic-bezier(0.6,0,0.3,1)] focus-visible:z-10 focus-visible:-outline-offset-2"
+                  class="absolute top-0 left-0 cursor-pointer bg-fondo bg-no-repeat shadow-[inset_0_0_0_0.5px_var(--color-primario)] transition-transform duration-200 ease-(--ease-persiana) focus-visible:z-10 focus-visible:-outline-offset-2"
                   :style="pieceStyle(piece, tiles.indexOf(piece))"
                   @click="move(tiles.indexOf(piece))"
                 />

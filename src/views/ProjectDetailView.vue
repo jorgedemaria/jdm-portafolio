@@ -181,8 +181,8 @@ const reveal = useScrollReveal()
 
 
     <Transition
-      enter-active-class="transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]"
-      leave-active-class="transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]"
+      enter-active-class="transition-[clip-path] duration-500 ease-(--ease-persiana)"
+      leave-active-class="transition-[clip-path] duration-500 ease-(--ease-persiana)"
       enter-from-class="[clip-path:inset(100%_0_0_0)]"
       leave-to-class="[clip-path:inset(100%_0_0_0)]"
     >

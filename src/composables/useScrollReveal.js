@@ -7,7 +7,7 @@ import { onBeforeUnmount } from 'vue'
  * de cada foto. Con movimiento reducido no hace nada.
  */
 const HIDDEN = 'inset(0 0 100% 0)'
-const TRANSITION = 'clip-path 1s cubic-bezier(0.6, 0, 0.3, 1)'
+const TRANSITION = 'clip-path 1s var(--ease-persiana)'
 /*
  * Una foto lazy tapada entera por la persiana no carga nunca (Chrome la cuenta como no visible):
  * se la carga cuando su contenedor (sin recorte) está a 1,5 pantallas de entrar

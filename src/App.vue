@@ -41,8 +41,8 @@ const pushClass = computed(() => {
   if (titleBelowLogo.value)
     return menuOpen.value
       ? "duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-      : "delay-300 duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]";
-  return "duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]";
+      : "delay-300 duration-500 ease-(--ease-persiana)";
+  return "duration-500 ease-(--ease-persiana)";
 });
 </script>
 

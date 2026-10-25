@@ -1,3 +1,5 @@
+import { easePersiana } from './usePersiana'
+
 /*
  * Salida de la página al ir a otra: lo que se ve de ella se retira antes del cambio. Las fotos se
  * recogen como persiana hacia arriba (como la franja del navbar) y los textos se borran desde el
@@ -17,7 +19,7 @@ export function playPageExit() {
   const shutters = photos.map((el) =>
     el.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 100% 0)' }], {
       duration: PAGE_EXIT,
-      easing: 'cubic-bezier(0.6, 0, 0.3, 1)',
+      easing: easePersiana(),
       fill: 'forwards',
     }),
   )

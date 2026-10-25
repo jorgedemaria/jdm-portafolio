@@ -185,7 +185,8 @@ const scrollShrink = computed(() => (jumping.value ? 1 : Math.min(scrollY.value 
  */
 const NAV_MOVE = 800;
 const PAGE_FADE = 240; // fundido de salida de la página anterior (main.css)
-const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+// In-out quint, la misma curva que las persianas (--ease-persiana en main.css)
+const easeInOut = (x) => (x < 0.5 ? 16 * x ** 5 : 1 - (-2 * x + 2) ** 5 / 2);
 const reducedMotion = useReducedMotion();
 const forced = ref(null);
 let forcedFrame = 0;
@@ -510,6 +511,9 @@ async function returnHome(event) {
   forced.value = 1;
   if (route.hash) await router.push({ name: "home" });
   scrollToTopNow();
+  // Sin esperar al evento scroll (en Android puede llegar tarde): si no, la franja crecería
+  // hacia el tamaño de contacto y quedaría chica
+  onScroll();
   restore();
   returningHome.value = true;
   await moveNav(true);
@@ -627,7 +631,7 @@ watch(
     <div
       v-if="!pinned"
       :class="[
-        'absolute inset-x-0 top-0 -z-10 bg-fondo transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+        'absolute inset-x-0 top-0 -z-10 bg-fondo transition-[clip-path] duration-500 ease-(--ease-persiana)',
         open ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
       ]"
       :style="{ height: `${menuBottom + 16}px` }"
@@ -686,7 +690,7 @@ watch(
                 ><span>{{ logoParts.name }}</span
                 ><span
                   :class="[
-                    'text-transparent underline decoration-acento decoration-[0.06em] underline-offset-[0.12em] transition-[clip-path] duration-300 ease-[cubic-bezier(0.6,0,0.3,1)]',
+                    'text-transparent underline decoration-acento decoration-[0.06em] underline-offset-[0.12em] transition-[clip-path] duration-300 ease-(--ease-persiana)',
                     // El recorte baja 0.3em para no cortar la línea, que queda bajo la caja del texto
                     underlineOn ? '[clip-path:inset(0_0_-0.3em_0)]' : '[clip-path:inset(0_100%_-0.3em_0)] group-hover/logo:[clip-path:inset(0_0_-0.3em_0)]',
                   ]"
@@ -739,7 +743,7 @@ watch(
             type="button"
             :class="[
               // lg:invisible y no hidden: el botón sigue midiendo, el menú se ubica respecto de él
-              'group/toggle relative grid h-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)] sm:h-12 lg:invisible',
+              'group/toggle relative grid h-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-(--ease-persiana) sm:h-12 lg:invisible',
               beside && 'hidden',
               // Entrada de Inicio: baja como persiana cuando el logo terminó de escribirse
               introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
@@ -771,7 +775,7 @@ watch(
               // incluye, ver measureMonument); desde
               // antes, en fila, repartidos de borde a borde bajo el logo
               beside ? 'flex w-full flex-col text-boton text-primario' : 'flex flex-col text-primario',
-              'transition-[clip-path] duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+              'transition-[clip-path] duration-500 ease-(--ease-persiana)',
               open && introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
             :style="[menuStyle, listStyle]"

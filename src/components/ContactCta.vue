@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
           tabindex="-1"
           aria-hidden="true"
           :class="[
-            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-[cubic-bezier(0.6,0,0.3,1)] motion-reduce:transition-none',
+            'ml-[0.6em] inline-block cursor-pointer whitespace-pre transition-transform duration-300 ease-(--ease-persiana) motion-reduce:transition-none',
             copied && 'rotate-90',
           ]"
           @click="copy"

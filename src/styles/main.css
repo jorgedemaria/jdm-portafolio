@@ -88,6 +88,8 @@
  * pr-6, o pr-10 desde 1024 px). El logo con su * en mono y -0.04em de interletra mide 8.96em
  */
 :root {
+  /* Curva de las persianas y transiciones del sitio (en desarrollo se prueban otras en /guia) */
+  --ease-persiana: cubic-bezier(0.83, 0, 0.17, 1); /* in-out quint */
   --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 1.5rem) / 8.96);
   @media (width >= 64rem) {
     --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 2.5rem) / 8.96);

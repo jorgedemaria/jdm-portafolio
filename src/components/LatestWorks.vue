@@ -1,27 +1,24 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import CardPhoto from './CardPhoto.vue'
-import { preloadPhoto } from '../composables/useScrollReveal'
-import { useScrollProgress } from '../composables/useScrollProgress'
+import { preloadPhoto, whenPhotoReady } from '../composables/useScrollReveal'
 import { useReducedMotion } from '../composables/useReducedMotion'
 import { menuOpen, navContentBottom } from '../composables/useMenu'
 import { useScrambleText, SCRAMBLE_CHARSET_LOWER } from '../composables/useScrambleText'
+import { usePagingStops } from '../composables/usePaging'
 
 /*
  * "últimos registros": los 3 más recientes en una fila.
- * Desde 1024 px la sección se queda fija mientras se hace scroll (hijack) y los proyectos
- * aparecen uno tras otro de izquierda a derecha; al terminar hay una pausa y la página sigue.
- * En pantallas más chicas van uno debajo del otro, con scroll normal.
+ * Cada uno entra como en Registros: la foto se descubre como persiana que baja y el nombre se
+ * escribe con letras al azar. Desde 1024 px la sección mide una pantalla y, al terminar de llegar,
+ * entran de izquierda a derecha; en pantallas más chicas van uno debajo del otro y cada uno entra
+ * al asomar. Al salir de pantalla se reinician para repetirse.
  */
 const props = defineProps({
   projects: { type: Array, required: true },
 })
 
-// Parte del recorrido en la que aparecen los proyectos; el resto es pausa con los tres visibles
-const REVEAL_SPAN = 0.75
-
 const root = ref(null)
-const progress = useScrollProgress(root)
 const reducedMotion = useReducedMotion()
 
 const wide = ref(false)
@@ -37,57 +34,71 @@ onBeforeUnmount(() => wideQuery?.removeEventListener('change', updateWide))
 
 const animated = computed(() => wide.value && !reducedMotion.value)
 
-const easeOut = (x) => 1 - Math.pow(1 - x, 3)
-const clamp = (x) => Math.min(Math.max(x, 0), 1)
-
 /*
- * 0 = oculto, 1 = visible. En escritorio cada proyecto ocupa un tramo del recorrido fijo de la
- * sección, en orden. En tablet y teléfono (sin sección fija) cada tarjeta se descubre según
- * su propia posición: empieza al asomar por abajo y termina al recorrer NARROW_TRAVEL de pantalla.
+ * entered: el proyecto entró (su nombre se escribe y su foto se abre en cuanto carga). En
+ * escritorio, cuando la fila de proyectos está a la vista (60 %, venga del stack o desde contacto),
+ * uno tras otro con ENTER_STAGGER; en pantallas chicas, cada tarjeta al asomar
  */
-const NARROW_TRAVEL = 0.45
+const ENTER_STAGGER = 250
 const itemEls = []
-const narrowReveal = ref(props.projects.map(() => 1))
-function measureNarrow() {
-  narrowFrame = 0
-  if (wide.value || reducedMotion.value) return
-  const vh = window.innerHeight
-  narrowReveal.value = itemEls.map((el) =>
-    el ? easeOut(clamp((vh - el.getBoundingClientRect().top) / (vh * NARROW_TRAVEL))) : 1,
+const entered = ref(props.projects.map(() => reducedMotion.value))
+const photoShown = ref(props.projects.map(() => reducedMotion.value))
+let enterTimers = []
+function setAllEntered(on) {
+  enterTimers.forEach(clearTimeout)
+  enterTimers = props.projects.map((_, i) =>
+    setTimeout(() => (entered.value[i] = on), on ? i * ENTER_STAGGER : 0),
   )
 }
-let narrowFrame = 0
-const scheduleNarrow = () => {
-  if (!narrowFrame) narrowFrame = requestAnimationFrame(measureNarrow)
-}
+watch(
+  entered,
+  (list) =>
+    list.forEach((on, i) => {
+      if (!on) photoShown.value[i] = false
+      else if (!photoShown.value[i]) whenPhotoReady(itemEls[i], () => entered.value[i] && (photoShown.value[i] = true))
+    }),
+  { deep: true },
+)
+let sectionObserver
+let cardObserver
 onMounted(() => {
-  window.addEventListener('scroll', scheduleNarrow, { passive: true })
-  window.addEventListener('resize', scheduleNarrow)
-  scheduleNarrow()
+  if (reducedMotion.value) return
+  sectionObserver = new IntersectionObserver(([entry]) => {
+    if (!wide.value) return
+    if (entry.intersectionRatio >= 0.6) !entered.value[0] && setAllEntered(true)
+    else if (!entry.isIntersecting) setAllEntered(false)
+  }, { threshold: [0, 0.6] })
+  sectionObserver.observe(listRef.value.firstElementChild)
+  cardObserver = new IntersectionObserver((entries) => {
+    if (wide.value) return
+    entries.forEach((entry) => {
+      const i = itemEls.indexOf(entry.target)
+      if (entry.intersectionRatio >= 0.3) entered.value[i] = true
+      else if (!entry.isIntersecting) entered.value[i] = false
+    })
+  }, { threshold: [0, 0.3] })
+  itemEls.forEach((el) => el && cardObserver.observe(el))
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', scheduleNarrow)
-  window.removeEventListener('resize', scheduleNarrow)
-  cancelAnimationFrame(narrowFrame)
+  sectionObserver?.disconnect()
+  cardObserver?.disconnect()
+  enterTimers.forEach(clearTimeout)
 })
-watch(wide, scheduleNarrow)
 
-function reveal(index) {
-  if (reducedMotion.value) return 1
-  if (!wide.value) return narrowReveal.value[index] ?? 1
-  const span = REVEAL_SPAN / props.projects.length
-  return easeOut(clamp((progress.value - index * span) / span))
-}
+/*
+ * Paso por gestos (ver usePaging): desde la última foto del stack, un gesto trae la sección; desde
+ * ahí el scroll sigue libre. En escritorio, la sección arriba; en tablet y teléfono, la primera
+ * tarjeta arriba, bajo el navbar (MENU_GAP)
+ */
+usePagingStops(() => {
+  if (!root.value || reducedMotion.value) return null
+  const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cabecera-chica')) || 0
+  const target = animated.value ? root.value : itemEls[0]
+  if (!target) return null
+  const y = target.getBoundingClientRect().top + window.scrollY - (animated.value ? 0 : nav + MENU_GAP)
+  return { stops: [y], end: y }
+})
 
-// Se descubre como persiana que baja, con un leve desplazamiento hacia abajo
-function revealStyle(index) {
-  const r = reveal(index)
-  if (r === 1) return null
-  return {
-    clipPath: `inset(0 0 ${(1 - r) * 100}% 0)`,
-    transform: `translateY(${(1 - r) * -32}px)`,
-  }
-}
 
 /*
  * Los proyectos nunca quedan debajo del navbar (logo, menú abierto o título de sección):
@@ -121,36 +132,14 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pushFrame)
 })
 
-/*
- * Títulos de los proyectos: se arman desde vacío con letras al azar (como el nombre de la
- * intro). En escritorio, cuando su proyecto aparece en el recorrido; en pantallas más chicas,
- * cuando el título entra en pantalla. Al ocultarse se reinician para repetirse.
- */
-const cardTitleEls = []
-const cardTitleVisible = ref(props.projects.map(() => false))
+// Nombres de los proyectos: se escriben desde vacío con letras al azar al entrar (ver entered)
 const cardTitleItems = props.projects.map((project, i) =>
   useScrambleText(
-    computed(() => {
-      const shown = animated.value ? reveal(i) > 0.5 : cardTitleVisible.value[i]
-      return shown ? project.titulo : ' '.repeat(project.titulo.length)
-    }),
+    computed(() => (entered.value[i] ? project.titulo : ' '.repeat(project.titulo.length))),
     { stagger: 35, scramble: 400, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
   ),
 )
 const cardTitles = computed(() => cardTitleItems.map((t) => t.value))
-let cardObserver
-onMounted(() => {
-  cardObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      const i = cardTitleEls.indexOf(entry.target)
-      if (i === -1) return
-      if (entry.intersectionRatio >= 0.8) cardTitleVisible.value[i] = true
-      else if (!entry.isIntersecting) cardTitleVisible.value[i] = false
-    })
-  }, { threshold: [0, 0.8] })
-  cardTitleEls.forEach((el) => el && cardObserver.observe(el))
-})
-onBeforeUnmount(() => cardObserver?.disconnect())
 
 // "ver todo": bloque verde como "Desliza"; cada 5 s guiña (se vuelve carita feliz y regresa).
 // Con el cursor encima (o el foco del teclado) no guiña y el bloque crece para mostrar la flecha ↗
@@ -196,16 +185,16 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
 </script>
 
 <template>
-  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario lg:h-[260lvh]">
-    <!-- Fija en escritorio; el contenido empieza siempre debajo del navbar (no se centra, así no queda tapado en pantallas bajas) -->
-    <div class="px-2 pt-28 pb-28 lg:sticky lg:top-0 lg:flex lg:h-lvh lg:flex-col lg:pt-32 lg:pb-16">
+  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario">
+    <!-- En escritorio mide una pantalla; el contenido empieza siempre debajo del navbar (no se centra, así no queda tapado en pantallas bajas) -->
+    <div class="px-2 pt-28 pb-28 lg:flex lg:h-lvh lg:flex-col lg:pt-32 lg:pb-16">
       <div
         :class="[
           'page w-full transition-transform lg:flex lg:min-h-0 lg:flex-1 lg:flex-col',
           // Mismo ritmo que el título de sección del navbar, para no alcanzarlo
           menuOpen
             ? 'delay-0 duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]'
-            : 'delay-300 duration-500 ease-[cubic-bezier(0.6,0,0.3,1)]',
+            : 'delay-300 duration-500 ease-(--ease-persiana)',
         ]"
         :style="menuPush ? { transform: `translateY(${menuPush}px)` } : null"
       >
@@ -224,13 +213,21 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
               v-for="(project, i) in projects"
               :key="project.slug"
               :ref="(el) => (itemEls[i] = el)"
-              class="will-change-[clip-path,transform] lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
-              :style="revealStyle(i)"
+              class="lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
             >
               <!-- Como las tarjetas de Registros: foto, nombre y datos en una línea, sin cajas -->
               <article @pointerenter="hoveredCard = project.slug" @pointerleave="hoveredCard = null">
                 <!-- La foto repite el enlace del nombre; se oculta a lectores de pantalla y al teclado -->
-                <RouterLink :to="projectLink(project)" class="block" tabindex="-1" aria-hidden="true">
+                <!-- La foto entra como persiana que baja, como en Registros (ver entered) -->
+                <RouterLink
+                  :to="projectLink(project)"
+                  :class="[
+                    'block transition-[clip-path] duration-1000 ease-(--ease-persiana)',
+                    photoShown[i] ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+                  ]"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
                   <!-- La foto cambia sola cada cierto tiempo, salvo con el cursor encima -->
                   <CardPhoto
                     :project="project"
@@ -240,7 +237,6 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
                   />
                 </RouterLink>
                 <h3
-                  :ref="(el) => (cardTitleEls[i] = el)"
                   class="mt-3 font-display text-cuerpo leading-snug text-balance text-texto"
                 >
                   <RouterLink
@@ -268,8 +264,10 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
         <div class="mt-12 flex justify-end lg:mt-8">
           <RouterLink
             :to="{ name: 'projects' }"
-            class="group/all -my-[7px] flex items-center gap-1.5 py-[7px] text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 hover:underline"
-            :style="revealStyle(projects.length - 1)"
+            :class="[
+              'group/all -my-[7px] flex items-center gap-1.5 py-[7px] text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 transition-[clip-path] duration-1000 ease-(--ease-persiana) hover:underline',
+              entered[projects.length - 1] ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+            ]"
             aria-label="ver todos los registros"
             @pointerenter="seeAllHover = true"
             @pointerleave="seeAllHover = false"

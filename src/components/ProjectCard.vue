@@ -101,7 +101,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', alignText))
     <RouterLink
       :to="link"
       :class="[
-        'block transition-[clip-path] duration-1000 ease-[cubic-bezier(0.6,0,0.3,1)]',
+        'block transition-[clip-path] duration-1000 ease-(--ease-persiana)',
         photoShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
       ]"
       tabindex="-1"

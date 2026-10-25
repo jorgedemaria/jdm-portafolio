@@ -1,5 +1,6 @@
 import Lenis from 'lenis'
 import 'lenis/dist/lenis.css'
+import { easePersiana } from './usePersiana'
 
 /*
  * Scroll suave con inercia (Lenis): con la rueda o el trackpad la página no salta, sino que
@@ -41,20 +42,17 @@ export function scrollToElement(target, { immediate = false } = {}) {
 
 // Salta a una sección (ej. contacto) y la descubre subiendo desde abajo como persiana, con la
 // misma curva que el resto del sitio. Con movimiento reducido solo salta
-const REVEAL = { duration: 700, easing: 'cubic-bezier(0.6, 0, 0.3, 1)' }
+const REVEAL = { duration: 700 }
 export function jumpToSection(el) {
   scrollToElement(el, { immediate: true })
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  el.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0)' }], REVEAL)
+  el.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0)' }], { ...REVEAL, easing: easePersiana() })
 }
 
-// Lleva el scroll hasta una altura (px) en `duration` segundos, con la curva del sitio, sin que
-// el usuario lo interrumpa (el paso de fotos del stack)
-const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
-export function scrollToY(y, duration, onComplete) {
-  if (lenis) return lenis.scrollTo(y, { duration, easing: easeInOutCubic, lock: true, force: true, onComplete })
-  window.scrollTo({ top: y, behavior: 'smooth' })
-  setTimeout(onComplete, duration * 1000)
+// Lleva el scroll hasta una altura (px) en `duration` segundos con la curva `easing`, sin que el
+// usuario lo interrumpa (el paso por gestos, ver usePaging)
+export function scrollToY(y, duration, easing) {
+  lenis?.scrollTo(y, { duration, easing, lock: true, force: true })
 }
 
 // Salta arriba sin animación (al cambiar de página)

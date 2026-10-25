@@ -70,7 +70,7 @@ const incomingPhoto = computed(() => (incoming.value === null ? null : photos[in
       :key="incomingPhoto.src"
       :class="[
         'absolute inset-0',
-        revealing && 'transition-[clip-path] duration-700 ease-[cubic-bezier(0.6,0,0.3,1)]',
+        revealing && 'transition-[clip-path] duration-700 ease-(--ease-persiana)',
       ]"
       :style="{ clipPath: revealing ? 'inset(0)' : HIDDEN }"
       @transitionend="onRevealed"

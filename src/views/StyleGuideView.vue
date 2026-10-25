@@ -12,6 +12,7 @@ import {
 import ProjectCard from '../components/ProjectCard.vue'
 import ProjectFacts from '../components/ProjectFacts.vue'
 import SystemMock from '../components/SystemMock.vue'
+import { persianas, aplicarPersiana, persianaGuardada } from '../composables/usePersiana'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
 import { projects, heroPhotos } from '../data/content'
 import { site } from '../data/site'
@@ -271,6 +272,20 @@ const type = [
   { token: 'logo', class: 'text-logo text-primario', sample: 'jorge de maría' },
 ]
 
+
+// Persianas con distintas curvas ease in-out: se comparan aquí y la elegida se aplica a todo el sitio
+const persianaElegida = ref(persianaGuardada())
+function elegirPersiana(nombre) {
+  persianaElegida.value = nombre
+  aplicarPersiana(nombre)
+}
+const persianaAbierta = ref(true)
+const persianaDuracion = ref(1000)
+// Repetir: se cierran (hacia arriba) y vuelven a bajar
+function repetirPersianas() {
+  persianaAbierta.value = false
+  setTimeout(() => (persianaAbierta.value = true), persianaDuracion.value + 300)
+}
 </script>
 
 <template>
@@ -278,6 +293,67 @@ const type = [
     <div class="page">
     <h1 class="font-display text-h1">Guía de estilos</h1>
     <p class="mt-4 text-cuerpo-sm">Solo visible en desarrollo.</p>
+
+    <section class="mt-16" aria-labelledby="g-persianas">
+      <h2 id="g-persianas" class="font-display text-h3">Curvas de las persianas</h2>
+      <p class="mt-2 max-w-prose text-cuerpo-sm">
+        La misma persiana del sitio (la foto baja al entrar y sube al salir) con distintas curvas ease
+        in-out. «Repetir» las cierra hacia arriba y las vuelve a bajar. «Usar en el sitio» la aplica a
+        todas las persianas reales (stack, Registros, detalle, últimos registros, menú, contacto…):
+        recorre el sitio para verla. Se recuerda en este navegador, solo en desarrollo.
+      </p>
+      <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-boton text-primario">
+        <button
+          type="button"
+          class="cursor-pointer underline decoration-acento decoration-2 underline-offset-4"
+          @click="repetirPersianas"
+        >
+          repetir
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer underline decoration-acento decoration-2 underline-offset-4"
+          @click="persianaAbierta = !persianaAbierta"
+        >
+          {{ persianaAbierta ? 'cerrar (sube)' : 'abrir (baja)' }}
+        </button>
+        <span class="flex items-center gap-2">
+          duración
+          <button
+            v-for="d in [700, 1000, 1400]"
+            :key="d"
+            type="button"
+            :class="['cursor-pointer decoration-acento decoration-2 underline-offset-4', persianaDuracion === d && 'underline']"
+            @click="persianaDuracion = d"
+          >
+            {{ d }} ms
+          </button>
+        </span>
+      </div>
+      <div class="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 md:grid-cols-3 lg:gap-x-10">
+        <div v-for="p in persianas" :key="p.nombre">
+          <div
+            :class="persianaAbierta ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]'"
+            :style="{ transition: `clip-path ${persianaDuracion}ms ${p.curva}` }"
+          >
+            <ResponsiveImage v-bind="heroPhotos[1]" ratio="3 / 4" sizes="33vw" />
+          </div>
+          <h3 class="mt-3 text-cuerpo">{{ p.nombre }}</h3>
+          <p class="mt-1 text-cuerpo-sm text-primario">{{ p.nota }}</p>
+          <p class="mt-1 font-mono text-etiqueta text-texto/60">{{ p.curva }}</p>
+          <button
+            type="button"
+            :class="[
+              'mt-2 cursor-pointer text-boton text-primario decoration-acento decoration-2 underline-offset-4',
+              persianaElegida === p.nombre ? 'underline' : 'hover:underline',
+            ]"
+            @click="elegirPersiana(p.nombre)"
+          >
+            {{ persianaElegida === p.nombre ? 'en uso en el sitio' : 'usar en el sitio' }}
+          </button>
+        </div>
+      </div>
+    </section>
 
 
     <section class="mt-16" aria-labelledby="g-colores">
