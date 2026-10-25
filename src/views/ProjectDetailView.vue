@@ -14,9 +14,7 @@ const props = defineProps({
 const project = computed(() => findProject(props.slug))
 
 watchEffect(() => {
-  document.title = project.value
-    ? `${project.value.titulo} — Jorge de María`
-    : 'Página no encontrada — Jorge de María'
+  document.title = (project.value ? `${project.value.titulo} * jorge de maría` : 'página no encontrada * jorge de maría').toLowerCase()
 })
 
 // Ficha bajo la primera foto: los datos, sin etiquetas, después de la categoría
@@ -121,10 +119,11 @@ const reveal = useScrollReveal()
           <!-- Degradado oscuro suave detrás: el título crema se lee también sobre fotos claras -->
           <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-[rgb(0_0_0/0.45)] from-35% to-transparent px-2 pt-24 pb-6" :style="titleStyle">
             <div
-              class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] tracking-[-0.03em] text-fondo"
+              class="page font-display text-[clamp(2.25rem,6vw,5rem)] leading-[0.9] tracking-[-0.03em] text-fondo md:grid md:grid-cols-3"
             >
               <!-- -ml: corrección óptica, el margen propio de la letra grande la corría a la derecha de la ficha -->
-              <h1 class="-ml-[0.035em] text-balance">{{ project.titulo }}</h1>
+              <!-- Desde 768 px en el 3º tercio, sobre la ficha (ver abajo) -->
+              <h1 class="-ml-[0.035em] text-balance md:col-start-3">{{ project.titulo }}</h1>
             </div>
           </div>
 
@@ -133,13 +132,13 @@ const reveal = useScrollReveal()
     </div>
 
     <!--
-      Como Registros: desde 768 px, la ficha en el 1º tercio, fija bajo el navbar al bajar, con la
-      estética de las categorías; la galería en los otros dos
+      Desde 768 px, la ficha en el 3º tercio (alineada con los enlaces del navbar), fija bajo el
+      navbar al bajar, con la estética de las categorías; la galería en los dos primeros
     -->
     <div class="px-2">
       <div class="page mt-6 md:grid md:grid-cols-3 md:items-start lg:mt-10">
         <ul
-          class="flex flex-wrap gap-x-6 text-boton text-primario md:sticky md:top-[calc(var(--cabecera,0px)+1.5rem)] md:flex-col md:pr-6 lg:pr-10"
+          class="flex flex-wrap gap-x-6 text-boton text-primario md:sticky md:top-[calc(var(--cabecera,0px)+1.5rem)] md:col-start-3 md:row-start-1 md:flex-col"
         >
           <li>
             <RouterLink
@@ -150,11 +149,11 @@ const reveal = useScrollReveal()
           </li>
           <li v-for="fact in facts" :key="fact" class="py-2.5 md:py-1.5">{{ fact }}</li>
         </ul>
-        <ul class="mt-6 grid gap-y-16 md:col-span-2 md:mt-0">
+        <ul class="mt-6 grid gap-y-16 md:col-span-2 md:col-start-1 md:row-start-1 md:mt-0 md:pr-6 lg:pr-10">
           <li v-for="(photo, i) in gallery" :key="photo.src">
             <!--
               En tablet todas ocupan los dos tercios; desde 1024 px las horizontales siguen en dos tercios
-              y las verticales y cuadradas pasan a un solo tercio (el 2º, menos el aire de la columna). Verticales y cuadradas nunca más altas que lo que cabe bajo el fondo del
+              y las verticales y cuadradas pasan a un solo tercio (el 1º, menos el aire de la columna). Verticales y cuadradas nunca más altas que lo que cabe bajo el fondo del
               navbar (--cabecera, con 1,5 rem arriba y abajo): se ven completas sin recorrerlas
             -->
             <div

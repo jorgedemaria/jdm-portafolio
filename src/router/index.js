@@ -106,9 +106,9 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  // El nombre en minúsculas, como el logo
-  const base = 'jorge de maría — Fotografía de arquitectura'
-  document.title = to.meta.title ? `${to.meta.title} — jorge de maría` : base
+  // Todo en minúsculas y con el "*" del logo entre partes (el detalle pone el suyo, ver ProjectDetailView)
+  const base = 'jorge de maría * fotografía de arquitectura'
+  document.title = to.meta.title ? `${to.meta.title} * jorge de maría`.toLowerCase() : base
 })
 
 export default router
