@@ -70,14 +70,25 @@ let clockTimer = 0
 onMounted(() => (clockTimer = setInterval(() => (time.value = clock.format(new Date())), 10000)))
 onBeforeUnmount(() => clearInterval(clockTimer))
 
-// Alto del pie en --footer-h: contacto lo resta para que entre los dos llenen la pantalla
+// Alto del pie en --footer-h: contacto lo resta para que entre los dos llenen la pantalla.
+// Y en --footer-telefono, dónde empieza el teléfono desde el borde del contenido (las categorías
+// de Registros se alinean con él; 0 cuando va bajo el correo)
 const footerEl = ref(null)
+const telefonoEl = ref(null)
 let footerObserver
+function measureTelefono() {
+  const ul = footerEl.value?.querySelector('ul')
+  if (!ul || !telefonoEl.value) return
+  const x = telefonoEl.value.getBoundingClientRect().left - ul.getBoundingClientRect().left
+  document.documentElement.style.setProperty('--footer-telefono', `${Math.round(x)}px`)
+}
 onMounted(() => {
-  footerObserver = new ResizeObserver(([entry]) =>
-    document.documentElement.style.setProperty('--footer-h', `${entry.borderBoxSize[0].blockSize}px`),
-  )
+  footerObserver = new ResizeObserver(([entry]) => {
+    document.documentElement.style.setProperty('--footer-h', `${entry.borderBoxSize[0].blockSize}px`)
+    measureTelefono()
+  })
   footerObserver.observe(footerEl.value)
+  document.fonts.ready.then(measureTelefono)
 })
 onBeforeUnmount(() => footerObserver?.disconnect())
 </script>
@@ -107,7 +118,7 @@ onBeforeUnmount(() => footerObserver?.disconnect())
             <span class="sr-only">Instagram {{ values.instagram }}</span><span aria-hidden="true">{{ shown('instagram') }}</span>
           </a>
           <template v-if="site.telefono"><span class="hidden lg:inline" aria-hidden="true">·</span></template>
-          <a v-if="site.telefono" :href="telefonoHref" :class="link">
+          <a v-if="site.telefono" ref="telefonoEl" :href="telefonoHref" :class="link">
             <span class="sr-only">Teléfono {{ values.telefono }}</span><span aria-hidden="true">{{ shown('telefono') }}</span>
           </a>
         </li>

@@ -1,3 +1,34 @@
+<script>
+/*
+ * Fila de entrada compartida por todas las tarjetas: de las que esperan, entra siempre la que está
+ * más arriba en la página, cuando la anterior ya terminó (foto, nombre y datos: ENTER_STAGGER) y su
+ * foto ya cargó; si la fila está libre, de inmediato. Una foto que no carga no la traba (FOTO_MAX)
+ */
+const ENTER_STAGGER = 400
+const FOTO_MAX = 3000
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const waiting = []
+let running = false
+async function runLine() {
+  running = true
+  await wait(0) // junta las que asoman a la vez
+  while (waiting.length) {
+    waiting.sort((a, b) => a.el.getBoundingClientRect().top - b.el.getBoundingClientRect().top)
+    const card = waiting.shift()
+    if (card.gone()) continue
+    await Promise.race([card.ready, wait(FOTO_MAX)])
+    if (card.gone()) continue
+    card.enter()
+    await wait(ENTER_STAGGER)
+  }
+  running = false
+}
+function queueEnter(card) {
+  waiting.push(card)
+  if (!running) runLine()
+}
+</script>
+
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import CardPhoto from './CardPhoto.vue'
@@ -33,43 +64,55 @@ const facts = computed(() =>
 )
 
 /*
- * El título se arma desde vacío con letras al azar (como el nombre de la intro) la primera
- * vez que entra en pantalla; después queda fijo.
+ * Entrada, como en "últimos registros": la primera vez que la tarjeta asoma, en cuanto su foto
+ * carga, la foto se descubre como persiana que baja; después (TEXT_DELAY) el nombre se escribe con
+ * letras al azar y, otro TEXT_DELAY después, los datos. Una tarjeta tras otra (ver queueEnter)
  */
-const titleEl = ref(null)
+const TEXT_DELAY = 150
 const shown = ref(false)
-// La foto se descubre como persiana que baja la primera vez que la tarjeta se ve
 const photoShown = ref(false)
-let photoObserver
-const title = useScrambleText(
-  computed(() => (shown.value ? props.project.titulo : ' '.repeat(props.project.titulo.length))),
-  { stagger: 35, scramble: 400, tick: 50, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
-)
+const factsShown = ref(false)
+const typed = (on, text) =>
+  useScrambleText(
+    computed(() => (on.value ? text.value : ' '.repeat(text.value.length))),
+    { stagger: 25, scramble: 280, tick: 40, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
+  )
+const title = typed(shown, computed(() => props.project.titulo))
+const factsText = typed(factsShown, facts)
+const arquitectoText = typed(factsShown, computed(() => props.project.arquitecto ?? ''))
 let observer
+let unmounted = false
+let textTimers = []
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    shown.value = true
-    photoShown.value = true
+    shown.value = photoShown.value = factsShown.value = true
     return
   }
-  photoObserver = new IntersectionObserver(([entry]) => {
-    if (!entry.isIntersecting) return
-    photoObserver.disconnect()
-    whenPhotoReady(cardEl.value, () => (photoShown.value = true))
-    // Apenas asoma (threshold 0): el registro siguiente se ve abriéndose bajo el actual
-  }, { threshold: 0 })
-  photoObserver.observe(cardEl.value)
-  preloadPhoto(cardEl.value)
   observer = new IntersectionObserver(([entry]) => {
-    if (entry.intersectionRatio < 0.8) return
-    shown.value = true
+    if (!entry.isIntersecting) return
     observer.disconnect()
-  }, { threshold: 0.8 })
-  observer.observe(titleEl.value)
+    // La foto empieza a cargar ya; la tarjeta espera su turno en la fila y su foto
+    const ready = new Promise((resolve) => whenPhotoReady(cardEl.value, resolve))
+    queueEnter({
+      el: cardEl.value,
+      ready,
+      gone: () => unmounted,
+      enter: () => {
+        photoShown.value = true
+        textTimers = [
+          setTimeout(() => (shown.value = true), TEXT_DELAY),
+          setTimeout(() => (factsShown.value = true), TEXT_DELAY * 2),
+        ]
+      },
+    })
+  }, { threshold: 0.15 })
+  observer.observe(cardEl.value)
+  preloadPhoto(cardEl.value)
 })
 onBeforeUnmount(() => {
   observer?.disconnect()
-  photoObserver?.disconnect()
+  unmounted = true
+  textTimers.forEach(clearTimeout)
 })
 
 const cardEl = ref(null)
@@ -81,7 +124,7 @@ const cardEl = ref(null)
     <RouterLink
       :to="link"
       :class="[
-        'block transition-[clip-path] duration-1000 ease-(--ease-persiana) md:mr-6 lg:mr-10',
+        'block transition-[clip-path] duration-500 ease-(--ease-persiana) md:mr-6 lg:mr-10',
         photoShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
       ]"
       tabindex="-1"
@@ -90,7 +133,7 @@ const cardEl = ref(null)
       <CardPhoto :project="project" :paused="hovered" :ratio="ratio" :sizes="sizes" :max-height="MAX_PHOTO_HEIGHT" />
     </RouterLink>
     <div>
-    <h2 ref="titleEl" class="mt-3 md:mt-0 font-display text-cuerpo leading-snug text-balance text-texto">
+    <h2 class="mt-3 md:mt-0 font-display text-cuerpo leading-snug text-balance text-texto">
       <RouterLink
         :to="link"
         :aria-label="project.titulo"
@@ -99,8 +142,13 @@ const cardEl = ref(null)
         <span aria-hidden="true">{{ title }}</span>
       </RouterLink>
     </h2>
-    <p class="mt-1 text-cuerpo-sm text-primario">{{ facts }}</p>
-    <p class="text-cuerpo-sm text-primario">{{ project.arquitecto }}</p>
+    <!-- Los datos se escriben después del nombre (ver factsShown); los lectores los leen completos -->
+    <p class="mt-1 text-cuerpo-sm whitespace-pre-wrap text-primario">
+      <span class="sr-only">{{ facts }}</span><span aria-hidden="true">{{ factsText }}</span>
+    </p>
+    <p class="text-cuerpo-sm whitespace-pre-wrap text-primario">
+      <span class="sr-only">{{ project.arquitecto }}</span><span aria-hidden="true">{{ arquitectoText }}</span>
+    </p>
     </div>
   </article>
 </template>
