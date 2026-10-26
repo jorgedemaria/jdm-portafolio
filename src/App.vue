@@ -28,9 +28,9 @@ if (window.location.pathname !== "/") introLeaving.value = true;
 const MENU_GAP = 24;
 // En Inicio no se baja nada (asomaría el fondo crema); "últimos registros" se corre por su cuenta
 const route = useRoute();
-// Inicio y el detalle empiezan con una foto a pantalla completa bajo el navbar; el resto de las
+// Inicio empieza con una foto a pantalla completa bajo el navbar; el resto de las
 // páginas empieza debajo del nombre grande del logo (--cabecera, lo mide AppNav)
-const fullBleed = computed(() => route.name === "home" || route.name === "project");
+const fullBleed = computed(() => route.name === "home");
 const contentPush = computed(() =>
   menuOpen.value && !navOverPhotos.value && menuHeight.value && route.name !== "home"
     ? menuHeight.value + MENU_GAP

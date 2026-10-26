@@ -183,19 +183,19 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- "cerrar" arriba; abajo las flechas y el contador, en texto como el navbar -->
-        <div class="absolute inset-x-0 top-0 px-2 pt-6 text-boton text-primario">
+        <div class="absolute inset-x-0 top-0 px-2 pt-6 text-boton text-ui">
           <div class="mx-auto flex max-w-360 justify-end px-2">
             <button
               ref="closeButton"
               type="button"
-              class="cursor-pointer decoration-acento decoration-2 underline-offset-4 hover:underline xl:mr-8"
+              class="cursor-pointer decoration-linea decoration-2 underline-offset-4 hover:underline xl:mr-8"
               @click="emit('close')"
             >
               cerrar
             </button>
           </div>
         </div>
-        <div class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-primario">
+        <div class="absolute inset-x-0 bottom-0 px-2 pb-6 text-boton text-ui">
           <div class="mx-auto flex max-w-360 items-center justify-end gap-6 px-2 xl:pr-10">
             <!-- Verticales, como el stack: la anterior baja, la siguiente sube -->
             <span class="flex gap-4">
@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
                 type="button"
                 :aria-label="label"
                 :disabled="dir < 0 ? at <= 0 : at >= photos.length - 1"
-                class="-my-2.5 cursor-pointer px-1 py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline disabled:cursor-default disabled:opacity-30 disabled:hover:no-underline"
+                class="-my-2.5 cursor-pointer px-1 py-2.5 decoration-linea decoration-2 underline-offset-4 hover:underline disabled:cursor-default disabled:opacity-30 disabled:hover:no-underline"
                 @click="goTo(at + dir)"
               >
                 <!-- Máscara de una línea con el carácter dos veces, para el text roll (ver rollEls) -->

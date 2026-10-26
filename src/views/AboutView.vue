@@ -28,7 +28,7 @@ onMounted(() => (timer = setTimeout(() => (shown.value = true), START_DELAY)))
 onBeforeUnmount(() => clearTimeout(timer))
 
 // Enlaces con el subrayado rosado del resto del sitio (sin bloque)
-const block = 'whitespace-pre text-primario underline decoration-acento decoration-2 underline-offset-4'
+const block = 'whitespace-pre text-ui underline decoration-linea decoration-2 underline-offset-4'
 </script>
 
 <template>
@@ -37,10 +37,10 @@ const block = 'whitespace-pre text-primario underline decoration-acento decorati
       Retícula de tercios, como Registros y el detalle: el título en el 1º tercio y el mensaje desde
       el 2º (donde empiezan las fotos allá); en móvil, bajo el título
     -->
-    <div class="page md:grid md:grid-cols-3 md:items-baseline">
-      <h1 class="font-display text-h1">Sobre mí</h1>
+    <div class="page md:grid md:grid-cols-6 md:items-baseline md:gap-x-6 lg:gap-x-10">
+      <h1 class="font-display text-h1 text-titulo md:col-span-2">Sobre mí</h1>
 
-      <p class="mt-4 max-w-[40ch] text-boton text-primario md:col-span-2 md:col-start-2 md:mt-0">
+      <p class="mt-4 max-w-[40ch] text-boton text-dato md:col-span-4 md:col-start-3 md:mt-0">
         aún no sé qué compartir de mi. mientras revisa mis
         <RouterLink :to="{ name: 'projects' }" :class="block" :aria-label="PROJECTS"
           ><span aria-hidden="true">{{ projectsText }}</span></RouterLink

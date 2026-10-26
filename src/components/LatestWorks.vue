@@ -178,6 +178,35 @@ const cardTitleItems = props.projects.map((project, i) =>
 )
 const cardTitles = computed(() => cardTitleItems.map((t) => t.value))
 
+// Datos de cada proyecto: se escriben DETAILS_DELAY después de su nombre (como en Registros)
+const DETAILS_DELAY = 250
+const detailsOn = ref(props.projects.map(() => reducedMotion.value))
+let detailsTimers = []
+watch(
+  entered,
+  (list) =>
+    list.forEach((on, i) => {
+      clearTimeout(detailsTimers[i])
+      if (!on) detailsOn.value[i] = false
+      else detailsTimers[i] = setTimeout(() => (detailsOn.value[i] = true), DETAILS_DELAY)
+    }),
+  { deep: true },
+)
+onBeforeUnmount(() => detailsTimers.forEach(clearTimeout))
+const typed = (on, text) =>
+  useScrambleText(computed(() => (on() ? text : ' '.repeat(text.length))), {
+    stagger: 35,
+    scramble: 400,
+    tick: 50,
+    keepUnchanged: false,
+    charset: SCRAMBLE_CHARSET_LOWER,
+  })
+const cardDetails = props.projects.map((project, i) =>
+  [project.categoria.nombre.toLowerCase(), String(project.año), project.lugar].map((text) =>
+    typed(() => detailsOn.value[i], text),
+  ),
+)
+
 // "ver todo": bloque verde como "Desliza"; cada 5 s guiña (se vuelve carita feliz y regresa).
 // Con el cursor encima (o el foco del teclado) no guiña y el bloque crece para mostrar la flecha ↗
 const SEE_ALL = 'ver todo'
@@ -186,7 +215,11 @@ const SMILEY = ':)'
 const WINK_EVERY = 7000
 const WINK_HOLD = 1400
 const seeAllWink = ref(false)
-const seeAllTarget = computed(() => (seeAllWink.value ? SMILEY : SEE_ALL))
+// Se escribe al entrar: en escritorio con el último proyecto; en pantallas chicas, con la franja
+const seeAllShown = computed(() => (wide.value ? entered.value[props.projects.length - 1] : cardInView.value))
+const seeAllTarget = computed(() =>
+  !seeAllShown.value ? ' '.repeat(SEE_ALL.length) : seeAllWink.value ? SMILEY : SEE_ALL,
+)
 const seeAllText = useScrambleText(seeAllTarget, {
   stagger: 30,
   scramble: 240,
@@ -222,7 +255,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
 </script>
 
 <template>
-  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-primario">
+  <section ref="root" aria-labelledby="ultimos-registros" class="relative text-ui">
     <!-- En escritorio mide una pantalla; el contenido empieza siempre debajo del navbar (no se centra, así no queda tapado en pantallas bajas) -->
     <div class="px-2 pt-28 pb-28 lg:flex lg:h-lvh lg:flex-col lg:pt-32 lg:pb-16">
       <div
@@ -245,21 +278,29 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
           disponible en la pantalla.
         -->
         <div ref="listRef" class="mt-10 lg:flex lg:flex-1 lg:items-center">
-          <ul class="grid w-full gap-16 lg:grid-cols-3 lg:gap-0">
+          <ul class="grid w-full gap-16 lg:grid-cols-6 lg:gap-x-10 lg:gap-y-0 lg:*:col-span-2">
             <li
               v-for="(project, i) in projects"
               :key="project.slug"
               :ref="(el) => (itemEls[i] = el)"
-              class="w-[min(100%,calc((100svh_-_var(--cabecera-chica,0px)_-_11rem)*0.75))] lg:w-[min(calc(100%-2.5rem),calc(56svh*0.75))]"
+              class="w-[min(100%,calc((100svh_-_var(--cabecera-chica,0px)_-_11rem)*0.75))] lg:w-full"
             >
-              <!-- Como las tarjetas de Registros: foto, nombre y datos en una línea, sin cajas -->
-              <article @pointerenter="hoveredCard = project.slug" @pointerleave="hoveredCard = null">
+              <!--
+                Como las tarjetas de Registros, sin cajas. Desde 1024 px cada tarjeta ocupa sus 2
+                columnas: la foto de lado a lado, y abajo el nombre en la 1ª columna y los datos en
+                la 2ª, en la misma línea base
+              -->
+              <article
+                class="lg:grid lg:grid-cols-2 lg:items-baseline lg:gap-x-10"
+                @pointerenter="hoveredCard = project.slug"
+                @pointerleave="hoveredCard = null"
+              >
                 <!-- La foto repite el enlace del nombre; se oculta a lectores de pantalla y al teclado -->
                 <!-- La foto entra como persiana que baja, como en Registros (ver entered) -->
                 <RouterLink
                   :to="projectLink(project)"
                   :class="[
-                    'block transition-[clip-path] duration-1000 ease-(--ease-persiana)',
+                    'block transition-[clip-path] duration-1000 ease-(--ease-persiana) lg:col-span-2',
                     photoShown[i] ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
                   ]"
                   tabindex="-1"
@@ -270,28 +311,35 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
                     :project="project"
                     :paused="hoveredCard === project.slug"
                     ratio="3 / 4"
-                    sizes="(min-width: 1024px) 28vw, 100vw"
+                    sizes="(min-width: 1024px) 33vw, 100vw"
                   />
                 </RouterLink>
                 <h3
-                  class="mt-3 font-display text-cuerpo leading-snug text-balance text-texto"
+                  class="mt-4 font-display text-cuerpo text-balance text-titulo"
                 >
                   <RouterLink
                     :to="projectLink(project)"
                     :aria-label="project.titulo"
-                    class="py-0.5 whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
+                    class="py-0.5 whitespace-pre-wrap decoration-linea decoration-2 underline-offset-4 hover:underline"
                   >
                     <span aria-hidden="true">{{ cardTitles[i] }}</span>
                   </RouterLink>
                 </h3>
-                <p class="mt-1 text-cuerpo-sm text-primario">
-                  <RouterLink
-                    :to="categoryLink(project)"
-                    class="pb-2.5 lowercase decoration-acento decoration-2 underline-offset-4 hover:underline"
-                    >{{ project.categoria.nombre }}</RouterLink
-                  >
-                  · {{ project.año }} · {{ project.lugar }}
-                </p>
+                <!-- Los datos en lista, uno por línea y sin puntos, como en Registros -->
+                <ul class="mt-2 text-cuerpo-sm text-dato lg:mt-4">
+                  <li>
+                    <RouterLink
+                      :to="categoryLink(project)"
+                      class="lowercase decoration-linea decoration-2 underline-offset-4 hover:underline"
+                      ><span class="sr-only">{{ project.categoria.nombre }}</span
+                    ><span aria-hidden="true" class="whitespace-pre">{{ cardDetails[i][0].value }}</span></RouterLink
+                    >
+                  </li>
+                  <!-- Se escriben después del nombre (ver detailsOn); los lectores leen el dato completo -->
+                  <li v-for="(text, k) in [project.año, project.lugar]" :key="k" class="whitespace-pre">
+                    <span class="sr-only">{{ text }}</span><span aria-hidden="true">{{ cardDetails[i][k + 1].value }}</span>
+                  </li>
+                </ul>
               </article>
             </li>
           </ul>
@@ -301,12 +349,11 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
           Abajo a la derecha: lleva a todos los registros. Entra junto con el último. En teléfono
           y tablet va en la franja del contador (abajo), siempre a la vista
         -->
-        <div class="mt-8 hidden justify-end lg:flex">
+        <div class="mt-16 hidden justify-end lg:flex">
           <RouterLink
             :to="{ name: 'projects' }"
             :class="[
-              'group/all -my-[7px] flex items-center gap-1.5 py-[7px] text-boton whitespace-pre text-primario decoration-acento decoration-2 underline-offset-4 transition-[clip-path] duration-1000 ease-(--ease-persiana) hover:underline',
-              entered[projects.length - 1] ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+              'group/all -my-[7px] flex items-center gap-1.5 py-[7px] text-boton whitespace-pre text-ui decoration-linea decoration-2 underline-offset-4 hover:underline',
             ]"
             aria-label="ver todos los registros"
             @pointerenter="seeAllHover = true"
@@ -315,7 +362,13 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
             @blur="seeAllHover = false"
           >
             <span aria-hidden="true">{{ seeAllText }}</span>
-            <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <!-- La flecha baja como persiana mientras el texto se escribe -->
+            <svg
+              :class="[
+                'size-3 shrink-0 transition-[clip-path] duration-500 ease-(--ease-persiana)',
+                seeAllShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
+              ]"
+              viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
               <path d="M3 9 9 3M4 3h5v5" />
             </svg>
           </RouterLink>
@@ -325,15 +378,16 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
     <!-- Teléfono y tablet: "ver todo" a la izquierda (donde el stack dice "Desliza") y el contador (ver cardInView) -->
     <div
       :class="[
-        'fixed inset-x-0 bottom-0 z-20 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-(--ease-persiana) lg:hidden',
+        'fixed inset-x-0 bottom-0 z-20 bg-fondo px-2 py-2 text-boton text-ui transition-[clip-path] duration-500 ease-(--ease-persiana) lg:hidden',
         cardInView ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)] pointer-events-none',
       ]"
       :inert="!cardInView"
     >
-      <div class="mx-auto flex max-w-360 items-end justify-between px-2">
+      <!-- En la retícula, como la franja del stack: "ver todo" en la 1ª columna y el contador en la 6ª -->
+      <div class="page grid grid-cols-2 items-end md:grid-cols-6 md:gap-x-6 lg:gap-x-10">
         <RouterLink
           :to="{ name: 'projects' }"
-          class="-my-[7px] flex items-center gap-1.5 py-[7px] whitespace-pre decoration-acento decoration-2 underline-offset-4 hover:underline"
+          class="-my-[7px] flex w-fit items-center gap-1.5 py-[7px] whitespace-pre decoration-linea decoration-2 underline-offset-4 hover:underline"
           aria-label="ver todos los registros"
         >
           <span aria-hidden="true">{{ seeAllText }}</span>
@@ -341,7 +395,7 @@ const categoryLink = (project) => ({ name: 'projects', query: { categoria: proje
             <path d="M3 9 9 3M4 3h5v5" />
           </svg>
         </RouterLink>
-        <p class="min-h-lh whitespace-pre tabular-nums" aria-hidden="true">{{ cardCounter }}</p>
+        <p class="col-start-2 min-h-lh justify-self-end whitespace-pre tabular-nums md:col-start-6 md:justify-self-start" aria-hidden="true">{{ cardCounter }}</p>
       </div>
     </div>
   </section>

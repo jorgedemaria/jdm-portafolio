@@ -127,30 +127,30 @@ const headingText = useScrambleText(heading, {
 <template>
   <section class="px-2 pt-6 pb-24">
     <div
-      class="page md:grid md:grid-cols-3 md:items-start lg:grid-cols-[33.333%_calc(var(--menu-inicio,66.666%)-33.333%)_1fr]"
+      class="page md:grid md:grid-cols-6 md:items-baseline md:gap-x-6 lg:gap-x-10"
     >
-        <h1 class="font-display text-h1 text-balance whitespace-pre-wrap md:pr-6 lg:pr-10">
+        <h1 class="font-display text-h1 text-titulo text-balance whitespace-pre-wrap md:col-span-2">
           <span class="sr-only">{{ TITLE }}</span>
           <span aria-hidden="true">{{ title }}</span>
         </h1>
         <!-- Enlaces como las categorías de Registros: texto chico, subrayado rosado al pasar -->
-        <ul class="mt-4 text-boton text-primario md:-mt-1.5">
+        <ul class="mt-4 text-boton text-ui md:col-span-2">
             <li v-for="link in LINKS" :key="link.label">
               <RouterLink
                 :to="link.to"
-                class="block w-fit py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline md:py-1.5"
+                class="block w-fit py-4 decoration-linea decoration-2 underline-offset-4 hover:underline md:py-2"
                 >{{ link.label }}</RouterLink
               >
             </li>
           </ul>
 
         <!-- Rompecabezas chico -->
-        <div class="mt-10 w-full max-w-72 md:col-start-3 md:mt-0">
-          <p class="text-cuerpo-sm whitespace-pre text-primario">
+        <div class="mt-10 w-full max-w-72 md:col-span-2 md:col-start-5 md:mt-0">
+          <p class="text-cuerpo-sm whitespace-pre text-dato">
             <span class="sr-only">{{ heading }}</span><span aria-hidden="true">{{ headingText }}</span>
           </p>
 
-          <div class="mt-3">
+          <div class="mt-4">
             <div
               class="relative overflow-hidden"
               :style="{ aspectRatio: ratio }"
@@ -182,13 +182,13 @@ const headingText = useScrambleText(heading, {
           </div>
 
           <!-- Debajo: los movimientos y "mezclar" (también para jugar otra vez al armarla) -->
-          <div class="mt-3 flex items-baseline justify-between gap-4 text-cuerpo-sm text-primario">
+          <div class="mt-4 flex items-baseline justify-between gap-4 text-cuerpo-sm text-ui">
             <p class="tabular-nums">
               {{ moves }} mov.<template v-if="best"> · récord {{ best }}</template>
             </p>
             <button
               type="button"
-              class="-my-[7px] cursor-pointer py-[7px] text-primario decoration-1 underline-offset-4 hover:underline"
+              class="-my-[7px] cursor-pointer py-[7px] text-ui decoration-1 underline-offset-4 hover:underline"
               @click="newPuzzle"
             >
               {{ solved ? 'otra vez' : 'mezclar' }}

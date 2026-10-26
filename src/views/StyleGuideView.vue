@@ -1,238 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { paletas, aplicarPaleta, paletaGuardada } from '../composables/usePaleta'
-import {
-  titulos,
-  aplicarTitulos,
-  tituloGuardado,
-  cargarFuentes,
-  aplicarLogoSerif,
-  logoSerifGuardado,
-} from '../composables/useTitulos'
-import ProjectCard from '../components/ProjectCard.vue'
-import ProjectFacts from '../components/ProjectFacts.vue'
-import SystemMock from '../components/SystemMock.vue'
-import { persianas, aplicarPersiana, persianaGuardada } from '../composables/usePersiana'
+import { tipografias, aplicarTipografia, tipografiaGuardada, cargarTipografias } from '../composables/useTipografia'
 import ResponsiveImage from '../components/ResponsiveImage.vue'
-import { projects, heroPhotos } from '../data/content'
+import ProjectCard from '../components/ProjectCard.vue'
+import { heroPhotos, projects, categories } from '../data/content'
 import { site } from '../data/site'
-
-/*
- * Propuestas de sistema para navbar + ficha + pie, coherentes con la retícula de tercios. Las
- * tres primeras son las opciones conversadas; las tres últimas, direcciones de tasteskill
- * (design-taste-frontend, sector arquitectura), adaptadas a la paleta y la letra del sitio.
- */
-const systemVariants = [
-  {
-    id: 'ficha',
-    nombre: 'Ficha técnica',
-    origen: 'industrial-brutalist-ui',
-    texto: 'El navbar es una regla de tres tercios, igual que la ficha y el pie: logo, título del registro y enlaces como texto. Arriba y abajo de la galería, las mismas tres líneas.',
-  },
-  {
-    id: 'minimo',
-    nombre: 'Mínimo',
-    origen: 'minimalist-ui',
-    texto: 'Los mismos tercios, sin bloques ni líneas: todo texto chico, como un pie de imprenta. Las fotos dominan; el subrayado rosado marca la página actual.',
-  },
-  {
-    id: 'cajas',
-    nombre: 'Menú en cajas, en tercios',
-    origen: 'opción conversada',
-    texto: 'El menú actual en bloques, ajustado a los tercios: cuatro enlaces en el segundo tercio y "escríbeme" ocupando el tercero. Ficha en lista bajo el segundo tercio y pie en celdas.',
-  },
-  {
-    id: 'lugar',
-    nombre: 'La foto manda',
-    origen: 'tasteskill · place-carries-it',
-    texto: 'La foto principal es el argumento: el menú encima, chico en las esquinas, y el nombre del registro abajo como título de película. La ficha se reduce a una línea y el pie devuelve el nombre a todo el ancho.',
-  },
-  {
-    id: 'monumento',
-    nombre: 'El nombre como monumento',
-    origen: 'tasteskill · name-as-monument',
-    texto: 'El nombre del sitio a todo el ancho, como arquitectura, arriba y otra vez al cerrar. El menú en una esquina; la ficha y el pie en tercios.',
-  },
-  {
-    id: 'oscuro',
-    nombre: 'Cuarto oscuro',
-    origen: 'tasteskill · dark-room',
-    texto: 'Un solo fondo oscuro de arriba a abajo y las fotos como lo único iluminado, como en una sala de exposición. Misma estructura de tercios que la ficha técnica, con letra clara y rosado.',
-  },
-  {
-    id: 'mezcla',
-    nombre: 'Monumento + la foto manda',
-    origen: 'S5 + S4',
-    texto: 'El nombre a todo el ancho con el menú en una esquina (de S5), y todo lo demás de S4: el nombre del registro sobre la foto como título de película, la ficha en una línea y el pie con el nombre grande.',
-  },
-]
-
-// Las maquetas de sistema usan el registro con más fotos, para ver la galería en varias filas
-const mockProject = projects.reduce((most, p) => (p.fotos.length > (most?.fotos.length ?? 0) ? p : most), null)
-
-// Vista previa: partes reales del sitio (o réplicas fieles) con la paleta elegida
-const sample = projects[0]
-const sampleFacts = sample
-  ? [
-      ['año', String(sample.año)],
-      ['lugar', sample.lugar],
-      ['arquitectura', sample.arquitecto],
-    ]
-  : []
-const samplePhoto = heroPhotos[0]
-const menuItems = site.nav.map((item) => item.label)
-
-// Propuestas de color para el logo: cada una es una lista de partes { texto, clases }
-const wordmarkFirst = site.wordmark.split(' ').slice(0, -1).join(' ') + ' '
-const wordmarkLast = site.wordmark.split(' ').at(-1)
-const logoVariants = [
-  { nombre: 'anterior', partes: [{ t: site.wordmark, c: 'bg-primario text-fondo' }] },
-  { nombre: 'bloque rosado (en uso)', partes: [{ t: site.wordmark, c: 'bg-acento text-primario' }] },
-  { nombre: 'letra rosada', partes: [{ t: site.wordmark, c: 'bg-primario text-acento' }] },
-  {
-    nombre: 'dos tonos',
-    partes: [
-      { t: wordmarkFirst, c: 'bg-primario text-fondo' },
-      { t: wordmarkLast, c: 'bg-acento text-primario' },
-    ],
-  },
-  { nombre: 'contorno', partes: [{ t: site.wordmark, c: 'border-2 border-primario bg-fondo text-primario' }] },
-  { nombre: 'sombra rosada', partes: [{ t: site.wordmark, c: 'bg-primario text-fondo shadow-[0.25rem_0.25rem_0_var(--color-acento)]' }] },
-  { nombre: 'tinta', partes: [{ t: site.wordmark, c: 'bg-texto text-fondo' }] },
-  { nombre: 'rosado y tinta', partes: [{ t: site.wordmark, c: 'bg-acento text-texto' }] },
-]
-
-/*
- * Propuestas de forma para el logo, sobre el bloque actual (rosado, letra en primario, mismo
- * aire): cambia el texto (lineas: una o varias líneas) o el espaciado entre letras (extra).
- */
-const logoForms = [
-  { nombre: 'en uso', lineas: [site.wordmark] },
-  { nombre: 'anterior', lineas: ['JORGE DE MARÍA'] },
-  { nombre: 'minúsculas', lineas: ['jorge de maría'] },
-  { nombre: 'como se escribe', lineas: ['Jorge de María'] },
-  { nombre: 'minúsculas y carita', lineas: ['jorge de maría :)'] },
-  { nombre: 'sílabas', lineas: ['jor·ge de ma·rí·a'] },
-  { nombre: 'guiones bajos', lineas: ['jorge_de_maría'] },
-  { nombre: 'entre corchetes', lineas: ['[jorge de maría]'] },
-  { nombre: 'con cursor', lineas: ['jorge de maría_'] },
-  { nombre: 'en dos líneas', lineas: ['jorge', 'de maría'] },
-  { nombre: 'apretado', lineas: ['jorgedemaría'], extra: 'tracking-[-0.06em]' },
-  { nombre: 'iniciales', lineas: ['jdm'] },
-  { nombre: 'iniciales y carita', lineas: ['j.d.m :)'] },
-]
-
-// Propuestas para contacto: fondo de la sección, frase, correo y carita
-const contactVariants = [
-  { nombre: 'anterior', seccion: '', frase: 'bg-primario text-fondo', correo: 'text-primario', carita: 'text-primario' },
-  { nombre: 'frase rosada', seccion: '', frase: 'bg-acento text-primario', correo: 'text-primario', carita: 'text-primario' },
-  {
-    nombre: 'carita rosada',
-    seccion: '',
-    frase: 'bg-primario text-fondo',
-    correo: 'text-primario',
-    carita: 'bg-acento px-[0.1em] text-primario',
-  },
-  {
-    nombre: 'correo marcado (en uso)',
-    seccion: '',
-    frase: 'bg-primario text-fondo',
-    correo: 'bg-acento px-[0.1em] text-primario',
-    carita: 'text-primario',
-  },
-  {
-    nombre: 'subrayado rosado',
-    seccion: '',
-    frase: 'text-primario',
-    correo: 'text-primario underline decoration-acento decoration-[0.18em] underline-offset-[0.14em]',
-    carita: 'text-primario',
-  },
-  {
-    nombre: 'sección rosada',
-    seccion: 'bg-acento',
-    frase: 'bg-primario text-fondo',
-    correo: 'text-primario',
-    carita: 'text-primario',
-  },
-  {
-    nombre: 'sección en primario',
-    seccion: 'bg-primario',
-    frase: 'bg-acento text-primario',
-    correo: 'text-fondo',
-    carita: 'text-acento',
-  },
-]
-
-/*
- * Propuestas para el pie: los datos reales del sitio con distintos tratamientos.
- * tipo: 'grilla' (como el actual), 'grande' (nombre gigante arriba de la grilla) o 'linea'
- * (todo en una línea). En la grilla: lineas = borde y color de las divisiones, celda = fondo de
- * cada celda, etiqueta y dato = texto, correo = estilo extra de la celda del correo.
- */
-const footerData = [
-  { label: 'fotografía de arquitectura', value: site.name.toLowerCase() },
-  { label: 'correo', value: site.email },
-  ...(site.instagram ? [{ label: 'instagram', value: `@${site.instagram}` }] : []),
-  ...(site.telefono ? [{ label: 'teléfono', value: site.telefono }] : []),
-  ...(site.ubicacion ? [{ label: 'ubicación', value: site.ubicacion }] : []),
-  { label: '©', value: String(new Date().getFullYear()) },
-]
-const gridFooter = { lineas: 'border border-primario bg-primario', celda: 'bg-fondo', etiqueta: 'text-primario', dato: 'text-primario' }
-const footerVariants = [
-  { nombre: 'anterior', tipo: 'grilla', ...gridFooter },
-  { nombre: 'como las fichas', tipo: 'grilla', ...gridFooter, etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'correo destacado', tipo: 'grilla', ...gridFooter, correo: '[&_dd]:w-fit [&_dd]:bg-acento [&_dd]:px-1' },
-  { nombre: 'celdas rosadas', tipo: 'grilla', ...gridFooter, celda: 'bg-acento', etiqueta: 'font-light text-primario' },
-  {
-    nombre: 'en primario',
-    tipo: 'grilla',
-    lineas: 'border border-primario bg-fondo',
-    celda: 'bg-primario',
-    etiqueta: 'text-acento',
-    dato: 'text-fondo',
-  },
-  { nombre: 'solo líneas horizontales', tipo: 'grilla', ...gridFooter, lineas: 'border-y border-primario bg-fondo', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'nombre gigante', tipo: 'grande', ...gridFooter },
-  { nombre: 'una línea (en uso)', tipo: 'linea' },
-]
-
-/*
- * Propuestas para el hover de los enlaces tipo menú (menú, filtro de categorías, "ver proyecto").
- * Son reales: pasa el cursor por cada lista para probarlas.
- */
-const hoverVariants = [
-  { nombre: 'relleno primario (en uso)', c: 'hover:bg-primario hover:text-fondo' },
-  { nombre: 'relleno rosado', c: 'hover:bg-acento' },
-  { nombre: 'rosado y letra texto', c: 'hover:bg-acento hover:text-texto' },
-  { nombre: 'subrayado rosado', c: 'hover:underline hover:decoration-acento hover:decoration-[0.2em] hover:underline-offset-[0.25em]' },
-  { nombre: 'barra rosada a la izquierda', c: 'hover:shadow-[inset_0.375rem_0_0_var(--color-acento)]' },
-  { nombre: 'relleno primario y letra rosada', c: 'hover:bg-primario hover:text-acento' },
-  { nombre: 'contorno rosado', c: 'hover:shadow-[inset_0_0_0_0.1875rem_var(--color-acento)]' },
-  { nombre: 'relleno tinta', c: 'hover:bg-texto hover:text-fondo' },
-]
-
-/*
- * Propuestas para las fichas (todas iguales: últimos trabajos, proyectos y detalle).
- * caja: el borde y el fondo; lineas: las divisiones; etiqueta y dato: el texto de cada fila;
- * primera: estilo extra de la primera fila (opcional).
- */
-const fichaVariants = [
-  { nombre: 'en uso', caja: 'border border-primario bg-fondo', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'fondo rosado', caja: 'border border-primario bg-acento', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  {
-    nombre: 'primera fila rosada',
-    caja: 'border border-primario bg-fondo',
-    lineas: 'divide-primario',
-    etiqueta: 'font-light text-primario',
-    dato: 'text-texto',
-    primera: 'bg-acento',
-  },
-  { nombre: 'solo líneas, sin caja', caja: 'border-y border-primario', lineas: 'divide-primario', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'líneas punteadas', caja: 'border border-primario bg-fondo', lineas: 'divide-primario divide-dashed', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'borde rosado', caja: 'border-2 border-acento bg-fondo', lineas: 'divide-acento', etiqueta: 'font-light text-primario', dato: 'text-texto' },
-  { nombre: 'invertida en primario', caja: 'border border-primario bg-primario', lineas: 'divide-fondo/30', etiqueta: 'font-light text-acento', dato: 'text-fondo' },
-  { nombre: 'etiquetas en bloque rosado', caja: 'border border-primario bg-fondo', lineas: 'divide-primario', etiqueta: 'w-fit bg-acento px-1 text-primario', dato: 'text-texto' },
-]
 
 const colors = [
   { name: 'fondo', class: 'bg-fondo border border-texto' },
@@ -243,6 +16,8 @@ const colors = [
 
 // Paleta en prueba: cambia todo el sitio y se recuerda al recorrerlo (ver usePaleta)
 const activa = ref(paletaGuardada())
+// Colores de una muestra; la publicada usa los de su par en la lista (grafito y lima)
+const muestra = (p) => (p.colores ?? paletas.find((q) => q.nombre === 'grafito y lima').colores)
 const hex = ref({})
 function readColors() {
   const style = getComputedStyle(document.documentElement)
@@ -254,38 +29,48 @@ function choose(nombre) {
 }
 onMounted(readColors)
 
-// Tipografía de títulos en prueba: cambia todos los títulos del sitio (ver useTitulos). Las
-// tarjetas muestran cada una con su propia fuente, así se comparan aunque no esté elegida
-const tituloActivo = ref(tituloGuardado())
-const logoSerif = ref(logoSerifGuardado())
-onMounted(cargarFuentes)
-const muestraTitulos = { nombre: 'Casa Punucapa', ficha: 'casas · 2023 · Valdivia, Chile', otro: 'Librería 780' }
+// Propuestas de tipografía: cada muestra con sus propias fuentes; «usar en el sitio» la aplica a todo
+const tipografiaActiva = ref(tipografiaGuardada())
+onMounted(() => cargarTipografias())
 
 const type = [
   { token: 'h1', class: 'font-display text-h1', sample: 'Nave de producción, planta norte' },
-  { token: 'h2', class: 'font-display text-h2', sample: 'Nave de producción, planta norte' },
   { token: 'h3', class: 'font-display text-h3', sample: 'Nave de producción, planta norte' },
-  { token: 'h4', class: 'font-display text-h4', sample: 'Nave de producción, planta norte' },
   { token: 'cuerpo', class: 'text-cuerpo', sample: 'Hormigón, acero y luz de la tarde.' },
   { token: 'cuerpo-sm', class: 'text-cuerpo-sm', sample: 'Hormigón, acero y luz de la tarde.' },
   { token: 'etiqueta', class: 'text-etiqueta', sample: 'Planta norte, 2025' },
   { token: 'logo', class: 'text-logo text-primario', sample: 'jorge de maría' },
 ]
 
+// Propuestas para el detalle, con un registro real: misma retícula y mismas piezas que Registros
+const muestraDetalle = projects.reduce((a, b) => (b.fotos.length > a.fotos.length ? b : a))
+const datosDetalle = [muestraDetalle.categoria.nombre.toLowerCase(), String(muestraDetalle.año), muestraDetalle.lugar, muestraDetalle.arquitecto].filter(Boolean)
+const fotosDetalle = muestraDetalle.fotos
+const vertical = (foto) => foto.width <= foto.height
+const nro = (i) => String(i + 1).padStart(2, '0')
+const propuestasDetalle = [
+  {
+    id: 'lista',
+    nombre: '1 · como Registros',
+    nota: 'Sin foto a pantalla completa. El nombre en las columnas 1–2 y los datos debajo, en la 2ª (donde están las categorías); las fotos una bajo otra en las columnas 3–6, del ancho de la lista de Registros, cada una completa.',
+  },
+  {
+    id: 'tarjeta',
+    nombre: '2 · la tarjeta abierta',
+    nota: 'Cada foto es una fila como una tarjeta de Registros: la foto en las columnas 3–4, su número en la 5ª (donde va el nombre del registro) y los datos en la 6ª, en la fila de la primera. La página sigue la tarjeta que se tocó.',
+  },
+  {
+    id: 'entrada',
+    nombre: '3 · foto de entrada en la retícula',
+    nota: 'La primera foto sigue siendo grande, pero dentro de la caja: columnas 3–6 en 16:9, como la foto de una tarjeta pero más grande. Debajo, las horizontales en las 4 columnas y las verticales de a pares (3–4 y 5–6).',
+  },
+  {
+    id: 'contactos',
+    nombre: '4 · hoja de contactos',
+    nota: 'Todas las fotos chicas, una por columna en las columnas 3–6, en cajas cuadradas con su número; al tocar una se abre el lightbox. Se ve el registro entero de una vez, como una hoja de contactos.',
+  },
+]
 
-// Persianas con distintas curvas ease in-out: se comparan aquí y la elegida se aplica a todo el sitio
-const persianaElegida = ref(persianaGuardada())
-function elegirPersiana(nombre) {
-  persianaElegida.value = nombre
-  aplicarPersiana(nombre)
-}
-const persianaAbierta = ref(true)
-const persianaDuracion = ref(1000)
-// Repetir: se cierran (hacia arriba) y vuelven a bajar
-function repetirPersianas() {
-  persianaAbierta.value = false
-  setTimeout(() => (persianaAbierta.value = true), persianaDuracion.value + 300)
-}
 </script>
 
 <template>
@@ -294,400 +79,78 @@ function repetirPersianas() {
     <h1 class="font-display text-h1">Guía de estilos</h1>
     <p class="mt-4 text-cuerpo-sm">Solo visible en desarrollo.</p>
 
-    <section class="mt-16" aria-labelledby="g-persianas">
-      <h2 id="g-persianas" class="font-display text-h3">Curvas de las persianas</h2>
+    <!--
+      Propuestas para el detalle de un registro, con la retícula real de la página (6 columnas desde
+      768 px): el nombre en las columnas 1–2, como «Registros», y las fotos en las 3–6, como la lista
+    -->
+    <section class="mt-16" aria-labelledby="g-detalle">
+      <h2 id="g-detalle" class="font-display text-h3">Propuestas de detalle</h2>
       <p class="mt-2 max-w-prose text-cuerpo-sm">
-        La misma persiana del sitio (la foto baja al entrar y sube al salir) con distintas curvas ease
-        in-out. «Repetir» las cierra hacia arriba y las vuelve a bajar. «Usar en el sitio» la aplica a
-        todas las persianas reales (stack, Registros, detalle, últimos registros, menú, contacto…):
-        recorre el sitio para verla. Se recuerda en este navegador, solo en desarrollo.
+        Que el detalle se lea como la continuación de Registros: el mismo reparto de columnas, el mismo
+        título y los datos como las categorías. Con {{ muestraDetalle.titulo }}.
       </p>
-      <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-boton text-primario">
-        <button
-          type="button"
-          class="cursor-pointer underline decoration-acento decoration-2 underline-offset-4"
-          @click="repetirPersianas"
-        >
-          repetir
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer underline decoration-acento decoration-2 underline-offset-4"
-          @click="persianaAbierta = !persianaAbierta"
-        >
-          {{ persianaAbierta ? 'cerrar (sube)' : 'abrir (baja)' }}
-        </button>
-        <span class="flex items-center gap-2">
-          duración
-          <button
-            v-for="d in [700, 1000, 1400]"
-            :key="d"
-            type="button"
-            :class="['cursor-pointer decoration-acento decoration-2 underline-offset-4', persianaDuracion === d && 'underline']"
-            @click="persianaDuracion = d"
-          >
-            {{ d }} ms
-          </button>
-        </span>
-      </div>
-      <div class="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 md:grid-cols-3 lg:gap-x-10">
-        <div v-for="p in persianas" :key="p.nombre">
-          <div
-            :class="persianaAbierta ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]'"
-            :style="{ transition: `clip-path ${persianaDuracion}ms ${p.curva}` }"
-          >
-            <ResponsiveImage v-bind="heroPhotos[1]" ratio="3 / 4" sizes="33vw" />
+
+      <div v-for="prop in propuestasDetalle" :key="prop.id" class="mt-16 border-t border-texto/15 pt-6">
+        <h3 class="text-boton text-ui">{{ prop.nombre }}</h3>
+        <p class="max-w-prose text-cuerpo-sm text-dato">{{ prop.nota }}</p>
+
+        <div class="mt-8 md:grid md:grid-cols-6 md:items-start md:gap-x-6 lg:gap-x-10">
+          <!-- Columnas 1–2: el nombre y, salvo en la tarjeta abierta, los datos en la 2ª -->
+          <div class="md:col-span-2">
+            <p class="font-display text-h1 text-balance text-titulo">{{ muestraDetalle.titulo }}</p>
+            <ul
+              v-if="prop.id !== 'tarjeta'"
+              class="mt-4 text-boton text-dato md:mt-6 md:pl-[calc(50%+0.75rem)] lg:pl-[calc(50%+1.25rem)]"
+            >
+              <li v-for="(dato, i) in datosDetalle" :key="dato" :class="i === 0 && 'underline decoration-linea decoration-2 underline-offset-4'">{{ dato }}</li>
+            </ul>
           </div>
-          <h3 class="mt-3 text-cuerpo">{{ p.nombre }}</h3>
-          <p class="mt-1 text-cuerpo-sm text-primario">{{ p.nota }}</p>
-          <p class="mt-1 font-mono text-etiqueta text-texto/60">{{ p.curva }}</p>
-          <button
-            type="button"
-            :class="[
-              'mt-2 cursor-pointer text-boton text-primario decoration-acento decoration-2 underline-offset-4',
-              persianaElegida === p.nombre ? 'underline' : 'hover:underline',
-            ]"
-            @click="elegirPersiana(p.nombre)"
-          >
-            {{ persianaElegida === p.nombre ? 'en uso en el sitio' : 'usar en el sitio' }}
-          </button>
-        </div>
-      </div>
-    </section>
 
+          <div class="mt-8 md:col-span-4 md:mt-0">
+            <!-- 1: una columna, cada foto completa -->
+            <ul v-if="prop.id === 'lista'" class="grid gap-y-16">
+              <li v-for="foto in fotosDetalle.slice(0, 3)" :key="foto.src" :class="vertical(foto) && 'md:w-1/2'">
+                <ResponsiveImage v-bind="foto" sizes="(min-width: 768px) 66vw, 100vw" />
+              </li>
+            </ul>
 
-    <section class="mt-16" aria-labelledby="g-colores">
-      <h2 id="g-colores" class="font-display text-h3">Colores</h2>
-      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
-        Paleta en prueba: cambia todo el sitio (solo aquí, en desarrollo). La publicada es la de main.css.
-      </p>
-      <div class="mt-4 flex flex-wrap gap-2">
-        <button
-          v-for="p in paletas"
-          :key="p.nombre"
-          type="button"
-          :aria-pressed="activa === p.nombre"
-          :class="[
-            'cursor-pointer border border-primario px-3 py-1.5 text-cuerpo-sm',
-            activa === p.nombre ? 'bg-primario text-fondo' : 'text-primario hover:bg-primario hover:text-fondo',
-          ]"
-          @click="choose(p.nombre)"
-        >
-          {{ p.nombre }}
-        </button>
-      </div>
-      <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <li v-for="c in colors" :key="c.name">
-          <div :class="['aspect-square', c.class]" />
-          <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
-        </li>
-      </ul>
-    </section>
-
-    <section class="mt-16" aria-labelledby="g-titulos">
-      <h2 id="g-titulos" class="font-display text-h3">Tipografía de títulos</h2>
-      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
-        El logo, el navbar y los textos siguen en JetBrains Mono; cada tarjeta prueba una serif para los títulos.
-        Al elegir una cambian todos los títulos del sitio (solo aquí, en desarrollo).
-      </p>
-      <button
-        type="button"
-        :aria-pressed="logoSerif"
-        :class="[
-          'mt-4 cursor-pointer border border-primario px-3 py-1.5 text-cuerpo-sm',
-          logoSerif ? 'bg-primario text-fondo' : 'text-primario hover:bg-primario hover:text-fondo',
-        ]"
-        @click="logoSerif = aplicarLogoSerif(!logoSerif)"
-      >
-        logo en Instrument Serif: {{ logoSerif ? 'sí' : 'no' }}
-      </button>
-      <ul class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <li v-for="t in titulos" :key="t.nombre">
-          <button
-            type="button"
-            :aria-pressed="tituloActivo === t.nombre"
-            :class="[
-              'flex h-full w-full cursor-pointer flex-col border p-4 text-left',
-              tituloActivo === t.nombre ? 'border-primario ring-2 ring-primario' : 'border-texto/15 hover:border-primario',
-            ]"
-            @click="tituloActivo = aplicarTitulos(t.nombre)"
-          >
-            <!-- Navbar en mono, como el sitio -->
-            <span class="flex items-baseline justify-between gap-2">
-              <span class="font-logo text-h4 leading-none [font-weight:var(--logo-peso,800)] tracking-[-0.04em] text-primario"
-                >jorge de maría *</span
+            <!-- 2: filas como tarjetas (subgrilla de 4 con el mismo gutter) -->
+            <ul v-else-if="prop.id === 'tarjeta'" class="grid gap-y-16">
+              <li
+                v-for="(foto, i) in fotosDetalle.slice(0, 4)"
+                :key="foto.src"
+                class="md:grid md:grid-cols-4 md:items-start md:gap-x-6 lg:gap-x-10"
               >
-              <span class="text-boton text-primario">registros · sobre mí</span>
-            </span>
-            <!-- Título con la fuente de cada opción -->
-            <span
-              class="mt-8 block text-[2.5rem] leading-[1.05] text-texto"
-              :style="{ fontFamily: t.familia ?? t.muestra, fontWeight: t.peso }"
-              >{{ muestraTitulos.nombre }}</span
-            >
-            <span class="mt-2 text-boton text-primario">{{ muestraTitulos.ficha }}</span>
-            <span
-              class="mt-6 block text-2xl leading-tight text-texto"
-              :style="{ fontFamily: t.familia ?? t.muestra, fontWeight: t.peso }"
-              >{{ muestraTitulos.otro }}</span
-            >
-            <span class="mt-1 text-boton text-primario">comercial · 2025 · Valdivia, Chile</span>
-            <span class="mt-auto block border-t border-texto/15 pt-3 text-cuerpo-sm" style="margin-top: 2rem">
-              <span class="font-extrabold">{{ t.nombre }}</span> — {{ t.nota }}
-            </span>
-          </button>
-        </li>
-      </ul>
-    </section>
+                <ResponsiveImage v-bind="foto" class="md:col-span-2" sizes="(min-width: 768px) 33vw, 100vw" />
+                <div class="mt-4 md:col-span-2 md:mt-0 md:grid md:grid-cols-2 md:items-baseline md:gap-x-6 lg:gap-x-10">
+                  <p class="text-cuerpo text-titulo tabular-nums">{{ nro(i) }}</p>
+                  <ul v-if="i === 0" class="mt-2 text-boton text-dato md:mt-0">
+                    <li v-for="(dato, j) in datosDetalle" :key="dato" :class="j === 0 && 'underline decoration-linea decoration-2 underline-offset-4'">{{ dato }}</li>
+                  </ul>
+                </div>
+              </li>
+            </ul>
 
-    <section class="mt-16" aria-labelledby="g-sistema">
-      <h2 id="g-sistema" class="font-display text-h3">Propuestas de sistema: navbar, ficha y pie</h2>
-      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
-        Cómo se ve una página de registro completa en cada propuesta: navbar, foto principal, ficha, galería en
-        tercios (con la misma regla del sitio) y pie. Usa la paleta elegida arriba.
-      </p>
-      <ul v-if="mockProject" class="mt-8 flex flex-col gap-16">
-        <li v-for="(v, i) in systemVariants" :key="v.id">
-          <p class="text-etiqueta text-texto/60">S{{ i + 1 }} · {{ v.origen }}</p>
-          <h3 class="mt-2 font-display text-h4">{{ v.nombre }}</h3>
-          <p class="mt-2 max-w-[70ch] text-cuerpo-sm">{{ v.texto }}</p>
-          <SystemMock class="mt-4" :variant="v.id" :project="mockProject" />
-        </li>
-      </ul>
-    </section>
-
-    <section class="mt-16" aria-labelledby="g-vista">
-      <h2 id="g-vista" class="font-display text-h3">Vista previa</h2>
-      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
-        Partes del sitio con la paleta elegida. Cambia de paleta arriba y mira cómo se ven.
-      </p>
-
-      <div class="mt-8 grid gap-10 lg:grid-cols-2">
-        <!-- Navbar con el menú abierto: "proyectos" con el cursor encima, "escríbeme" al final -->
-        <div>
-          <h3 class="text-etiqueta text-texto/60">navbar y menú abierto</h3>
-          <div class="mt-3 flex items-center justify-between">
-            <span class="bg-acento px-1.5 pt-2 pb-1 text-h3 font-extrabold whitespace-pre text-primario">{{
-              site.wordmark
-            }}</span>
-            <span class="grid size-9 place-items-center border border-primario bg-fondo text-primario">×</span>
-          </div>
-          <div class="mt-4 grid gap-px border border-primario bg-primario sm:grid-cols-5">
-            <span
-              v-for="(label, i) in menuItems"
-              :key="label"
-              :class="[
-                'flex justify-between gap-2 px-3 py-2.5 text-boton',
-                i === 1 ? 'bg-primario text-fondo' : 'bg-fondo text-primario',
-              ]"
-            >
-              <span>{{ i === 0 ? '*' : '' }}</span>{{ label }}
-            </span>
-            <span class="bg-primario px-3 py-2.5 text-right text-boton text-fondo">{{ site.cta.label }}</span>
-          </div>
-        </div>
-
-        <!-- Stack de Inicio: foto, retícula y los bloques de "Desliza" y el contador -->
-        <div>
-          <h3 class="text-etiqueta text-texto/60">stack de fotos de inicio</h3>
-          <div v-if="samplePhoto" class="relative mt-3 aspect-video overflow-hidden">
-            <ResponsiveImage v-bind="samplePhoto" fill sizes="(min-width: 1024px) 50vw, 100vw" />
-            <div class="absolute inset-x-6 inset-y-4">
-              <span
-                v-for="n in 6"
-                :key="n"
-                class="absolute inset-y-0 w-px bg-primario"
-                :style="{ left: `${((n - 1) / 5) * 100}%` }"
-              />
+            <!-- 3: la primera grande en 16:9; después horizontales en 4 columnas y verticales de a pares -->
+            <div v-else-if="prop.id === 'entrada'">
+              <ResponsiveImage v-bind="fotosDetalle[0]" ratio="16 / 9" sizes="(min-width: 768px) 66vw, 100vw" />
+              <ul class="mt-16 grid grid-cols-2 items-start gap-x-6 gap-y-16 lg:gap-x-10">
+                <li v-for="foto in fotosDetalle.slice(1, 6)" :key="foto.src" :class="vertical(foto) ? 'col-span-1' : 'col-span-2'">
+                  <ResponsiveImage v-bind="foto" sizes="(min-width: 768px) 66vw, 100vw" />
+                </li>
+              </ul>
             </div>
-            <span class="absolute bottom-3 left-6 bg-primario px-1.5 py-0.5 text-cuerpo text-fondo">Desliza</span>
-            <span class="absolute right-6 bottom-3 bg-primario px-1.5 py-0.5 text-cuerpo text-fondo tabular-nums"
-              >1 / 5</span
-            >
-          </div>
-        </div>
 
-        <!-- Tarjeta de proyecto real (pasa el cursor para ver la ficha) y la ficha del detalle -->
-        <div v-if="sample">
-          <h3 class="text-etiqueta text-texto/60">tarjeta de proyecto (pasa el cursor)</h3>
-          <div class="mt-3 max-w-sm">
-            <ProjectCard :project="sample" />
+            <!-- 4: una foto por columna, cuadradas, con su número -->
+            <ul v-else class="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4 lg:gap-x-10">
+              <li v-for="(foto, i) in fotosDetalle.slice(0, 12)" :key="foto.src">
+                <ResponsiveImage v-bind="foto" ratio="1 / 1" sizes="(min-width: 768px) 17vw, 50vw" />
+                <p class="mt-2 text-boton text-dato tabular-nums">{{ nro(i) }}</p>
+              </li>
+            </ul>
           </div>
-        </div>
-        <div v-if="sample">
-          <h3 class="text-etiqueta text-texto/60">ficha del detalle de proyecto</h3>
-          <ProjectFacts :project="sample" :facts="sampleFacts" class="mt-3 max-w-sm" />
-        </div>
-
-        <!-- Contacto: frase en bloque y correo grande -->
-        <div class="lg:col-span-2">
-          <h3 class="text-etiqueta text-texto/60">contacto</h3>
-          <p class="mt-3 w-fit bg-primario px-[0.17em] pt-[0.22em] pb-[0.11em] text-[1.5rem] leading-none font-extrabold text-fondo">
-            ¿necesitas fotos? escríbeme:
-          </p>
-          <p class="mt-4 text-[clamp(1.5rem,5vw,3.5rem)] leading-none font-extrabold break-all text-primario">
-            <span class="bg-acento px-[0.1em]">{{ site.email }}</span> :)
-          </p>
         </div>
       </div>
-
-      <!-- Propuestas de color para el logo (bloque del navbar) -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para el logo</h3>
-      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <li v-for="(v, i) in logoVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">L{{ i + 1 }}. {{ v.nombre }}</p>
-          <p class="mt-3 flex w-fit text-h3 font-extrabold whitespace-pre">
-            <span v-for="parte in v.partes" :key="parte.t" :class="['px-1.5 pt-2 pb-1', parte.c]">{{ parte.t }}</span>
-          </p>
-        </li>
-      </ul>
-
-      <!-- Propuestas de forma para el logo: mismo bloque, distinto texto -->
-      <h3 class="mt-16 font-display text-h4">Propuestas de forma para el logo</h3>
-      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
-        El mismo bloque del logo actual, con otras formas de escribir el nombre.
-      </p>
-      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        <li v-for="(v, i) in logoForms" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">LF{{ i + 1 }}. {{ v.nombre }}</p>
-          <p
-            :class="[
-              'mt-3 w-fit bg-acento px-6 pt-2 pb-1 text-h3 leading-none font-extrabold whitespace-pre text-primario sm:text-logo',
-              v.extra,
-            ]"
-          >
-            <template v-for="(linea, j) in v.lineas" :key="linea"><br v-if="j" />{{ linea }}</template>
-          </p>
-        </li>
-      </ul>
-
-      <!-- Propuestas para contacto (cierre de Inicio) -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para contacto</h3>
-      <ul class="mt-6 grid gap-8 lg:grid-cols-2">
-        <li v-for="(v, i) in contactVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">C{{ i + 1 }}. {{ v.nombre }}</p>
-          <div :class="['mt-3 p-5', v.seccion || 'border border-texto/10']">
-            <p
-              :class="[
-                'w-fit px-[0.17em] pt-[0.22em] pb-[0.11em] text-[1.25rem] leading-none font-extrabold',
-                v.frase,
-              ]"
-            >
-              ¿necesitas fotos? escríbeme:
-            </p>
-            <p class="mt-4 text-[clamp(1.25rem,3vw,2.25rem)] leading-none font-extrabold break-all">
-              <span :class="v.correo">{{ site.email }}</span> <span :class="v.carita">:)</span>
-            </p>
-          </div>
-        </li>
-      </ul>
-
-      <!-- Propuestas para el pie (footer) -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para el pie</h3>
-      <ul class="mt-6 flex flex-col gap-12">
-        <li v-for="(v, i) in footerVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">P{{ i + 1 }}. {{ v.nombre }}</p>
-
-          <!-- Nombre gigante en bloque rosado, como el logo, sobre la grilla -->
-          <p
-            v-if="v.tipo === 'grande'"
-            class="mt-3 w-fit bg-acento px-[0.17em] pt-[0.22em] pb-[0.11em] text-[clamp(2rem,7vw,5.5rem)] leading-none font-extrabold whitespace-nowrap text-primario"
-          >
-            {{ site.wordmark }}
-          </p>
-
-          <!-- Todo en una línea, separado por puntos, sobre una línea fina -->
-          <p
-            v-if="v.tipo === 'linea'"
-            class="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-primario pt-3 text-cuerpo-sm text-primario"
-          >
-            <template v-for="(d, j) in footerData" :key="d.label">
-              <span v-if="j" aria-hidden="true">·</span>
-              <span :class="j === 1 && 'bg-acento px-1'">{{ d.value }}</span>
-            </template>
-          </p>
-
-          <!-- Grilla: las líneas son el fondo que asoma por 1 px entre celdas, como el pie real -->
-          <dl v-else :class="['mt-3 grid gap-px sm:grid-cols-3 xl:grid-cols-6', v.lineas]">
-            <div
-              v-for="(d, j) in footerData"
-              :key="d.label"
-              :class="['flex flex-col gap-1 px-3 py-2', v.celda, j === 1 && v.correo]"
-            >
-              <dt :class="['text-etiqueta', v.etiqueta]">{{ d.label }}</dt>
-              <dd :class="['text-cuerpo-sm whitespace-nowrap', v.dato]">{{ d.value }}</dd>
-            </div>
-          </dl>
-        </li>
-      </ul>
-
-      <!-- Propuestas para el hover: listas tipo menú, pasa el cursor para probarlas -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para el hover</h3>
-      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">Pasa el cursor por cada lista para probarla.</p>
-      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <li v-for="(v, i) in hoverVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">H{{ i + 1 }}. {{ v.nombre }}</p>
-          <div class="mt-3 grid gap-px border border-primario bg-primario">
-            <a
-              v-for="label in menuItems.slice(0, 3)"
-              :key="label"
-              href="#g-vista"
-              :class="[
-                'bg-fondo px-3 py-2.5 text-right text-boton text-primario transition-colors duration-200 ease-out',
-                v.c,
-              ]"
-              @click.prevent
-              >{{ label }}</a
-            >
-          </div>
-        </li>
-      </ul>
-
-      <!-- Propuestas para las fichas: una sola para últimos trabajos, proyectos y detalle -->
-      <h3 class="mt-16 font-display text-h4">Propuestas para las fichas</h3>
-      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
-        La que elijas se aplica igual en últimos trabajos, proyectos y el detalle de cada proyecto.
-      </p>
-      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <li v-for="(v, i) in fichaVariants" :key="v.nombre">
-          <p class="text-etiqueta text-texto/60">F{{ i + 1 }}. {{ v.nombre }}</p>
-          <dl :class="['mt-3 divide-y text-cuerpo-sm', v.caja, v.lineas]">
-            <div
-              v-for="([label, value], row) in sampleFacts"
-              :key="label"
-              :class="['flex items-baseline justify-between gap-4 px-3 py-2.5', row === 0 && v.primera]"
-            >
-              <dt :class="v.etiqueta">{{ label }}</dt>
-              <dd :class="['text-right', v.dato]">{{ value }}</dd>
-            </div>
-          </dl>
-        </li>
-      </ul>
-
-      <!--
-        Otros usos posibles del acento (rosado).
-      -->
-      <h3 class="mt-16 font-display text-h4">Otros usos del rosado</h3>
-      <p class="mt-3 max-w-[60ch] text-cuerpo-sm">
-        En uso: el logo, el correo de contacto, los bloques sobre las fotos, la carita y el "copiado!".
-      </p>
-      <ul class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-        <li>
-          <p class="text-etiqueta text-texto/60">1. bloques sobre las fotos (en uso)</p>
-          <div v-if="samplePhoto" class="relative mt-3 aspect-[4/3] overflow-hidden">
-            <ResponsiveImage v-bind="samplePhoto" fill sizes="25vw" />
-            <span class="absolute bottom-3 left-3 bg-acento px-1.5 py-0.5 text-cuerpo text-primario">Desliza</span>
-            <span class="absolute right-3 bottom-3 bg-acento px-1.5 py-0.5 text-cuerpo text-primario">1 / 5</span>
-          </div>
-        </li>
-        <li>
-          <p class="text-etiqueta text-texto/60">2. carita y "copiado!" (en uso)</p>
-          <p class="mt-3 text-[2.5rem] leading-none font-extrabold text-primario">
-            <span class="bg-acento px-[0.1em]">:)</span>
-          </p>
-          <p class="mt-4 w-fit bg-acento px-1.5 py-0.5 text-cuerpo-sm text-primario">copiado!</p>
-        </li>
-      </ul>
     </section>
 
     <section class="mt-16" aria-labelledby="g-tipo">
@@ -699,6 +162,162 @@ function repetirPersianas() {
         </div>
       </dl>
     </section>
+
+    <section class="mt-16" aria-labelledby="g-tipografias">
+      <h2 id="g-tipografias" class="font-display text-h3">Propuestas de tipografía</h2>
+      <p class="mt-2 max-w-prose text-cuerpo-sm">
+        De la biblioteca de la skill design-taste-frontend: una sola familia en distintos pesos, o
+        una pareja. Cada muestra lleva sus propias fuentes; «usar en el sitio» la aplica a todas las
+        páginas (y a la vista previa de abajo). Se recuerda en este navegador.
+      </p>
+      <div class="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-10">
+        <div v-for="t in tipografias" :key="t.nombre">
+          <div class="bg-fondo p-4 outline outline-1 outline-texto/15" :style="{ fontFamily: t.texto.familia }">
+            <p class="text-[2rem] leading-[0.9] text-marca" :style="{ fontFamily: t.logo.familia, fontWeight: t.logo.peso, letterSpacing: t.logo.tracking }">
+              {{ site.wordmark }}
+            </p>
+            <p class="mt-6 text-[2.25rem] leading-none text-titulo" :style="{ fontFamily: t.titulos.familia, fontWeight: t.titulos.peso, letterSpacing: t.titulos.tracking }">
+              Librería 780
+            </p>
+            <p class="mt-2 text-cuerpo-sm text-dato">comercial · 2025 · Valdivia, Chile</p>
+            <p class="mt-4 text-cuerpo-sm leading-[1.5] text-texto">
+              Fotografía de arquitectura e instalaciones industriales en el sur de Chile.
+            </p>
+            <p class="mt-4 text-boton text-ui">inicio · <span class="underline decoration-linea decoration-2 underline-offset-4">registros</span> · sobre mí · contacto</p>
+          </div>
+          <h3 class="mt-3 text-cuerpo">{{ t.nombre }} <span class="text-etiqueta opacity-60">{{ t.tipo }}</span></h3>
+          <p class="mt-1 text-cuerpo-sm text-dato">{{ t.nota }}</p>
+          <button
+            type="button"
+            :class="[
+              'mt-2 cursor-pointer text-boton text-ui decoration-linea decoration-2 underline-offset-4',
+              tipografiaActiva === t.nombre ? 'underline' : 'hover:underline',
+            ]"
+            @click="tipografiaActiva = aplicarTipografia(t.nombre)"
+          >
+            {{ tipografiaActiva === t.nombre ? 'en uso en el sitio' : 'usar en el sitio' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-16" aria-labelledby="g-colores">
+      <h2 id="g-colores" class="font-display text-h3">Colores</h2>
+      <p class="mt-4 max-w-[60ch] text-cuerpo-sm">
+        Paleta en prueba: cambia todo el sitio (solo aquí, en desarrollo). La publicada es la de main.css.
+      </p>
+      <!--
+        Cada paleta como una muestra con el reparto publicado (tinta y un acento): fondo, logo y
+        subrayado en el primario, texto en tinta. La publicada muestra sus colores de main.css
+      -->
+      <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <button
+          v-for="p in paletas"
+          :key="p.nombre"
+          type="button"
+          :aria-pressed="activa === p.nombre"
+          :class="[
+            'cursor-pointer p-4 text-left outline-offset-2',
+            activa === p.nombre ? 'outline-2 outline-primario' : 'outline-1 outline-texto/15 hover:outline-texto/40',
+          ]"
+          :style="{ background: muestra(p).fondo, color: muestra(p).texto }"
+          @click="choose(p.nombre)"
+        >
+          <span class="block text-cuerpo leading-none font-extrabold tracking-[-0.04em]" :style="{ color: muestra(p).primario }">
+            jorge de maría *
+          </span>
+          <span class="mt-3 block font-display text-cuerpo">Librería 780</span>
+          <span class="mt-1 block text-boton">
+            comercial · 2025 ·
+            <span class="underline decoration-2 underline-offset-4" :style="{ textDecorationColor: muestra(p).primario }">ver</span>
+          </span>
+          <span class="mt-3 block text-etiqueta opacity-70">{{ p.nombre }}</span>
+        </button>
+      </div>
+      <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <li v-for="c in colors" :key="c.name">
+          <div :class="['aspect-square', c.class]" />
+          <p class="mt-2 text-cuerpo-sm">{{ c.name }} <span class="opacity-70">{{ hex[c.name] }}</span></p>
+        </li>
+      </ul>
+    </section>
+
+
+    <!--
+      Pedazos reales del sitio (componentes o sus mismas clases): cambian con la paleta y la letra de
+      títulos elegidas arriba. El navbar y el pie de esta página también
+    -->
+    <section class="mt-16" aria-labelledby="g-vista">
+      <h2 id="g-vista" class="font-display text-h3">Vista previa</h2>
+
+      <!--
+        Navbar de Inicio, con el logo en su tamaño grande: los dos primeros tercios (menos el aire);
+        el logo con su * mide 6.66em (ver --logo-chico en main.css). Los enlaces en el 3º
+      -->
+      <h3 class="mt-8 text-boton text-ui">navbar</h3>
+      <div class="@container mt-4 grid grid-cols-3 items-start bg-fondo py-4">
+        <span
+          class="col-span-2 font-logo leading-[0.85] font-bold tracking-[-0.04em] whitespace-nowrap text-marca [font-size:calc((100cqi*2/3-2.5rem)/6.66)]"
+          >{{ site.wordmark }}</span
+        >
+        <ul class="text-boton text-ui">
+          <li v-for="(item, i) in site.nav" :key="item.label" class="py-0.5">
+            <span :class="['decoration-linea decoration-2 underline-offset-4', i === 1 && 'underline']">{{ item.label }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Stack de Inicio: la primera foto con la franja de "Desliza" y el contador -->
+      <h3 class="mt-16 text-boton text-ui">stack</h3>
+      <div class="mt-4">
+        <ResponsiveImage v-bind="heroPhotos[0]" ratio="16 / 9" sizes="100vw" />
+        <div class="flex justify-between bg-fondo py-3 text-boton text-ui">
+          <span>Desliza</span><span class="tabular-nums">1 / {{ heroPhotos.length }}</span>
+        </div>
+      </div>
+
+      <!-- Registros: título y categorías en el 1º tercio, la tarjeta real en los otros dos -->
+      <h3 class="mt-16 text-boton text-ui">registros</h3>
+      <div class="mt-4 md:grid md:grid-cols-3 md:items-start">
+        <div class="md:pr-6 lg:pr-10">
+          <p class="font-display text-h1 text-titulo">Registros</p>
+          <ul class="mt-4 flex flex-wrap gap-x-6 text-boton text-ui lowercase md:mt-6 md:flex-col">
+            <li v-for="(c, i) in [{ nombre: 'Todos' }, ...categories]" :key="c.nombre">
+              <span :class="['block w-fit py-1.5 decoration-linea decoration-2 underline-offset-4', i === 0 && 'underline']">{{ c.nombre }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="mt-8 md:col-span-2 md:mt-0"><ProjectCard :project="projects[0]" /></div>
+      </div>
+
+      <!-- Detalle: la foto de entrada con el nombre encima y la ficha -->
+      <h3 class="mt-16 text-boton text-ui">detalle</h3>
+      <div class="mt-4 md:grid md:grid-cols-3 md:items-start">
+        <div class="relative md:col-span-2 md:mr-6 lg:mr-10">
+          <ResponsiveImage v-bind="projects[0].fotos[0]" ratio="16 / 9" sizes="66vw" />
+          <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-[rgb(0_0_0/0.45)] from-35% to-transparent px-4 pt-16 pb-4">
+            <p class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.9] tracking-[-0.03em] text-sobre-foto">{{ projects[0].titulo }}</p>
+          </div>
+        </div>
+        <div class="mt-6 md:mt-0">
+          <p class="font-display text-h1 text-titulo">{{ projects[0].titulo }}</p>
+          <ul class="mt-4 text-boton text-dato">
+            <li class="py-1.5"><span class="underline decoration-linea decoration-2 underline-offset-4">{{ projects[0].categoria.nombre.toLowerCase() }}</span></li>
+            <li class="py-1.5">{{ projects[0].año }}</li>
+            <li class="py-1.5">{{ projects[0].lugar }}</li>
+            <li class="py-1.5">{{ projects[0].arquitecto }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Contacto: la frase y el correo -->
+      <h3 class="mt-16 text-boton text-ui">contacto</h3>
+      <p class="mt-4 font-display text-h1 text-titulo">¿necesitas fotos? escríbeme:</p>
+      <p class="mt-4 text-[clamp(1.75rem,4.5vw,4rem)] leading-none font-bold text-marca">
+        <span class="underline decoration-linea decoration-[0.08em] underline-offset-[0.12em]">{{ site.email }}</span> :)
+      </p>
+    </section>
+
     </div>
   </div>
 </template>

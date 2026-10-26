@@ -7,6 +7,8 @@ import { easePersiana } from './usePersiana'
  * está en pantalla; el resto se va con el fundido de siempre.
  */
 export const PAGE_EXIT = 500
+// Los textos se borran en la mitad: así terminan antes de que la persiana tape los que van sobre una foto
+const TEXT_EXIT = 250
 
 const inView = (rect) => rect.bottom > 0 && rect.top < window.innerHeight && rect.width > 0
 
@@ -40,7 +42,7 @@ export function playPageExit() {
     if (!texts.length) return resolve()
     const start = performance.now()
     const step = (now) => {
-      const left = 1 - Math.min((now - start) / PAGE_EXIT, 1)
+      const left = 1 - Math.min((now - start) / TEXT_EXIT, 1)
       for (const t of texts) t.node.nodeValue = t.full.slice(0, Math.ceil(t.full.length * left))
       if (left > 0) requestAnimationFrame(step)
       else resolve()

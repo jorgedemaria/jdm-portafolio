@@ -45,8 +45,8 @@ const props = defineProps({
   project: { type: Object, required: true },
 })
 
-// Todas las cajas iguales, cuadradas: cada foto se recorta según su foco
-const ratio = '1 / 1'
+// Todas las cajas iguales, en 16:9: cada foto se recorta según su foco
+const ratio = '16 / 9'
 // Todas a lo ancho de la columna; la foto nunca más alta que la pantalla: bajo el fondo del navbar
 // (--cabecera) entran la foto, el nombre y las dos filas de datos (9 rem: el texto y el aire) y además
 // asoma el registro siguiente (5 rem: el espacio entre registros y 1 rem de su foto), para invitar a bajar
@@ -59,9 +59,8 @@ const hovered = ref(false)
 const link = computed(() => ({ name: 'project', params: { slug: props.project.slug } }))
 
 // Datos en una línea (categoría, año y lugar); el arquitecto, en la fila de abajo
-const facts = computed(() =>
-  [props.project.categoria.nombre.toLowerCase(), props.project.año, props.project.lugar].join(' · '),
-)
+// Los datos en lista, uno por línea: categoría, año, lugar y arquitectos
+const facts = [props.project.categoria.nombre.toLowerCase(), String(props.project.año), props.project.lugar, props.project.arquitecto].filter(Boolean)
 
 /*
  * Entrada, como en "últimos registros": la primera vez que la tarjeta asoma, en cuanto su foto
@@ -78,8 +77,7 @@ const typed = (on, text) =>
     { stagger: 25, scramble: 280, tick: 40, keepUnchanged: false, charset: SCRAMBLE_CHARSET_LOWER },
   )
 const title = typed(shown, computed(() => props.project.titulo))
-const factsText = typed(factsShown, facts)
-const arquitectoText = typed(factsShown, computed(() => props.project.arquitecto ?? ''))
+const factsTexts = facts.map((fact) => typed(factsShown, computed(() => fact)))
 let observer
 let unmounted = false
 let textTimers = []
@@ -119,12 +117,12 @@ const cardEl = ref(null)
 </script>
 
 <template>
-  <article ref="cardEl" class="md:grid md:grid-cols-2 md:items-start" @pointerenter="hovered = true" @pointerleave="hovered = false">
+  <article ref="cardEl" class="md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:gap-x-10" @pointerenter="hovered = true" @pointerleave="hovered = false">
     <!-- La foto repite el enlace del nombre; se oculta a lectores de pantalla y al teclado -->
     <RouterLink
       :to="link"
       :class="[
-        'block transition-[clip-path] duration-500 ease-(--ease-persiana) md:mr-6 lg:mr-10',
+        'block transition-[clip-path] duration-500 ease-(--ease-persiana)',
         photoShown ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
       ]"
       tabindex="-1"
@@ -132,23 +130,26 @@ const cardEl = ref(null)
     >
       <CardPhoto :project="project" :paused="hovered" :ratio="ratio" :sizes="sizes" :max-height="MAX_PHOTO_HEIGHT" />
     </RouterLink>
-    <div>
-    <h2 class="mt-3 md:mt-0 font-display text-cuerpo leading-snug text-balance text-texto">
+    <!--
+      Desde 768 px, el nombre en una columna y los datos en lista en la siguiente (la 5ª y la 6ª en
+      Registros), con el nombre y el primer dato en la misma línea base
+    -->
+    <div class="md:grid md:grid-cols-2 md:items-baseline md:gap-x-6 lg:gap-x-10">
+    <h2 class="mt-4 md:mt-0 font-display text-cuerpo text-balance text-titulo">
       <RouterLink
         :to="link"
         :aria-label="project.titulo"
-        class="py-0.5 whitespace-pre-wrap decoration-acento decoration-2 underline-offset-4 hover:underline"
+        class="py-0.5 whitespace-pre-wrap decoration-linea decoration-2 underline-offset-4 hover:underline"
       >
         <span aria-hidden="true">{{ title }}</span>
       </RouterLink>
     </h2>
     <!-- Los datos se escriben después del nombre (ver factsShown); los lectores los leen completos -->
-    <p class="mt-1 text-cuerpo-sm whitespace-pre-wrap text-primario">
-      <span class="sr-only">{{ facts }}</span><span aria-hidden="true">{{ factsText }}</span>
-    </p>
-    <p class="text-cuerpo-sm whitespace-pre-wrap text-primario">
-      <span class="sr-only">{{ project.arquitecto }}</span><span aria-hidden="true">{{ arquitectoText }}</span>
-    </p>
+    <ul class="mt-2 text-cuerpo-sm text-dato md:mt-0">
+      <li v-for="(fact, i) in facts" :key="fact" class="whitespace-pre-wrap">
+        <span class="sr-only">{{ fact }}</span><span aria-hidden="true">{{ factsTexts[i].value }}</span>
+      </li>
+    </ul>
     </div>
   </article>
 </template>

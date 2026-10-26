@@ -18,6 +18,7 @@ const visible = computed(() =>
 
 const filters = [{ slug: null, nombre: 'Todos' }, ...categories]
 
+
 /*
  * Entrada: el título se escribe con letras al azar y después las categorías, una tras otra
  * (FILTER_STAGGER), como el resto de los textos del sitio
@@ -76,38 +77,38 @@ watch(visible, () => nextTick(alignNav))
       crema (los registros pasan por debajo); desde 768 px en el 1º tercio de la retícula, con los
       registros en los otros dos
     -->
-    <div class="page md:grid md:grid-cols-3 md:items-start">
+    <div class="page md:grid md:grid-cols-6 md:items-start md:gap-x-6 lg:gap-x-10">
       <div
-        class="sticky top-(--cabecera,0px) z-10 bg-fondo pt-6 pb-2 md:top-[calc(var(--cabecera,0px)+1.5rem)] md:z-auto md:bg-transparent md:pt-0 md:pr-6 md:pb-0 lg:grid lg:items-start lg:pr-10 lg:*:[grid-area:1/1]"
+        class="sticky top-(--cabecera,0px) z-10 bg-fondo md:col-span-2 pt-6 pb-2 md:top-[calc(var(--cabecera,0px)+1.5rem)] md:z-auto md:bg-transparent md:pt-0 md:pb-0 lg:grid lg:items-start lg:*:[grid-area:1/1]"
       >
-        <h1 class="font-display text-h1 whitespace-pre">
+        <h1 class="font-display text-h1 text-titulo whitespace-pre">
           <span class="sr-only">{{ TITLE }}</span><span aria-hidden="true">{{ pageTitle }}</span>
         </h1>
         <!--
           Categorías como los enlaces del navbar: texto, la elegida subrayada en rosado (y al pasar).
-          Desde 768 px en lista, en la misma línea vertical que el teléfono del pie (--footer-telefono).
-          Desde 1024 px, al lado del título (la misma celda de la grilla), la primera en la línea base
-          del nombre del primer registro (ver alignNav); antes, bajo el título (el teléfono va al
-          borde y chocarían)
+          Desde 768 px en lista, en la 2ª columna: el bloque ocupa las columnas 1–2, así que la 2ª
+          empieza en la mitad más medio gutter. Desde 1024 px, al lado del título (la misma celda de
+          la grilla), la primera en la línea base del nombre del primer registro (ver alignNav);
+          antes, bajo el título
         -->
         <nav
           ref="navEl"
           aria-label="Filtrar por categoría"
-          class="mt-4 md:mt-6 md:pl-(--footer-telefono,0px) lg:mt-0"
+          class="mt-4 md:mt-6 md:pl-[calc(50%+0.75rem)] lg:mt-0 lg:pl-[calc(50%+1.25rem)]"
           :style="navShift ? { transform: `translateY(${navShift}px)` } : null"
         >
-          <ul class="flex flex-wrap gap-x-6 text-boton text-primario lowercase md:flex-col">
+          <ul class="flex flex-wrap gap-x-6 text-boton text-ui lowercase md:flex-col">
             <!--
               Desde 1024 px, con el mismo ritmo de renglones que el nombre y los datos del registro
-              de al lado: la 2ª categoría a la altura de los datos, y de ahí cada 16,5 px. El área
+              de al lado: cada categoría a la altura de un dato de la lista, cada 16 px. El área
               para tocar sigue en 24 px (py con -my)
             -->
-            <li v-for="(filter, i) in filters" :key="filter.nombre" class="lg:first:mb-[5.5px]">
+            <li v-for="(filter, i) in filters" :key="filter.nombre">
               <RouterLink
                 :to="{ name: 'projects', query: filter.slug ? { categoria: filter.slug } : {} }"
                 :aria-current="active === filter.slug ? 'true' : undefined"
                 :class="[
-                  'block w-fit py-2.5 decoration-acento decoration-2 underline-offset-4 hover:underline md:py-1.5 lg:-my-1 lg:py-1 lg:leading-[16.5px]',
+                  'block w-fit py-4 decoration-linea decoration-2 underline-offset-4 hover:underline md:py-2 lg:underline-offset-2 lg:-my-1 lg:py-1',
                   active === filter.slug && 'underline',
                 ]"
               >
@@ -120,12 +121,12 @@ watch(visible, () => nextTick(alignNav))
       </div>
 
       <!-- Una columna en los 2 tercios de la derecha: todas las fotos del mismo ancho -->
-      <ul v-if="visible.length" class="mt-10 grid gap-y-16 md:col-span-2 md:mt-0">
+      <ul v-if="visible.length" class="mt-10 grid gap-y-16 md:col-span-4 md:mt-0">
         <li v-for="project in visible" :key="project.slug">
           <ProjectCard :project="project" />
         </li>
       </ul>
-      <p v-else class="mt-10 md:col-span-2 md:mt-0">Todavía no hay registros en esta categoría.</p>
+      <p v-else class="mt-10 md:col-span-4 md:mt-0">Todavía no hay registros en esta categoría.</p>
     </div>
   </section>
 </template>

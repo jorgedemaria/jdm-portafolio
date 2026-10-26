@@ -164,9 +164,21 @@ function reset() {
   smiley.value = ''
 }
 
-// Ancho en em del correo con la carita (cada letra mono mide 0.6em), para el tamaño que
-// llena su caja sin pasar de 6rem (ver la clase del correo)
-const emailSize = { '--todo': (site.email.length + 3) * 0.6 }
+// Ancho en em del correo con la carita (y su margen de 0.6em), medido con la letra real, para el
+// tamaño que llena su caja sin pasar de 6rem (ver la clase del correo). Antes de medir, una
+// estimación (0.6em por carácter)
+const emailSize = ref({ '--todo': (site.email.length + 3) * 0.6 })
+onMounted(() =>
+  document.fonts.ready.then(() => {
+    const el = root.value?.querySelector('button')
+    if (!el) return
+    const ctx = document.createElement('canvas').getContext('2d')
+    const style = getComputedStyle(el)
+    ctx.font = `${style.fontWeight} 100px ${style.fontFamily}`
+    const em = (text) => ctx.measureText(text).width / 100
+    emailSize.value = { '--todo': em(site.email) + 0.6 + em(':)') }
+  }),
+)
 
 // Avisa al navbar cuando se ve la sección (el logo se recoge); también con movimiento reducido
 let viewObserver
@@ -235,19 +247,19 @@ onBeforeUnmount(() => {
         Frase en texto, sin bloque (como el resto del sitio), que se arma con letras al azar.
         Cada texto animado tiene su versión fija para lectores de pantalla.
       -->
-      <!-- Del tamaño de los títulos de las páginas, siempre en una sola línea -->
-      <p class="font-display text-h1 whitespace-pre text-texto">
+      <!-- Del tamaño de los títulos de las páginas, en una sola línea (en el teléfono no cabe: baja) -->
+      <p class="font-display text-h1 whitespace-pre-wrap text-titulo md:whitespace-pre">
         <span class="sr-only">{{ PROMPT }}</span>
         <span aria-hidden="true">{{ promptShown }}<TypingCaret :state="promptCaret" /></span>
       </p>
 
       <!--
-        En móvil el correo y la carita llenan el ancho en una línea. Desde 768 px llenan los 2 primeros
-        tercios (menos el aire del 2º), lo mismo que el nombre gigante de Inicio
+        En móvil el correo y la carita llenan el ancho en una línea. Desde 768 px llenan las columnas
+        1 a 4 (2/3 del ancho menos un tercio de gutter), lo mismo que el nombre gigante de Inicio
       -->
       <div class="@container mt-6">
       <p
-        class="leading-none font-bold whitespace-pre text-primario [font-size:min(6rem,calc(100cqi/var(--todo)))] md:[font-size:min(6rem,calc((100cqi*2/3-1.5rem)/var(--todo)))] lg:[font-size:min(6rem,calc((100cqi*2/3-2.5rem)/var(--todo)))]"
+        class="leading-none font-bold whitespace-pre text-marca [font-size:min(6rem,calc(100cqi/var(--todo)))] md:[font-size:min(6rem,calc((100cqi*2/3-0.5rem)/var(--todo)))] lg:[font-size:min(6rem,calc((100cqi*2/3-0.8333rem)/var(--todo)))]"
         :style="emailSize"
       >
         <button
@@ -260,7 +272,7 @@ onBeforeUnmount(() => {
         >
           <!-- El correo con el subrayado rosado de los enlaces del sitio, a medida que se escribe -->
           <span aria-hidden="true"
-            ><span v-if="emailTyped" class="underline decoration-acento decoration-[0.08em] underline-offset-[0.12em]">{{
+            ><span v-if="emailTyped" class="underline decoration-linea decoration-[0.08em] underline-offset-[0.12em]">{{
               emailTyped
             }}</span
             ><TypingCaret :state="emailCaretShown" />{{ emailShown.slice(emailTyped.length) }}</span

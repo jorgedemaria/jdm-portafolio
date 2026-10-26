@@ -1,9 +1,12 @@
-@import '@fontsource/instrument-serif/latin-400.css';
-@import '@fontsource/jetbrains-mono/latin-300.css';
-@import '@fontsource/jetbrains-mono/latin-400.css';
-@import '@fontsource/jetbrains-mono/latin-700.css';
-@import '@fontsource/jetbrains-mono/latin-800.css';
 @import 'tailwindcss';
+
+/* Switzer (Fontshare, licencia ITF Free Font: uso comercial libre), servida desde /public/fonts */
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-300.woff2') format('woff2'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Switzer'; src: url('/fonts/switzer/switzer-800.woff2') format('woff2'); font-weight: 800; font-display: swap; }
 
 /*
  * Design tokens — fuente: Figma "jdm-portafolio" › guía de estilos.
@@ -12,54 +15,64 @@
 @theme {
   /* Colores */
   --color-*: initial;
-  /* Paleta "salvia y rosa" (las demás quedan para probar en /guia) */
-  --color-fondo: #f5f1e8;
-  --color-primario: #3d6b4f;
-  --color-acento: #f4b6c2; /* rosado: bloque del logo y correo de contacto */
-  --color-texto: #1a1a1a;
+  /* Paleta "grafito y lima" (las demás quedan para probar en /guia) */
+  --color-fondo: #1d1e1b;
+  --color-primario: #d6f264;
+  --color-acento: #4a4b45;
+  --color-texto: #ecebe6;
+  /* Texto sobre las fotos (ej. el nombre del detalle, sobre su degradado oscuro): claro con cualquier paleta */
+  --color-sobre-foto: #f2f0eb;
 
   /*
-   * Familias. Regla de uso:
-   * - Instrument Serif 400 (font-display, su único peso): nombres. Títulos de página y de
-   *   sección, y nombres de proyectos.
-   * - JetBrains Mono 800 (font-extrabold): la voz del sitio. Logo, intro, mensajes y llamadas a
-   *   la acción en bloques (contacto, 404).
-   * - JetBrains Mono 400: todo lo demás (texto, menú, fichas, pie).
-   * - JetBrains Mono 300 (font-light): etiquetas de las fichas (detalle y tarjetas de proyecto).
+   * Reparto: qué color lleva cada papel.
+   * marca: logo y correo de contacto · ui: menú, filtros, contadores, pie · dato: fichas y datos ·
+   * titulo: títulos en serif · linea: subrayados
+   */
+  /* Reparto "tinta y un acento": todo en tinta; el primario solo en el logo y los subrayados */
+  --color-marca: var(--color-primario);
+  --color-ui: var(--color-texto);
+  --color-dato: var(--color-texto);
+  --color-titulo: var(--color-texto);
+  --color-linea: var(--color-primario);
+
+  /*
+   * Familias. Regla de uso: una sola familia (Switzer) y la jerarquía la dan el peso y el tamaño.
+   * - 700 (font-logo, font-bold): el logo y el correo de contacto.
+   * - 600 (font-display): títulos y nombres de los registros, con la interletra apretada.
+   * - 400: todo lo demás (texto, menú, fichas, pie).
    */
   --font-*: initial;
-  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  /* Logo: el mono, salvo en las pruebas de /guia (ver useTitulos) */
-  --font-logo: var(--font-mono);
+  /* Una sola familia, Switzer, en distintos pesos: texto 400, títulos 600, logo 700 (ver @layer base) */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-logo: var(--font-sans);
 
   /* Escala tipográfica (interlineado 100% como en Figma).
      Figma "texto" → cuerpo, "texto pequeño" → cuerpo-sm, "etiquetas" → etiqueta */
   --text-*: initial;
-  --text-h1: 2.25rem;
-  --text-h1--line-height: 1;
-  --text-h1--font-weight: 400;
-  --text-h2: 2rem;
-  --text-h2--line-height: 1;
-  --text-h2--font-weight: 400;
-  --text-h3: 1.5rem;
-  --text-h3--line-height: 1;
-  --text-h3--font-weight: 400;
-  --text-h4: 1.25rem;
-  --text-h4--line-height: 1;
-  --text-h4--font-weight: 400;
-  --text-cuerpo: 1rem;
-  --text-cuerpo--line-height: 1;
-  /* Letra chica de interfaz (menú, selector, fichas, pie, "Desliza"…): todas del mismo tamaño */
-  --text-cuerpo-sm: 0.6875rem;
-  --text-cuerpo-sm--line-height: 1;
-  --text-etiqueta: 0.6875rem;
-  --text-etiqueta--line-height: 1;
-  --text-boton: 0.6875rem;
-  --text-boton--line-height: 1;
+  /*
+   * Escala de la skill design-taste-frontend (type.md): pocos tamaños, bien separados, y todo
+   * sobre una grilla de 8 px (interlineados múltiplos de 8; ver la retícula con G).
+   * Ningún texto bajo 13 px, para que se lea.
+   */
+  --text-h1: 2.5rem; /* 40 / 40 */
+  --text-h1--line-height: 2.5rem;
+  --text-h1--font-weight: 600;
+  --text-h3: 1.5rem; /* 24 / 32: el logo en el teléfono */
+  --text-h3--line-height: 2rem;
+  --text-h3--font-weight: 600;
+  --text-cuerpo: 1rem; /* 16 / 24: texto y nombres de los registros */
+  --text-cuerpo--line-height: 1.5rem;
+  /* Letra chica de interfaz (menú, selector, fichas, pie, "Desliza"…): todas 13 / 24 */
+  --text-cuerpo-sm: 0.8125rem;
+  --text-cuerpo-sm--line-height: 1.5rem;
+  --text-etiqueta: 0.8125rem;
+  --text-etiqueta--line-height: 1.5rem;
+  --text-boton: 0.8125rem;
+  --text-boton--line-height: 1.5rem;
   --text-logo: 2.25rem;
   --text-logo--line-height: 1;
-  --text-logo--font-weight: 800;
+  --text-logo--font-weight: 700;
 
   /* Interlineado para bloques de lectura de varias líneas */
   --leading-lectura: 1.5;
@@ -84,22 +97,30 @@
 }
 
 /*
- * Logo chico desde 768 px: mide lo que el 1º tercio de la retícula sin su aire (contenido / 3, menos
- * pr-6, o pr-10 desde 1024 px). El logo con su * en mono y -0.04em de interletra mide 8.96em
+ * Logo chico desde 768 px: mide un par de columnas (columnas 1–2: contenido / 3 menos 2/3 de gutter,
+ * 24 px, o 40 px desde 1024 px). El logo con su * en Switzer 700 y -0.04em de interletra mide 6.66em
  */
 :root {
-  /* Curva de las persianas y transiciones del sitio (en desarrollo se prueban otras en /guia) */
+  /* Página oscura: controles y barras de scroll del navegador en oscuro */
+  color-scheme: dark;
+  /* Curva de las persianas y transiciones del sitio */
   --ease-persiana: cubic-bezier(0.83, 0, 0.17, 1); /* in-out quint */
-  --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 1.5rem) / 8.96);
+  --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 1rem) / 6.66);
   @media (width >= 64rem) {
-    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 2.5rem) / 8.96);
+    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 1rem) / 3 - 1.6667rem) / 6.66);
   }
   @media (width >= 80rem) {
-    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 5rem) / 3 - 2.5rem) / 8.96);
+    --logo-chico: calc(((min(100vw - 1rem, 90rem) - 5rem) / 3 - 1.6667rem) / 6.66);
   }
 }
 
 @layer base {
+  /* Títulos y nombres: Switzer 600, más apretada cuanto más grande (ver la regla de familias) */
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
   html {
     /* Fondo de la página también en el lienzo: el rebote del scroll y Safari no muestran blanco */
     @apply bg-fondo;
@@ -113,11 +134,12 @@
   }
 
   body {
-    @apply bg-fondo font-mono text-cuerpo text-texto antialiased;
+    @apply bg-fondo font-sans text-cuerpo text-texto antialiased;
   }
 
+  /* El interlineado lo da cada tamaño de la escala (grilla de 8 px), no el párrafo */
   p {
-    @apply leading-lectura text-pretty;
+    @apply text-pretty;
   }
 
   :focus-visible {

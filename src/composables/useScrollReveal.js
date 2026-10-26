@@ -4,7 +4,8 @@ import { onBeforeUnmount } from 'vue'
  * Fotos que aparecen como las tarjetas de Registros: la primera vez que asoman en pantalla se
  * descubren como persiana que baja (desde arriba), y quedan fijas.
  * Uso: `const reveal = useScrollReveal()` y en el template `:ref="reveal"` en el contenedor
- * de cada foto. Con movimiento reducido no hace nada.
+ * de cada foto. Con movimiento reducido no hace nada. onOpen(el), si se da, avisa cuando una se abre
+ * (ej. para escribir su texto después).
  */
 const HIDDEN = 'inset(0 0 100% 0)'
 const TRANSITION = 'clip-path 1s var(--ease-persiana)'
@@ -41,7 +42,7 @@ export function whenPhotoReady(el, open) {
   img.addEventListener('load', () => setTimeout(open, PHOTO_FADE), { once: true })
 }
 
-export function useScrollReveal() {
+export function useScrollReveal(onOpen) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   // Se observa el padre: con el recorte puesto, la foto misma nunca cuenta como visible
   const clipped = new WeakMap()
@@ -52,7 +53,10 @@ export function useScrollReveal() {
           for (const { target, isIntersecting } of entries) {
             if (!isIntersecting) continue
             const el = clipped.get(target)
-            whenPhotoReady(el, () => (el.style.clipPath = 'inset(0)'))
+            whenPhotoReady(el, () => {
+              el.style.clipPath = 'inset(0)'
+              onOpen?.(el)
+            })
             observer.unobserve(target)
           }
         },

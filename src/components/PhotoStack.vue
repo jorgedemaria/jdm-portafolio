@@ -230,7 +230,7 @@ function photoStyle(index) {
           a todo el ancho y en su proporción; si es más alta que la caja (las verticales), se
           recorta arriba y abajo según su punto de foco
         -->
-        <div v-if="narrow" class="absolute inset-x-0 top-0 bottom-12 grid place-items-center [container-type:size]">
+        <div v-if="narrow" class="absolute inset-x-0 top-0 bottom-10 grid place-items-center [container-type:size]">
           <div class="w-full" :style="{ height: `min(100cqh, 100cqw * ${photo.height / photo.width})` }">
             <ResponsiveImage v-bind="photo" fill :loading="i === 0 ? 'eager' : 'lazy'" sizes="100vw" />
           </div>
@@ -247,17 +247,18 @@ function photoStyle(index) {
       <!-- Sobre el borde visible: con las barras del navegador a la vista, la parte fija sigue debajo -->
       <div
         :class="[
-          'absolute inset-x-0 bottom-0 bg-fondo px-2 py-3 text-boton text-primario transition-[clip-path] duration-500 ease-(--ease-persiana)',
+          'absolute inset-x-0 bottom-0 bg-fondo px-2 py-2 text-boton text-ui transition-[clip-path] duration-500 ease-(--ease-persiana)',
           indicatorRevealed ? '[clip-path:inset(0)]' : '[clip-path:inset(100%_0_0_0)]',
         ]"
         :style="{ bottom: `max(0px, calc(${viewport.height}px - 100dvh))` }"
         aria-hidden="true"
       >
-        <div class="mx-auto flex max-w-360 items-end justify-between px-2">
+        <!-- En la retícula: "Desliza" en la 1ª columna y el contador en la 6ª (en el teléfono, a la derecha) -->
+        <div class="page grid grid-cols-2 items-end md:grid-cols-6 md:gap-x-6 lg:gap-x-10">
           <!-- min-h: la fila mide lo mismo aunque los textos aún estén vacíos -->
-          <p class="min-h-lh whitespace-pre xl:ml-8">{{ hint }}</p>
+          <p class="min-h-lh whitespace-pre">{{ hint }}</p>
           <p
-            class="min-h-lh whitespace-pre tabular-nums xl:mr-8"
+            class="col-start-2 min-h-lh justify-self-end whitespace-pre tabular-nums md:col-start-6 md:justify-self-start"
             @pointerenter="counterHover = true"
             @pointerleave="counterHover = false"
           >{{ counter }}</p>

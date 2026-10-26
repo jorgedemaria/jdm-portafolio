@@ -144,15 +144,25 @@ function measureMonument() {
   // desde 1024 px). La carita de la intro, un carácter más larga, se asoma un poco al 3º
   if (window.innerWidth >= 768) {
     const one = ctx.measureText(site.wordmark).width;
+    // Columnas 1–4 enteras: al barajarse con símbolos se ensancha un poco, sobre la 5ª (el menú va en la 6ª)
     scale = (2 * one + (window.innerWidth >= 1024 ? 40 : 24)) / one;
   }
   // El nombre gigante empieza justo bajo la fila del navbar
   const lift = row.bottom - spanTop;
   const giantBottom = row.bottom + textH * scale;
-  const big = beside.value ? giantBottom + LIST_GAP + listH + MENU_LIST_GAP : giantBottom + MONUMENT_GAP;
+  // Con la lista: su primer enlace en la línea base del nombre gigante (la misma fila de la
+  // retícula, como en el diseño suizo), no debajo de él. Se mide la línea base del texto sin su
+  // escala de este momento y se lleva a la escala gigante
+  let listStart = giantBottom + LIST_GAP;
+  if (firstLink) {
+    const now = new DOMMatrix(getComputedStyle(text).transform).a || 1;
+    const textBase = (baselineOf(text) - text.getBoundingClientRect().top) / now;
+    listStart = spanTop + lift + textBase * scale - (baselineOf(firstLink) - menuRef.value.getBoundingClientRect().top);
+  }
+  const big = beside.value ? Math.max(giantBottom, listStart + listH) + MENU_LIST_GAP : giantBottom + MONUMENT_GAP;
   // El nombre termina de achicarse cuando la página subió lo mismo que baja la franja crema
   // (big - small): así la franja, la lista y el stack de Inicio en móvil van 1:1 con el scroll
-  monument.value = { scale, lift, distance: Math.max(1, big - small), small, big, ...base };
+  monument.value = { scale, lift, distance: Math.max(1, big - small), small, big, listStart, ...base };
   logoShrink.value = monument.value.distance;
   document.documentElement.style.setProperty("--cabecera", `${big}px`);
 }
@@ -244,15 +254,15 @@ watch(scrollY, (y) => {
 const logoAtTop = computed(() => route.name === "home" && shrink.value === 0);
 // El subrayado vuelve un poco antes de llegar arriba del todo (el scroll suave tarda en asentarse)
 const underlineOn = computed(() => route.name === "home" && shrink.value < 0.1);
-// Lista del menú (desde 1024 px): con el nombre gigante empieza bajo él (su borde de abajo +
-// LIST_GAP) y sube a la par mientras se achica, hasta quedar con inicio a la altura del logo
+// Lista del menú (desde 1024 px): con el nombre gigante, su primer enlace en la línea base del nombre
+// (ver measureMonument), y sube a la par mientras se achica, hasta quedar con inicio a la altura del logo
 // Borde de arriba de la lista en este momento del scroll (null sin la lista en la fila)
 const listLiveTop = computed(() => {
-  const { scale, lift, spanTop, textH, listEnd } = monument.value;
+  const { textH, listEnd, listStart } = monument.value;
   if (!beside.value || !textH) return null;
   // Fuera de Inicio no hay nombre gigante: la lista está siempre en su lugar final
   const p = route.name === "home" ? shrink.value : 1;
-  const start = spanTop + lift + textH * scale + LIST_GAP;
+  const start = listStart ?? listEnd;
   return listEnd + (start - listEnd) * (1 - p);
 });
 const listStyle = computed(() =>
@@ -327,7 +337,10 @@ watch([open, menuStyle, beside], () => nextTick(measureMenu));
 // En Inicio el menú abierto sube con el nombre al bajar: la franja crema detrás lo sigue
 watch(scrollY, () => open.value && !pinned.value && measureMenu());
 // Al empezar el scroll del stack de fotos y al volver arriba, el logo y el botón pasan por símbolos al azar
-const SYMBOL_SCRAMBLE = { stagger: 35, scramble: 380, tick: 50, charset: SYMBOL_CHARSET };
+// Solo los símbolos angostos (no más anchos que las letras del logo en Switzer): con @, %, # o & el
+// logo grande se ensanchaba al barajarse y pisaba el menú
+const LOGO_CHARSET = SYMBOL_CHARSET.replace(/[@%#&]/g, '')
+const SYMBOL_SCRAMBLE = { stagger: 35, scramble: 380, tick: 50, charset: LOGO_CHARSET };
 const logo = useScrambleReplay(site.wordmark, SYMBOL_SCRAMBLE);
 function playSymbols() {
   logo.play();
@@ -660,8 +673,7 @@ watch(
           :tabindex="logoHidden || logoAtTop ? -1 : undefined"
           translate="no"
           :class="[
-            // Peso por variable: en las pruebas de /guia el logo puede ir en una serif de un solo peso
-            'group/logo shrink-0 font-logo text-h3 leading-[0.85] [font-weight:var(--logo-peso,800)] tracking-[-0.04em] whitespace-nowrap text-primario sm:text-logo sm:leading-[0.85] xl:ml-8',
+            'group/logo shrink-0 font-logo text-h3 leading-[0.85] font-bold tracking-[-0.04em] whitespace-nowrap text-marca sm:text-logo sm:leading-[0.85] xl:ml-8',
             // Desde 768 px el logo chico mide lo que el 1º tercio de la retícula (--logo-chico, main.css)
             'md:text-(length:--logo-chico)',
             logoAtTop && 'pointer-events-none',
@@ -690,7 +702,7 @@ watch(
                 ><span>{{ logoParts.name }}</span
                 ><span
                   :class="[
-                    'text-transparent underline decoration-acento decoration-[0.06em] underline-offset-[0.12em] transition-[clip-path] duration-300 ease-(--ease-persiana)',
+                    'text-transparent underline decoration-linea decoration-[0.06em] underline-offset-[0.12em] transition-[clip-path] duration-300 ease-(--ease-persiana)',
                     // El recorte baja 0.3em para no cortar la línea, que queda bajo la caja del texto
                     underlineOn ? '[clip-path:inset(0_0_-0.3em_0)]' : '[clip-path:inset(0_100%_-0.3em_0)] group-hover/logo:[clip-path:inset(0_0_-0.3em_0)]',
                   ]"
@@ -707,7 +719,7 @@ watch(
           v-if="sectionTitle"
           ref="sectionTitleRef"
           :class="[
-            'pointer-events-none hidden min-w-0 items-center gap-[0.25em] font-display text-logo whitespace-pre text-texto md:flex',
+            'pointer-events-none hidden min-w-0 items-center gap-[0.25em] font-display text-logo whitespace-pre text-titulo md:flex',
             // Con el menú en la fila: debajo de él, alineado con su borde derecho (p-2 del nav y
             // xl:mr-8 del menú); si no, a la derecha del logo
             beside ? 'absolute top-full right-2 mt-2 xl:right-10' : 'ml-6',
@@ -733,8 +745,9 @@ watch(
           :inert="!introLeaving"
           :class="[
             'relative shrink-0 xl:mr-8',
-            // En la fila: el último tercio de la retícula (sin los márgenes xl:ml-8 y xl:mr-8)
-            beside && 'flex w-1/3 items-center xl:w-[calc((100%-4rem)/3)]',
+            // En la fila: la 6ª columna de la retícula (6 columnas, 5 gutters de 2,5 rem; desde xl sin
+            // los márgenes xl:ml-8 y xl:mr-8)
+            beside && 'flex w-[calc((100%-12.5rem)/6)] items-center xl:w-[calc((100%-16.5rem)/6)]',
           ]"
         >
           <!-- Mismo alto que el bloque del logo: 36 px en móvil, 48 px desde 640 px -->
@@ -743,7 +756,7 @@ watch(
             type="button"
             :class="[
               // lg:invisible y no hidden: el botón sigue midiendo, el menú se ubica respecto de él
-              'group/toggle relative grid h-9 shrink-0 cursor-pointer place-items-center text-primario transition-[clip-path] duration-500 ease-(--ease-persiana) sm:h-12 lg:invisible',
+              'group/toggle relative grid h-9 shrink-0 cursor-pointer place-items-center text-ui transition-[clip-path] duration-500 ease-(--ease-persiana) sm:h-12 lg:invisible',
               beside && 'hidden',
               // Entrada de Inicio: baja como persiana cuando el logo terminó de escribirse
               introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
@@ -755,7 +768,7 @@ watch(
             <span class="sr-only">{{ open ? "Cerrar menú" : "Abrir menú" }}</span>
             <!-- En texto, como los enlaces: "menú" se baraja a "cerrar" al abrir. Ancho fijo (mono) para que no salte -->
             <span
-              class="inline-block w-[6ch] text-right text-boton whitespace-pre decoration-acento decoration-2 underline-offset-4 group-hover/toggle:underline"
+              class="inline-block w-[6ch] text-right text-boton whitespace-pre decoration-linea decoration-2 underline-offset-4 group-hover/toggle:underline"
               aria-hidden="true"
               >{{ toggleText }}</span
             >
@@ -774,7 +787,7 @@ watch(
               // (sobre la franja crema), siempre debajo del logo (ver listStyle; la cabecera la
               // incluye, ver measureMonument); desde
               // antes, en fila, repartidos de borde a borde bajo el logo
-              beside ? 'flex w-full flex-col text-boton text-primario' : 'flex flex-col text-primario',
+              beside ? 'flex w-full flex-col text-boton text-ui' : 'flex flex-col text-ui',
               'transition-[clip-path] duration-500 ease-(--ease-persiana)',
               open && introLeaving ? '[clip-path:inset(0)]' : '[clip-path:inset(0_0_100%_0)]',
             ]"
@@ -793,8 +806,8 @@ watch(
                   @focus="scrambleMenuItem(i)"
                   :class="[
                     // En la lista de escritorio, menos aire: los 4 entran en el alto de la fila del logo
-                    'flex w-fit items-center text-boton decoration-acento decoration-2 underline-offset-4 hover:underline',
-                    beside ? 'py-[5px]' : 'py-2.5',
+                    'flex w-fit items-center text-boton decoration-linea decoration-2 hover:underline', beside ? 'underline-offset-2' : 'underline-offset-4',
+                    beside ? 'py-0' : 'py-4',
                     isActive(item) && 'underline',
                   ]"
                 >
